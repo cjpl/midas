@@ -109,8 +109,12 @@ p{
 	line-height: 1.5em;
 }
 
+select{
+	font-size: 100%;
+}
+
 /*generic button style*/
-button, input[type=button], input[type=submit], input[type=reset], td.ODBdirectory{
+button, input[type=button], input[type=submit], input[type=reset]{
 	background-color: #00B26B;
 	color: #FFFFFF;
 	font-size: 120%;
@@ -126,8 +130,9 @@ button:hover, input[type=button]:hover, input[type=submit]:hover, input[type=res
 }
 
 td.ODBdirectory{
-	border-radius: 12px;
-	border: 1px solid #EEEEEE !important;
+	text-align: left;
+	background-color: #EEEEEE;
+	padding-left: 2em;
 }
 
 td.titleCell{
@@ -171,6 +176,10 @@ div.footerDiv a{
 	color: #f1c40f;
 }
 
+input[type=text]{
+	font-size: 100%
+}
+
 div.wrapper{
     min-height: 100%;
     height: auto !important;
@@ -197,7 +206,7 @@ table.dialogTable td{
 }
 
 .ODBpath{
-	text-align: center;
+	text-align: left;
 	font-size: 120%;
 	background-color: #EEEEEE;
 }
@@ -339,7 +348,8 @@ table.dialogTable td{
 
 /*---- ODB pages ----*/
 .ODBkey{
-	text-align: right;
+	text-align: left;
+	padding-left: 2em;
 }
 
 .ODBvalue{
@@ -379,7 +389,6 @@ table.dialogTable td{
 
 table.ODBtable td{
 	border:none;
-	width:50%;
 }
 
 /*---- Messages Page----*/

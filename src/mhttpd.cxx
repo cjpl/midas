@@ -1503,7 +1503,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    else if (runinfo.state == STATE_PAUSED)
       rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"yellowLight\">Run<br>%d<br>Paused", runinfo.run_number);
    else if (runinfo.state == STATE_RUNNING)
-      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"greenLight\">Run<br>%d<br>Live", runinfo.run_number);
+      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"greenLight\">Run<br>%d<br>Running", runinfo.run_number);
    else
       rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"yellowLight\">Run<br>%d<br>Run State Unknown", runinfo.run_number);
 
@@ -8065,7 +8065,7 @@ void show_start_page(int script)
 
 void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
 {
-   int i, j, size, status;
+   int i, j, keyPresent, scan, size, status;
    char str[256], tmp_path[256], url_path[256], data_str[TEXT_SIZE], 
       hex_str[256], ref[256], keyname[32], link_name[256], link_ref[256],
       full_path[256], root_path[256];
@@ -8128,9 +8128,6 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
       rsprintf("<input type=submit name=cmd value=Help>\n");
       rsprintf("</tr>\n");
 
-      rsprintf("<tr><td colspan=2>\n");
-      rsprintf("<input type=submit name=cmd value=\"Create Elog from this page\">\n");
-      rsprintf("</tr>\n");
    }
    /*---- end page header ----*/
    rsprintf("</table>\n");
@@ -8143,7 +8140,8 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
       rsprintf("<tr><td colspan=2>\n");
       rsprintf("<input type=submit name=cmd value=Find>\n");
       rsprintf("<input type=submit name=cmd value=Create>\n");
-      rsprintf("<input type=submit name=cmd value=Delete></td></tr>\n");
+      rsprintf("<input type=submit name=cmd value=Delete>\n");
+      rsprintf("<input type=submit name=cmd value=\"Create Elog from this page\"></td></tr>\n");
    }
 
    /*---- ODB display -----------------------------------------------*/
@@ -8182,150 +8180,154 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    }
    rsprintf("</b></tr>\n");
 
-   rsprintf("<tr class=\"titleRow\"><th class=\"ODBkey\">Key<th class=\"ODBvalue\">Value</tr>\n");
-
    /* enumerate subkeys */
-   for (i = 0;; i++) {
-      db_enum_link(hDB, hkeyroot, i, &hkey);
-      if (!hkey)
-         break;
-      db_get_link(hDB, hkey, &key);
+   keyPresent = 0;
+   for(scan=0; scan<2; scan++){
+      if(scan==1 && keyPresent==1) 
+         rsprintf("<tr class=\"titleRow\"><th class=\"ODBkey\">Key<th class=\"ODBvalue\">Value</tr>\n");
+      for (i = 0;; i++) {
+         db_enum_link(hDB, hkeyroot, i, &hkey);
+         if (!hkey)
+            break;
+         db_get_link(hDB, hkey, &key);
 
-      if (strrchr(dec_path, '/'))
-         strlcpy(str, strrchr(dec_path, '/')+1, sizeof(str));
-      else
-         strlcpy(str, dec_path, sizeof(str));
-      if (str[0] && str[strlen(str) - 1] != '/')
-         strlcat(str, "/", sizeof(str));
-      strlcat(str, key.name, sizeof(str));
-      strlcpy(full_path, str, sizeof(full_path));
-      urlEncode(full_path, sizeof(full_path));
-      strlcpy(keyname, key.name, sizeof(keyname));
-
-      /* resolve links */
-      link_name[0] = 0;
-      status = DB_SUCCESS;
-      if (key.type == TID_LINK) {
-         size = sizeof(link_name);
-         db_get_link_data(hDB, hkey, link_name, &size, TID_LINK);
-         status = db_enum_key(hDB, hkeyroot, i, &hkey);
-         db_get_key(hDB, hkey, &key);
-      }
-
-      if (link_name[0]) {
-         if (root_path[strlen(root_path)-1] == '/' && link_name[0] == '/')
-            sprintf(ref, "%s%s?cmd=Set", root_path, link_name+1);
+         if (strrchr(dec_path, '/'))
+            strlcpy(str, strrchr(dec_path, '/')+1, sizeof(str));
          else
-            sprintf(ref, "%s%s?cmd=Set", root_path, link_name);
-         sprintf(link_ref, "%s?cmd=Set", full_path);
-      } else
-         sprintf(ref, "%s?cmd=Set", full_path);
+            strlcpy(str, dec_path, sizeof(str));
+         if (str[0] && str[strlen(str) - 1] != '/')
+            strlcat(str, "/", sizeof(str));
+         strlcat(str, key.name, sizeof(str));
+         strlcpy(full_path, str, sizeof(full_path));
+         urlEncode(full_path, sizeof(full_path));
+         strlcpy(keyname, key.name, sizeof(keyname));
 
-      if (status != DB_SUCCESS) {
-         rsprintf("<tr><td class=\"yellowLight\">");
-         rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td><b><font color=\"red\">&lt;cannot resolve link&gt;</font><b></tr>\n",
-              keyname, link_ref, link_name);
-      } else {
-         if (key.type == TID_KEY) {
-            /* for keys, don't display data value */
-            rsprintf("<tr><td colspan=2 class=\"ODBdirectory\"><a href=\"%s\">./%s</a><br></tr>\n",
-                    full_path, keyname);
+         /* resolve links */
+         link_name[0] = 0;
+         status = DB_SUCCESS;
+         if (key.type == TID_LINK) {
+            size = sizeof(link_name);
+            db_get_link_data(hDB, hkey, link_name, &size, TID_LINK);
+            status = db_enum_key(hDB, hkeyroot, i, &hkey);
+            db_get_key(hDB, hkey, &key);
+         }
+
+         if (link_name[0]) {
+            if (root_path[strlen(root_path)-1] == '/' && link_name[0] == '/')
+               sprintf(ref, "%s%s?cmd=Set", root_path, link_name+1);
+            else
+               sprintf(ref, "%s%s?cmd=Set", root_path, link_name);
+            sprintf(link_ref, "%s?cmd=Set", full_path);
+         } else
+            sprintf(ref, "%s?cmd=Set", full_path);
+
+         if (status != DB_SUCCESS) {
+            rsprintf("<tr><td class=\"yellowLight\">");
+            rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td><b><font color=\"red\">&lt;cannot resolve link&gt;</font><b></tr>\n",
+                 keyname, link_ref, link_name);
          } else {
-            /* display single value */
-            if (key.num_values == 1) {
-               size = sizeof(data);
-               db_get_data(hDB, hkey, data, &size, key.type);
-               db_sprintf(data_str, data, key.item_size, 0, key.type);
+            if (key.type == TID_KEY && scan==0) {
+               /* for keys, don't display data value */
+               rsprintf("<tr><td colspan=2 class=\"ODBdirectory\"><a href=\"%s\">&#x25B6 ./%s</a><br></tr>\n",
+                       full_path, keyname);
+            } else if(key.type != TID_KEY && scan==1) {
+               /* display single value */
+               if (key.num_values == 1) {
+                  size = sizeof(data);
+                  db_get_data(hDB, hkey, data, &size, key.type);
+                  db_sprintf(data_str, data, key.item_size, 0, key.type);
 
-               if (key.type != TID_STRING)
-                  db_sprintfh(hex_str, data, key.item_size, 0, key.type);
-               else
-                  hex_str[0] = 0;
+                  if (key.type != TID_STRING)
+                     db_sprintfh(hex_str, data, key.item_size, 0, key.type);
+                  else
+                     hex_str[0] = 0;
 
-               if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>")) {
-                  strcpy(data_str, "(empty)");
-                  hex_str[0] = 0;
-               }
+                  if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>")) {
+                     strcpy(data_str, "(empty)");
+                     hex_str[0] = 0;
+                  }
 
-               if (strcmp(data_str, hex_str) != 0 && hex_str[0]) {
-                  if (link_name[0]) {
-                     rsprintf("<tr><td class=\"ODBkey\">");
-                     rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\"><a href=\"%s\">%s (%s)</a><br></tr>\n",
-                          keyname, link_ref, link_name, ref, data_str, hex_str);
+                  if (strcmp(data_str, hex_str) != 0 && hex_str[0]) {
+                     if (link_name[0]) {
+                        rsprintf("<tr><td class=\"ODBkey\">");
+                        rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\"><a href=\"%s\">%s (%s)</a><br></tr>\n",
+                             keyname, link_ref, link_name, ref, data_str, hex_str);
+                     } else {
+                        rsprintf("<tr><td class=\"ODBkey\">");
+                        rsprintf("%s<td class=\"ODBvalue\"><a href=\"%s\">%s (%s)</a><br></tr>\n",
+                                 keyname, ref, data_str, hex_str);
+                     }
                   } else {
-                     rsprintf("<tr><td class=\"ODBkey\">");
-                     rsprintf("%s<td class=\"ODBvalue\"><a href=\"%s\">%s (%s)</a><br></tr>\n",
-                              keyname, ref, data_str, hex_str);
+                     if (strchr(data_str, '\n')) {
+                        if (link_name[0]) {
+                           rsprintf("<tr><td class=\"ODBkey\">");
+                           rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\">", keyname, link_ref, link_name);
+                        } else
+                           rsprintf("<tr><td class=\"ODBkey\">%s<td class=\"ODBvalue\">", keyname);
+                        rsprintf("\n<pre>");
+                        strencode3(data_str);
+                        rsprintf("</pre>");
+                        if (strlen(data) > strlen(data_str))
+                           rsprintf("<i>... (%d bytes total)<p>\n", strlen(data));
+
+                        rsprintf("<a href=\"%s\">Edit</a></tr>\n", ref);
+                     } else {
+                        if (link_name[0]) {
+                           rsprintf("<tr><td class=\"ODBkey\">");
+                           rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\"><a href=\"%s\">",
+                                keyname, link_ref, link_name, ref);
+                        } else
+                           rsprintf("<tr><td class=\"ODBkey\">%s<td class=\"ODBvalue\"><a href=\"%s\">", keyname,
+                                    ref);
+                        strencode(data_str);
+                        rsprintf("</a><br></tr>\n");
+                     }
                   }
                } else {
-                  if (strchr(data_str, '\n')) {
-                     if (link_name[0]) {
-                        rsprintf("<tr><td class=\"ODBkey\">");
-                        rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\">", keyname, link_ref, link_name);
-                     } else
-                        rsprintf("<tr><td class=\"ODBkey\">%s<td class=\"ODBvalue\">", keyname);
-                     rsprintf("\n<pre>");
-                     strencode3(data_str);
-                     rsprintf("</pre>");
-                     if (strlen(data) > strlen(data_str))
-                        rsprintf("<i>... (%d bytes total)<p>\n", strlen(data));
-
-                     rsprintf("<a href=\"%s\">Edit</a></tr>\n", ref);
-                  } else {
-                     if (link_name[0]) {
-                        rsprintf("<tr><td class=\"ODBkey\">");
-                        rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\"><a href=\"%s\">",
-                             keyname, link_ref, link_name, ref);
-                     } else
-                        rsprintf("<tr><td class=\"ODBkey\">%s<td class=\"ODBvalue\"><a href=\"%s\">", keyname,
-                                 ref);
-                     strencode(data_str);
-                     rsprintf("</a><br></tr>\n");
-                  }
-               }
-            } else {
-               /* check for exceeding length */
-               if (key.num_values > 1000)
-                  rsprintf("<tr><td class=\"ODBkey\">%s<td class=\"ODBvalue\"><i>... %d values ...</i>\n",
-                           keyname, key.num_values);
-               else {
-                  /* display first value */
-                  if (link_name[0])
-                     rsprintf("<tr><td class=\"ODBkey\" rowspan=%d>%s<br><i>-> %s</i>\n",
-                              key.num_values, keyname, link_name);
-                  else
-                     rsprintf("<tr><td class=\"ODBkey\" rowspan=%d>%s\n", key.num_values,
-                              keyname);
-
-                  for (j = 0; j < key.num_values; j++) {
-                     size = sizeof(data);
-                     db_get_data_index(hDB, hkey, data, &size, j, key.type);
-                     db_sprintf(data_str, data, key.item_size, 0, key.type);
-                     db_sprintfh(hex_str, data, key.item_size, 0, key.type);
-
-                     if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>")) {
-                        strcpy(data_str, "(empty)");
-                        hex_str[0] = 0;
-                     }
-
-                     sprintf(ref, "%s?cmd=Set&index=%d", full_path, j);
-
-                     if (j > 0)
-                        rsprintf("<tr>");
-
-                     if (strcmp(data_str, hex_str) != 0 && hex_str[0])
-                        rsprintf("<td class=\"ODBvalue\"><a href=\"%s\">[%d] %s (%s)</a><br></tr>\n", ref, j,
-                                 data_str, hex_str);
+                  /* check for exceeding length */
+                  if (key.num_values > 1000)
+                     rsprintf("<tr><td class=\"ODBkey\">%s<td class=\"ODBvalue\"><i>... %d values ...</i>\n",
+                              keyname, key.num_values);
+                  else {
+                     /* display first value */
+                     if (link_name[0])
+                        rsprintf("<tr><td class=\"ODBkey\" rowspan=%d>%s<br><i>-> %s</i>\n",
+                                 key.num_values, keyname, link_name);
                      else
-                        rsprintf("<td class=\"ODBvalue\"><a href=\"%s\">[%d] %s</a><br></tr>\n", ref, j,
-                                 data_str);
+                        rsprintf("<tr><td class=\"ODBkey\" rowspan=%d>%s\n", key.num_values,
+                                 keyname);
+
+                     for (j = 0; j < key.num_values; j++) {
+                        size = sizeof(data);
+                        db_get_data_index(hDB, hkey, data, &size, j, key.type);
+                        db_sprintf(data_str, data, key.item_size, 0, key.type);
+                        db_sprintfh(hex_str, data, key.item_size, 0, key.type);
+
+                        if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>")) {
+                           strcpy(data_str, "(empty)");
+                           hex_str[0] = 0;
+                        }
+
+                        sprintf(ref, "%s?cmd=Set&index=%d", full_path, j);
+
+                        if (j > 0)
+                           rsprintf("<tr>");
+
+                        if (strcmp(data_str, hex_str) != 0 && hex_str[0])
+                           rsprintf("<td class=\"ODBvalue\"><a href=\"%s\">[%d] %s (%s)</a><br></tr>\n", ref, j,
+                                    data_str, hex_str);
+                        else
+                           rsprintf("<td class=\"ODBvalue\"><a href=\"%s\">[%d] %s</a><br></tr>\n", ref, j,
+                                    data_str);
+                     }
                   }
                }
-            }
+            } else if(key.type != TID_KEY){
+               keyPresent = 1;  //flag that we've seen a key on the first pass, and should therefore write the Key / Value headline
+            } 
          }
       }
    }
-
    rsprintf("</table>\n");
    page_footer();
 }
