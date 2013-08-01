@@ -117,9 +117,9 @@ const Filetype filetype[] = {
    ".JPG", "image/jpeg",}, {
    ".GIF", "image/gif",}, {
    ".PNG", "image/png",}, {
-   ".PS", "application/postscript",}, {
+   ".PS",  "application/postscript",}, {
    ".EPS", "application/postscript",}, {
-   ".HTML", "text/html",}, {
+   ".HTML","text/html",}, {
    ".HTM", "text/html",}, {
    ".XLS", "application/x-msexcel",}, {
    ".DOC", "application/msword",}, {
@@ -127,6 +127,8 @@ const Filetype filetype[] = {
    ".TXT", "text/plain",}, {
    ".ASC", "text/plain",}, {
    ".ZIP", "application/x-zip-compressed",}, {
+   ".CSS", "text/css",}, {
+   ".JS",  "application/x-javascript"}, {
 ""},};
 
 /*------------------------------------------------------------------*/
@@ -1157,7 +1159,12 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    rsprintf("\r\n<html>\n");
 
    /* auto refresh */
-   if (refresh > 0)
+   i = 0;
+   size = sizeof(i);
+   db_get_value(hDB, 0, "/Runinfo/Transition in progress", &i, &size, TID_INT, FALSE);
+   if (i > 0)
+      rsprintf("<head><meta http-equiv=\"Refresh\" content=\"1\">\n");
+   else if (refresh > 0)
       rsprintf("<head><meta http-equiv=\"Refresh\" content=\"%02d\">\n", refresh);
 
    rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
@@ -13736,7 +13743,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       if (!check_web_password(cookie_wpwd, "?cmd=pause", experiment))
          return;
 
-      status = cm_transition(TR_PAUSE, 0, str, sizeof(str), DETACH, FALSE);
+      status = cm_transition(TR_PAUSE, 0, str, sizeof(str), MTHREAD | ASYNC, FALSE);
       if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
          show_error(str);
       else if (isparam("redir"))
@@ -13762,7 +13769,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       if (!check_web_password(cookie_wpwd, "?cmd=resume", experiment))
          return;
 
-      status = cm_transition(TR_RESUME, 0, str, sizeof(str), DETACH, FALSE);
+      status = cm_transition(TR_RESUME, 0, str, sizeof(str), MTHREAD | ASYNC, FALSE);
       if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
          show_error(str);
       else if (isparam("redir"))
@@ -13818,7 +13825,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
             return;
          }
 
-         status = cm_transition(TR_START, i, str, sizeof(str), DETACH, FALSE);
+         status = cm_transition(TR_START, i, str, sizeof(str), MTHREAD | ASYNC, FALSE);
          if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION) {
             show_error(str);
          } else {
@@ -13846,7 +13853,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       if (!check_web_password(cookie_wpwd, "?cmd=stop", experiment))
          return;
 
-      status = cm_transition(TR_STOP, 0, str, sizeof(str), DETACH, FALSE);
+      status = cm_transition(TR_STOP, 0, str, sizeof(str), MTHREAD | ASYNC, FALSE);
       if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
          show_error(str);
       else if (isparam("redir"))
