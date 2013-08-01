@@ -102,6 +102,7 @@ td{
 th, h1, h3{
 	/*pad cells proportionally to text size:*/;
 	padding:0.25em;	
+	text-align: center;
 }
 
 p{
@@ -129,8 +130,13 @@ td.ODBdirectory{
 	border: 1px solid #EEEEEE !important;
 }
 
+td.titleCell{
+	font-weight: bold;
+}
+
 tr.titleRow{
 	font-weight: bold;
+	background-color: #EEEEEE !important;
 }
 
 table.headerTable{
@@ -173,7 +179,7 @@ div.wrapper{
 }
 
 .dialogTable, .messageBox, .genericTable{
-	border-radius: 25px;
+	border-radius: 12px;
 	border: 2px solid #00B26B;
 	background-color: #EEEEEE;
 	color:#111111;
@@ -184,6 +190,10 @@ div.wrapper{
 
 table.dialogTable td{
 	border:none;
+}
+
+.historyTable td{
+	text-align: left;
 }
 
 .ODBpath{
@@ -213,8 +223,8 @@ table.dialogTable td{
 }
 
 /*Equipment table*/
-.subStatusTable{
-	border:2px solid #00B26B;/*#AAAAAA;*/
+.subStatusTable, .alarmTable{
+	border:2px solid #00B26B;
 	border-radius: 12px;	
 	padding:2px;
 }
@@ -247,13 +257,19 @@ table.dialogTable td{
 }
 
 #runNumberCell{
-	font-size:200%;
+	font-size:150%;
 	vertical-align: middle;
-	background-color: #00B26B;
 	border-radius: 12px;
-	color:#EEEEEE;
 	border:2px solid #EEEEEE;
 	width:15%;
+}
+
+.alarmTable{
+	border-spacing: 0px 1px;
+}
+
+.alarmTable td{
+	border: none;
 }
 
 .greenLight{
@@ -340,7 +356,16 @@ table.dialogTable td{
 	margin-bottom:1em;
 }
 
-.ODBtable tr:nth-child(odd), #equipmentList tr:nth-child(even){
+.genericStripe{
+	border-spacing: 0px 1px;
+}
+
+.genericStripe td{
+	border:none;
+}
+
+/*table striping*/
+.ODBtable tr:nth-child(odd), #equipmentList tr:nth-child(even), .alarmTable tr:nth-child(even), .historyTable tr:nth-child(odd), .genericStripe tr:nth-child(odd){
 	background-color: #CCCCCC;
 }
 
@@ -359,12 +384,15 @@ table.ODBtable td{
 
 /*---- Messages Page----*/
 .messageBox{
+	text-align: left;
 	max-height:70%;
 	overflow:scroll;
 	line-height: 0.75em;
-	margin-left: 1em;
-	margin-right: 1em;
+	margin-left: auto;
+	margin-right: auto;
 	margin-top:0.25em;
+	max-width: -webkit-max-content;
+	max-width: -moz-max-content;
 }
 
 /* standard link colors and decorations */

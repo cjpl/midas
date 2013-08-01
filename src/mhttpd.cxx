@@ -1497,7 +1497,15 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    rsprintf("<tr><td colspan=6><table class=\"subStatusTable\" width=100%%>\n");
 
    rsprintf("<tr><th colspan=6 class=\"subStatusTitle\">Run Status</th></tr>\n");
-   rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\">Run<br>%d", runinfo.run_number);
+
+   if (runinfo.state == STATE_STOPPED)
+      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"redLight\">Run<br>%d<br>Stopped", runinfo.run_number);
+   else if (runinfo.state == STATE_PAUSED)
+      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"yellowLight\">Run<br>%d<br>Paused", runinfo.run_number);
+   else if (runinfo.state == STATE_RUNNING)
+      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"greenLight\">Run<br>%d<br>Live", runinfo.run_number);
+   else
+      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"yellowLight\">Run<br>%d<br>Run State Unknown", runinfo.run_number);
 
    /*---- time ----*/
    rsprintf("<td colspan=2>Start: %s", runinfo.start_time);
@@ -1513,15 +1521,6 @@ void show_status_page(int refresh, const char *cookie_wpwd)
       rsprintf("<td colspan=2>Running time: %dh%02dm%02ds</tr>\n", h, m, s);
 
    /*---- run info ----*/
-   
-   if (runinfo.state == STATE_STOPPED)
-      rsprintf("<tr><td colspan=1 class=\"redLight\">Stopped");
-   else if (runinfo.state == STATE_PAUSED)
-      rsprintf("<td colspan=1 class=\"yellowLight\">Paused");
-   else if (runinfo.state == STATE_RUNNING)
-      rsprintf("<td colspan=1 class=\"greenLight\">Running");
-   else
-      rsprintf("<td colspan=1>Run State Unknown");
 
    if (runinfo.transition_in_progress)
       requested_transition = 0;
@@ -1622,10 +1621,10 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             break;
 
          if (n_items++ == 0)
-            rsprintf("<tr><td colspan=6><table width=100%%>\n");
+            rsprintf("<tr><td colspan=6><table class=\"genericStripe\" width=100%%>\n");
 
          db_get_key(hDB, hsubkey, &key);
-         rsprintf("<tr><td align=right width=30%% style=\"background-color:#CCCCCC;\">%s:</td>", key.name);
+         rsprintf("<tr><td align=right width=30%% class=\"titleCell\">%s:</td>", key.name);
          
          db_enum_key(hDB, hkey, i, &hsubkey);
          db_get_key(hDB, hsubkey, &key);
@@ -8849,16 +8848,16 @@ void show_alarm_page()
       index = al_list[ai];
 
       if (index == AT_EVALUATED) {
-         rsprintf("<tr><td colspan=7><table class=\"subStatusTable\" width=100%%><tr><th align=center colspan=7 class=\"subStatusTitle\">Evaluated alarms</tr>\n");
+         rsprintf("<tr><td colspan=7><table class=\"alarmTable\" width=100%%><tr><th align=center colspan=7 class=\"subStatusTitle\">Evaluated alarms</tr>\n");
          rsprintf("<tr class=\"titleRow\"><th>Alarm<th>State<th>First triggered<th>Class<th>Condition<th>Current value<th></tr>\n");
       } else if (index == AT_PROGRAM) {
-         rsprintf("<tr><td colspan=7><table class=\"subStatusTable\" width=100%%><tr><th align=center colspan=7 class=\"subStatusTitle\">Program alarms</tr>\n");
+         rsprintf("<tr><td colspan=7><table class=\"alarmTable\" width=100%%><tr><th align=center colspan=7 class=\"subStatusTitle\">Program alarms</tr>\n");
          rsprintf("<tr class=\"titleRow\"><th>Alarm<th>State<th>First triggered<th>Class<th colspan=2>Condition<th></tr>\n");
       } else if (index == AT_INTERNAL) {
-         rsprintf("<tr><td colspan=7><table class=\"subStatusTable\" width=100%%><tr><th align=center colspan=7 class=\"subStatusTitle\">Internal alarms</tr>\n");
+         rsprintf("<tr><td colspan=7><table class=\"alarmTable\" width=100%%><tr><th align=center colspan=7 class=\"subStatusTitle\">Internal alarms</tr>\n");
          rsprintf("<tr class=\"titleRow\"><th>Alarm<th>State<th>First triggered<th>Class<th colspan=2>Condition/Message<th></tr>\n");
       } else if (index == AT_PERIODIC) {
-         rsprintf("<tr><td colspan=7><table class=\"subStatusTable\" width=100%%><tr><th align=center colspan=7 class=\"subStatusTitle\">Periodic alarms</tr>\n");
+         rsprintf("<tr><td colspan=7><table class=\"alarmTable\" width=100%%><tr><th align=center colspan=7 class=\"subStatusTitle\">Periodic alarms</tr>\n");
          rsprintf("<tr class=\"titleRow\"><th>Alarm<th>State<th>First triggered<th>Class<th colspan=2>Time/Message<th></tr>\n");
       }
 
@@ -12632,8 +12631,8 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    rsprintf("<input type=submit name=cmd value=History>\n");
    rsprintf("</table>");  //end header menu
 
-   rsprintf("<table class=\"dialogTable\">");
-   rsprintf("<tr><th class=\"subStatusTitle\" colspan=2>History</th><tr>");
+   rsprintf("<table class=\"genericTable\">");
+   rsprintf("<tr><th class=\"subStatusTitle\" colspan=2>History</th></tr>");
 
    /* check if panel exists */
    sprintf(str, "/History/Display/%s", path);
@@ -12682,20 +12681,21 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    rsprintf("</td></tr>\n");
 
    if (path[0] == 0) {
-      /* show big selection page */
+      /* "New" button */
+      rsprintf("<tr><td colspan=2><input type=submit name=cmd value=New></td></tr>\n");
 
       /* links for history panels */
-      rsprintf("<tr><td colspan=2>\n");
+      rsprintf("<tr><td colspan=2 style=\"text-align:left;\">\n");
       if (!path[0])
          rsprintf("<b>Please select panel:</b><br>\n");
 
       /* table for panel selection */
-      rsprintf("<table border=1 cellpadding=3 style=\"text-align: left;\">");
+      rsprintf("<table class=\"historyTable\">");
 
       /* "All" link */
-      rsprintf("<tr><td colspan=2>\n");
+      rsprintf("<tr><td colspan=2 class=\"titleCell\">\n");
       if (equal_ustring(path, "All"))
-         rsprintf("<b>All</b> &nbsp;&nbsp;");
+         rsprintf("All &nbsp;&nbsp;");
       else
          rsprintf("<a href=\"%sAll\">ALL</a>\n", back_path);
       rsprintf("</td></tr>\n");
@@ -12748,9 +12748,9 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
                strlcpy(str, path, sizeof(str));
 
             if (equal_ustring(str, key.name))
-               rsprintf("<tr><td><b>%s</b></td>\n<td>", key.name);
+               rsprintf("<tr><td class=\"titleCell\">%s</td>\n<td>", key.name);
             else
-               rsprintf("<tr><td style=\"background-color:#DDDDDD\"><b><a href=\"%s%s\">%s</a></b></td>\n<td>",
+               rsprintf("<tr><td class=\"titleCell\"><a href=\"%s%s\">%s</a></td>\n<td>",
                          back_path, key.name, key.name);
 
             for (j = 0;; j++) {
@@ -12778,8 +12778,6 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
          }
       }
 
-      /* "New" button */
-      rsprintf("<tr><td colspan=2><input type=submit name=cmd value=New></td></tr>\n");
       rsprintf("</table></tr>\n");
 
    } else {
