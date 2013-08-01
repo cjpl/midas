@@ -4389,7 +4389,6 @@ INT tr_main_thread(void *param)
 /* wrapper around cm_transition1() for detached multi-threaded transitions */
 INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size, INT async_flag, INT debug_flag)
 {
-   int status = CM_SUCCESS;
    midas_thread_t tr_main;
 
    if (async_flag & MTHREAD) {
@@ -4418,7 +4417,7 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
    } else
       return cm_transition1(transition, run_number, errstr, errstr_size, async_flag, debug_flag);
    
-   return status;
+   return CM_SUCCESS;
 }
 
 /**dox***************************************************************/
