@@ -3464,6 +3464,7 @@ typedef struct tr_client {
    int   port;
    HNDLE hKey;
    int   status;
+   char  errorstr[256];
 } TR_CLIENT;
 
 int tr_compare(const void *arg1, const void *arg2)
@@ -3570,13 +3571,14 @@ int cm_transition_call(void *param)
 {
    INT old_timeout, status, i, t1, t0, size, n_wait;
    HNDLE hDB, hConn;
-   char errorstr[256];
    int connect_timeout = 10000;
    int timeout = 120000;
    TR_CLIENT *tr_client;
-   
+
    cm_get_experiment_database(&hDB, NULL);
    tr_client = (TR_CLIENT *)param;
+   
+   tr_client->errorstr[0] = 0;
    
    /* wait for predecessor if set */
    if (tr_client->async_flag & MTHREAD && tr_client->pred) {
@@ -3631,9 +3633,9 @@ int cm_transition_call(void *param)
       cm_msg(MERROR, "cm_transition_call",
              "cannot connect to client \"%s\" on host %s, port %d, status %d",
              tr_client->client_name, tr_client->host_name, tr_client->port, status);
-      strlcpy(errorstr, "Cannot connect to client \'", sizeof(errorstr));
-      strlcat(errorstr, tr_client->client_name, sizeof(errorstr));
-      strlcat(errorstr, "\'", sizeof(errorstr));
+      strlcpy(tr_client->errorstr, "Cannot connect to client \'", sizeof(tr_client->errorstr));
+      strlcat(tr_client->errorstr, tr_client->client_name, sizeof(tr_client->errorstr));
+      strlcat(tr_client->errorstr, "\'", sizeof(tr_client->errorstr));
       
       /* clients that do not respond to transitions are dead or defective, get rid of them. K.O. */
       cm_shutdown(tr_client->client_name, TRUE);
@@ -3674,8 +3676,8 @@ int cm_transition_call(void *param)
    t0 = ss_millitime();
    
    status = rpc_client_call(hConn, RPC_RC_TRANSITION, tr_client->transition,
-                            tr_client->run_number, errorstr, sizeof(errorstr), tr_client->sequence_number);
-   
+                            tr_client->run_number, tr_client->errorstr, sizeof(tr_client->errorstr), tr_client->sequence_number);
+
    t1 = ss_millitime();
    
    /* fix for clients returning 0 as error code */
@@ -3693,13 +3695,12 @@ int cm_transition_call(void *param)
              "cm_transition: RPC transition finished client \"%s\" on host %s in %d ms with status %d",
              tr_client->client_name, tr_client->host_name, t1 - t0, status);
    
-   if (status != CM_SUCCESS && strlen(errorstr) < 2)
-      sprintf(errorstr, "Unknown error %d from client \'%s\' on host %s", status,
-              tr_client->client_name, tr_client->host_name);
-   
+   if (status != CM_SUCCESS && strlen(tr_client->errorstr) < 2)
+      sprintf(tr_client->errorstr, "Unknown error %d from client \'%s\' on host %s", status, tr_client->client_name, tr_client->host_name);
+
    /* put error string into client entry in ODB */
    db_set_mode(hDB, tr_client->hKey, MODE_READ | MODE_WRITE, TRUE);
-   db_set_value(hDB, tr_client->hKey, "Error", errorstr, 256, 1, TID_STRING);
+   db_set_value(hDB, tr_client->hKey, "Error", tr_client->errorstr, sizeof(tr_client->errorstr), 1, TID_STRING);
    db_set_mode(hDB, tr_client->hKey, MODE_READ, TRUE);
 
    tr_client->status = status;
@@ -3710,7 +3711,6 @@ int cm_transition_call(void *param)
 
 int cm_transition_call_direct(TR_CLIENT *tr_client)
 {
-   char errorstr[256];
    int i, status;
    HNDLE hDB;
    
@@ -3727,7 +3727,7 @@ int cm_transition_call_direct(TR_CLIENT *tr_client)
       if (tr_client->debug_flag == 2)
          cm_msg(MINFO, "cm_transition_call_direct", "cm_transition: Calling local transition callback");
       
-      status = _trans_table[i].func(tr_client->run_number, errorstr);
+      status = _trans_table[i].func(tr_client->run_number, tr_client->errorstr);
       
       if (tr_client->debug_flag == 1)
          printf("Local transition callback finished\n");
@@ -3738,7 +3738,7 @@ int cm_transition_call_direct(TR_CLIENT *tr_client)
    
    /* put error string into client entry in ODB */
    db_set_mode(hDB, tr_client->hKey, MODE_READ | MODE_WRITE, TRUE);
-   db_set_value(hDB, tr_client->hKey, "Error", errorstr, 256, 1, TID_STRING);
+   db_set_value(hDB, tr_client->hKey, "Error", tr_client->errorstr, sizeof(tr_client->errorstr), 1, TID_STRING);
    db_set_mode(hDB, tr_client->hKey, MODE_READ, TRUE);
 
    return status;
@@ -3920,9 +3920,10 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
          cm_msg(MINFO, "cm_transition", "cm_transition: Setting run number %d in ODB", run_number);
 
       status = db_set_value(hDB, 0, "Runinfo/Run number", &run_number, sizeof(run_number), 1, TID_INT);
-      assert(status == SUCCESS);
-      if (status != DB_SUCCESS)
-         cm_msg(MERROR, "cm_transition", "cannot set Runinfo/Run number in database");
+      if (status != DB_SUCCESS) {
+         cm_msg(MERROR, "cm_transition", "cannot set Runinfo/Run number in database, status %d", status);
+         abort();
+      }
    }
 
    if (deferred) {
@@ -4219,7 +4220,7 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
    }
    
    if (async_flag & MTHREAD) {
-      /* wait until all theads haf finished */
+      /* wait until all threads have finished */
       do {
          ss_sleep(10);
          for (idx = 0 ; idx < n_tr_clients ; idx++)
@@ -4232,6 +4233,8 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
       for (idx = 0 ; idx < n_tr_clients ; idx++)
          if (tr_client[idx].status != CM_SUCCESS) {
             status = tr_client[idx].status;
+            if (errstr)
+               strlcpy(errstr, tr_client[idx].errorstr, errstr_size);
             break;
          }
    }
