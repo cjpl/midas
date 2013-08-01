@@ -181,7 +181,6 @@ ERROR_TABLE _error_table[] = {
    {0, NULL}
 };
 
-
 typedef struct {
    void *adr;
    int size;
@@ -191,6 +190,21 @@ typedef struct {
 
 DBG_MEM_LOC *_mem_loc = NULL;
 INT _n_mem = 0;
+
+typedef struct {
+   INT  transition;
+   INT  run_number;
+   char *errstr;
+   INT  errstr_size;
+   INT  async_flag;
+   INT  debug_flag;
+   INT  status;
+   BOOL finished;
+} TR_PARAM;
+
+static TR_PARAM _trp;
+
+/*------------------------------------------------------------------*/
 
 void *dbg_malloc(unsigned int size, char *file, int line)
 {
@@ -2531,6 +2545,14 @@ INT cm_disconnect_experiment(void)
    HNDLE hDB, hKey;
    char local_host_name[HOST_NAME_LENGTH], client_name[80];
 
+   /* wait on any transition thread */
+   if (_trp.transition && !_trp.finished) {
+      printf("Waiting for transition to finish...\n");
+      do {
+         ss_sleep(10);
+      } while (!_trp.finished);
+   }
+   
    /* send shutdown notification */
    rpc_get_name(client_name);
    gethostname(local_host_name, sizeof(local_host_name));
@@ -3623,8 +3645,6 @@ int cm_transition_call(void *param)
          db_set_value(hDB, 0, "/Runinfo/Start abort", &i, sizeof(INT), 1, TID_INT);
          i = 0;
          db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
-         
-         free(tr_client);
       }
       
       tr_client->status = status;
@@ -3658,6 +3678,10 @@ int cm_transition_call(void *param)
    
    t1 = ss_millitime();
    
+   /* fix for clients returning 0 as error code */
+   if (status == 0)
+      status = FE_ERR_HW;
+   
    /* reset timeout */
    rpc_set_option(hConn, RPC_OTIMEOUT, old_timeout);
       
@@ -3678,7 +3702,7 @@ int cm_transition_call(void *param)
    db_set_value(hDB, tr_client->hKey, "Error", errorstr, 256, 1, TID_STRING);
    db_set_mode(hDB, tr_client->hKey, MODE_READ, TRUE);
 
-   tr_client->status = CM_SUCCESS;
+   tr_client->status = status;
    return CM_SUCCESS;
 }
 
@@ -4330,19 +4354,6 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
 
 /*------------------------------------------------------------------*/
 
-typedef struct {
-   INT  transition;
-   INT  run_number;
-   char *errstr;
-   INT  errstr_size;
-   INT  async_flag;
-   INT  debug_flag;
-   INT  status;
-   BOOL finished;
-} TR_PARAM;
-
-/*------------------------------------------------------------------*/
-
 /* wrapper around cm_transition2() to send a TR_STARTABORT in case of failure */
 INT cm_transition1(INT transition, INT run_number, char *errstr, INT errstr_size, INT async_flag,
                    INT debug_flag)
@@ -4380,27 +4391,29 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
 {
    int status = CM_SUCCESS;
    midas_thread_t tr_main;
-   static TR_PARAM trp;
 
    if (async_flag & MTHREAD) {
-      trp.transition = transition;
-      trp.run_number = run_number;
-      trp.errstr = errstr;
-      trp.errstr_size = errstr_size;
-      trp.async_flag = async_flag;
-      trp.debug_flag = debug_flag;
-      trp.status = 0;
-      trp.finished = FALSE;
+      _trp.transition = transition;
+      _trp.run_number = run_number;
+      _trp.errstr = errstr;
+      _trp.errstr_size = errstr_size;
+      _trp.async_flag = async_flag;
+      _trp.debug_flag = debug_flag;
+      _trp.status = 0;
+      _trp.finished = FALSE;
       
-      tr_main = ss_thread_create(tr_main_thread, &trp);
+      if (errstr)
+         *errstr = 0; // null error string
+      
+      tr_main = ss_thread_create(tr_main_thread, &_trp);
       if (async_flag & SYNC) {
          
          /* wait until main thread has finished */
          do {
             ss_sleep(10);
-         } while (!trp.finished);
+         } while (!_trp.finished);
          
-         return trp.status;
+         return _trp.status;
       }
    } else
       return cm_transition1(transition, run_number, errstr, errstr_size, async_flag, debug_flag);
