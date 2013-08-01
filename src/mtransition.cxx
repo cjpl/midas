@@ -14,6 +14,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <assert.h>
+#include <signal.h>
 
 #include "midas.h"
 
@@ -63,6 +64,11 @@ int main(int argc, char *argv[])
    bool multithread = false;
    bool asyncmultithread = false;
    char host_name[HOST_NAME_LENGTH], exp_name[NAME_LENGTH];
+
+   setbuf(stdout, NULL);
+   setbuf(stderr, NULL);
+
+   signal(SIGPIPE, SIG_IGN);
 
    /* get default from environment */
    cm_get_environment(host_name, sizeof(host_name), exp_name, sizeof(exp_name));
