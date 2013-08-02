@@ -4228,16 +4228,16 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
                break;
          
       } while (idx < n_tr_clients);
-
-      /* search for any error */
-      for (idx = 0 ; idx < n_tr_clients ; idx++)
-         if (tr_client[idx].status != CM_SUCCESS) {
-            status = tr_client[idx].status;
-            if (errstr)
-               strlcpy(errstr, tr_client[idx].errorstr, errstr_size);
-            break;
-         }
    }
+
+   /* search for any error */
+   for (idx = 0 ; idx < n_tr_clients ; idx++)
+      if (tr_client[idx].status != CM_SUCCESS) {
+         status = tr_client[idx].status;
+         if (errstr)
+            strlcpy(errstr, tr_client[idx].errorstr, errstr_size);
+         break;
+      }
 
    if (transition != TR_STOP && status != CM_SUCCESS) {
       /* indicate abort */
