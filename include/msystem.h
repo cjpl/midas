@@ -295,6 +295,7 @@ typedef struct {
    INT port;                    /*  ip port                 */
    char exp_name[NAME_LENGTH];  /*  experiment to connect   */
    int send_sock;               /*  tcp send socket         */
+   int connected;               /*  socket is connected     */
    INT remote_hw_type;          /*  remote hardware type    */
    char client_name[NAME_LENGTH];       /* name of remote client    */
    INT transport;               /*  RPC_TCP/RPC_FTCP        */
