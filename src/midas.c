@@ -9041,7 +9041,7 @@ INT rpc_client_connect(const char *host_name, INT port, const char *client_name,
    /* create a new socket for connecting to remote server */
    sock = socket(AF_INET, SOCK_STREAM, 0);
    if (sock == -1) {
-      cm_msg(MERROR, "rpc_client_connect", "cannot create socket");
+      cm_msg(MERROR, "rpc_client_connect", "cannot create socket, socket() errno %d (%s)", errno, strerror(errno));
       ss_mutex_release(mtx);
       return RPC_NET_ERROR;
    }
@@ -9055,6 +9055,7 @@ INT rpc_client_connect(const char *host_name, INT port, const char *client_name,
    _client_connection[idx].rpc_timeout = DEFAULT_RPC_TIMEOUT;
    _client_connection[idx].rpc_timeout = DEFAULT_RPC_TIMEOUT;
    _client_connection[idx].send_sock = sock;
+   _client_connection[idx].connected = 0;
 
    /* connect to remote node */
    memset(&bind_addr, 0, sizeof(bind_addr));
@@ -9098,6 +9099,8 @@ INT rpc_client_connect(const char *host_name, INT port, const char *client_name,
       _client_connection[idx].send_sock = 0;
       return RPC_NET_ERROR;
    }
+
+   _client_connection[idx].connected = 1;
 
    /* set TCP_NODELAY option for better performance */
    i = 1;
@@ -9162,13 +9165,21 @@ void rpc_client_check()
 {
    INT i, status;
 
+   if (0) {
+      for (i = 0; i < MAX_RPC_CONNECTION; i++)
+         if (_client_connection[i].send_sock != 0) {
+            printf("slot %d, checking client %s socket %d, connected %d\n", i, _client_connection[i].client_name, _client_connection[i].send_sock, _client_connection[i].connected);
+         }
+   }
+      
    /* check for broken connections */
    for (i = 0; i < MAX_RPC_CONNECTION; i++)
-      if (_client_connection[i].send_sock != 0) {
+      if (_client_connection[i].send_sock != 0 && _client_connection[i].connected) {
          int sock;
          fd_set readfds;
          struct timeval timeout;
          char buffer[64];
+         int ok = 0;
 
          sock = _client_connection[i].send_sock;
          FD_ZERO(&readfds);
@@ -9179,27 +9190,43 @@ void rpc_client_check()
 
          do {
             status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
-         } while (status == -1);        /* dont return if an alarm signal was cought */
+         } while (status == -1 && errno == EINTR); /* dont return if an alarm signal was cought */
+ 
+         if (!FD_ISSET(sock, &readfds))
+            continue;
 
-         if (FD_ISSET(sock, &readfds)) {
-            status = recv(sock, (char *) buffer, sizeof(buffer), 0);
+         status = recv(sock, (char *) buffer, sizeof(buffer), MSG_PEEK);
+         //printf("recv %d status %d, errno %d (%s)\n", sock, status, errno, strerror(errno));
 
+         if (status < 0) {
+            if (errno == EAGAIN) { // still connected
+               ok = 1;
+            } else {
+               // connection error
+               cm_msg(MERROR, "rpc_client_check",
+                      "Connection broken to \"%s\" on host %s, recv() errno %d (%s)",
+                      _client_connection[i].client_name, _client_connection[i].host_name, errno, strerror(errno));
+            }
+         } else if (status == 0) {
+            // connection closed by remote end
+            cm_msg(MERROR, "rpc_client_check",
+                   "Connection to \"%s\" on host %s unexpectedly closed",
+                   _client_connection[i].client_name, _client_connection[i].host_name);
+         } else {
+            // read some data
+            ok = 1;
             if (equal_ustring(buffer, "EXIT")) {
                /* normal exit */
-               closesocket(sock);
-               memset(&_client_connection[i], 0, sizeof(RPC_CLIENT_CONNECTION));
-            }
-
-            if (status <= 0) {
-               cm_msg(MERROR, "rpc_client_check",
-                      "Connection broken to \"%s\" on host %s",
-                      _client_connection[i].client_name, _client_connection[i].host_name);
-
-               /* connection broken -> reset */
-               closesocket(sock);
-               memset(&_client_connection[i], 0, sizeof(RPC_CLIENT_CONNECTION));
+               ok = 0;
             }
          }
+
+         if (ok)
+            continue;
+
+         // connection lost, close the socket
+         closesocket(sock);
+         _client_connection[i].send_sock = 0;
       }
 }
 
@@ -14655,3 +14682,11 @@ int rb_get_buffer_level(int handle, int *n_bytes)
 
 /**dox***************************************************************/
                   /** @} *//* end of midasincludecode */
+
+/* emacs
+ * Local Variables:
+ * tab-width: 8
+ * c-basic-offset: 3
+ * indent-tabs-mode: nil
+ * End:
+ */
