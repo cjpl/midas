@@ -1675,7 +1675,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
       }
    }
    
-   rsprintf("<tr><td colspan=6><table class=\"subStatusTable\" id=\"equipmentList\" width=100%%>\n");
+   rsprintf("<tr><td colspan=6><table class=\"subStatusTable\" id=\"stripeList\" width=100%%>\n");
    rsprintf("<tr><th colspan=6 class=\"subStatusTitle\">Equipment</th><tr>\n");
 
    rsprintf("<tr class=\"titleRow\"><th>Equipment");
@@ -1733,7 +1733,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
                if (equipment.status[0] == 0)
                   rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center class=\"greenLight\">%s@%s", ref, key.name, equipment.frontend_name, equipment.frontend_host);
                else
-                  rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center class=\"%s\">%s", ref, key.name, ( !strcmp(equipment.status_color, "#00FF00") )? "greenLight" : ( (!strcmp(equipment.status_color, "#FF0000")? "redLight" : "yellowLight" ) ) /*equipment.status_color*/, equipment.status);
+                  rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center class=\"%s\">%s", ref, key.name, ( !strcmp(equipment.status_color, "#00FF00") )? "greenLight" : ( (!strcmp(equipment.status_color, "#FF0000")? "redLight" : "yellowLight" ) ), equipment.status);
             } else
                rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center class=\"yellowLight\">(disabled)", ref, key.name);
          }
@@ -2058,8 +2058,7 @@ void show_messages_page(int refresh, int n_message)
       more = n_message + 100;
 
    //rsprintf("<input type=submit style=\"margin-top:1em;\" name=cmd value=\"More%d\"><div class=\"messageBox\">\n", more);
-   rsprintf("<button type=submit style=\"margin-top:1em;\" name=cmd value=\"More%d\">%d More</button><div class=\"messageBox\">\n", more, more);
-   rsprintf("<h1 class=\"subStatusTitle\">Messages</h1>");
+   rsprintf("<button type=submit name=cmd value=\"More%d\">%d More</button><div class=\"messageBox\" id=\"messageFrame\">\n", more, more);
    buffer = (char *)malloc(1000000);
    cm_msg_retrieve(n_message, buffer, 1000000);
 
@@ -2082,14 +2081,27 @@ void show_messages_page(int refresh, int n_message)
 
       /* check for error */
       if (strstr(line, ",ERROR]"))
-         rsprintf("<p style=\"color:white;background-color:red; padding:0.5em\">%s</p>", line);
+         rsprintf("<p style=\"color:white;background-color:red; padding:0.25em\">%s</p>", line);
       else
-         rsprintf("<p style=\"padding:0.5em\">%s</p>", line);
+         rsprintf("<p style=\"padding:0.25em\">%s</p>", line);
    } while (!eob && *pline);
+   //title at the bottom so it ends up on top after reversal:
+   rsprintf("<h1 class=\"subStatusTitle\">Messages</h1>");
+
+
+   //some JS to reverse the order of messages, so latest appears at the top:
+   rsprintf("<script type=\"text/JavaScript\">");
+   rsprintf("var messages = document.getElementById(\"messageFrame\");");
+   rsprintf("var i = messages.childNodes.length;");
+   rsprintf("while (i--)");
+   rsprintf("messages.appendChild(messages.childNodes[i]);");
+   rsprintf("</script>");
+
 
    rsprintf("</div>\n");
    page_footer();
    free(buffer);
+
 }
 
 /*------------------------------------------------------------------*/
@@ -8228,7 +8240,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
          } else {
             if (key.type == TID_KEY && scan==0) {
                /* for keys, don't display data value */
-               rsprintf("<tr><td colspan=2 class=\"ODBdirectory\"><a href=\"%s\">&#x25B6 ./%s</a><br></tr>\n",
+               rsprintf("<tr><td colspan=2 class=\"ODBdirectory\"><a href=\"%s\">&#x25B6 %s</a><br></tr>\n",
                        full_path, keyname);
             } else if(key.type != TID_KEY && scan==1) {
                /* display single value */
@@ -8824,7 +8836,7 @@ void show_alarm_page()
    rsprintf("</table>"); //end header
 
    /*---- menu buttons ----*/
-   rsprintf("<table style=\"margin-top:1em;\">");   //main table
+   rsprintf("<table>");   //main table
    rsprintf("<tr>\n");
    rsprintf("<td colspan=7 style=\"margin:0px; padding:0px;\">\n");
 
@@ -9059,7 +9071,7 @@ void show_programs_page()
    rsprintf("<input type=hidden name=cmd value=Programs>\n");
 
    /*---- programs ----*/
-   rsprintf("<table class=\"genericTable\"><tr><td colspan=5 class=\"subStatusTitle\">Programs</td></tr>");
+   rsprintf("<table class=\"subStatusTable\" id=\"stripeList\"><tr><td colspan=5 class=\"subStatusTitle\">Programs</td></tr>");
    rsprintf("<tr class=\"titleRow\"><th>Program<th>Running on host<th>Alarm class<th>Autorestart</tr>\n");
 
    /* go through all programs */
