@@ -115,18 +115,19 @@ select{
 
 /*generic button style*/
 button, input[type=button], input[type=submit], input[type=reset]{
-	background-color: #00B26B;
+	background-color: #444444; /*#00B26B;*/
 	color: #FFFFFF;
 	font-size: 120%;
 	padding:0.25em;
 	padding-left: 0.5em;
 	padding-right: 0.5em;
-	border:0px;
+	border:1px solid #EEEEEE;
+	border-radius: 10px;
 	margin-bottom:1px;
 }
 
 button:hover, input[type=button]:hover, input[type=submit]:hover, input[type=reset]:hover{
-	background-color: #8e44ad; /*#00472B;*/
+	background-color: #888888; /*#8e44ad;*/
 }
 
 td.ODBdirectory{
