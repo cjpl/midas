@@ -72,7 +72,7 @@ table {
 body {
 	font-family:verdana,tahoma,sans-serif;
 	color:#111111;
-	background-color: #EEEEEE; /*#2c3e50;*/
+	background-color: #EEEEEE;
 	min-width: -moz-min-content;
 	min-width: -webkit-min-content; /*currently (July 2013) only FF and Chrome support min-content, expand to other browsers as they catch up.*/
 	text-align:center;
@@ -115,14 +115,14 @@ select{
 
 /*generic button style*/
 button, input[type=button], input[type=submit], input[type=reset]{
-	background-color: #444444; /*#00B26B;*/
-	color: #FFFFFF;
+	background-color: #CCCCCC; /*#00B26B;*/
+	color: #444444;
 	font-size: 120%;
 	padding:0.25em;
 	padding-left: 0.5em;
 	padding-right: 0.5em;
-	border:1px solid #EEEEEE;
-	border-radius: 10px;
+	border:1px solid #808080;
+	border-radius: 5px;
 	margin-bottom:1px;
 }
 
@@ -148,10 +148,10 @@ tr.titleRow{
 table.headerTable{
 	width:100%;
 	color:#EEEEEE;
-	background-color: #2c3e50;
-	border: 1em solid #2c3e50;
-	border-left: 1em solid #2c3e50;
-	border-right: 1em solid #2c3e50;
+	background-color: #E0E0E0;
+	border: 1em solid #E0E0E0;
+	border-left: 1em solid #E0E0E0;
+	border-right: 1em solid #E0E0E0;
 	border-collapse: collapse;
 	border-spacing: 0;
 	margin-bottom: 0.5em;
@@ -162,7 +162,7 @@ table.headerTable td{
 }
 
 div.footerDiv{
-	background-color: #2c3e50;
+	background-color: #808080;
 	text-align: center;
 	padding:1em;
 	color:#EEEEEE;
