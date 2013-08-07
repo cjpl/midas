@@ -26,6 +26,7 @@ extern void strencode(char *text);
 extern void strencode4(char *text);
 extern void show_header(HNDLE hDB, const char *title, const char *method, const char *path, int colspan,
                         int refresh);
+extern void page_footer();
 
 #undef NAME_LENGTH
 #define NAME_LENGTH 256
@@ -168,6 +169,8 @@ NULL }
 SEQUENCER_STR(sequencer_str);
 SEQUENCER seq;
 PMXML_NODE pnseq = NULL;
+
+
 
 /*------------------------------------------------------------------*/
 
@@ -777,12 +780,16 @@ void seq_start_page()
    cm_get_experiment_database(&hDB, NULL);
    
    show_header(hDB, "Start sequence", "GET", "", 1, 0);
-   rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>Start script</th>\n");
+   rsprintf("</table>"); //end header
+
+   rsprintf("<table class=\"dialogTable\">");  //main table
+
+   rsprintf("<tr><th colspan=2 class=\"subStatusTitle\" style=\"border:2px solid #FFFFFF\">Start script</th>\n");
   
    if (!pnseq) {
-      rsprintf("<tr><td colspan=2 align=\"center\" bgcolor=\"red\"><b>Error in XML script</b></td></tr>\n");
+      rsprintf("<tr><td colspan=2 align=\"center\" class=\"redLight\"><b>Error in XML script</b></td></tr>\n");
       rsprintf("</table>\n");
-      rsprintf("</body></html>\r\n");
+      page_footer(); 
       return;
    }
    
@@ -895,7 +902,7 @@ void seq_start_page()
    if (isparam("redir"))
       rsprintf("<input type=hidden name=\"redir\" value=\"%s\">\n", getparam("redir"));
    
-   rsprintf("</body></html>\r\n");
+   page_footer();
 }
 
 /*------------------------------------------------------------------*/
@@ -1389,15 +1396,21 @@ void show_seq_page()
    
    rsprintf("<form name=\"form1\" method=\"GET\" action=\".\">\n");
    
-   rsprintf("<table border=3 cellpadding=2>\n");
-   rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS experiment \"%s\"", str);
-   rsprintf("<th bgcolor=#A0A0FF>%s</tr>\n", ctime(&now));
-   
+   /*---- body needs wrapper div to pin footer ----*/
+   rsprintf("<div class=\"wrapper\">\n");
+   /*---- begin page header ----*/
+   rsprintf("<table class=\"headerTable\">\n");
+   //rsprintf("<tr><th>MIDAS experiment \"%s\"", str);
+   //rsprintf("<th>%s</tr>\n", ctime(&now));
+   rsprintf("<tr><td colspan=2><input type=submit name=cmd value=Status></td></tr>\n");
+   rsprintf("</table>"); //end header  
+
+   rsprintf("<table class=\"dialogTable\">");
    /*---- menu buttons ----*/
    
    if (!equal_ustring(getparam("cmd"), "Load Script") && !isparam("fs")) {
       rsprintf("<tr>\n");
-      rsprintf("<td colspan=2 bgcolor=#C0C0C0>\n");
+      rsprintf("<td colspan=2>\n");
       
       if (seq.running) {
          if (seq.stop_after_run)
@@ -1439,7 +1452,6 @@ void show_seq_page()
       }
       if (seq.filename[0] && !seq.running && !equal_ustring(getparam("cmd"), "Load Script") && !isparam("fs"))
          rsprintf("<input type=submit name=cmd value=\"Edit Script\">\n");
-      rsprintf("<input type=submit name=cmd value=Status>\n");
       
       rsprintf("</td></tr>\n");
    }
@@ -1447,7 +1459,7 @@ void show_seq_page()
    /*---- file selector ----*/
    
    if (equal_ustring(getparam("cmd"), "Load Script") || isparam("fs")) {
-      rsprintf("<tr><td align=center colspan=2 bgcolor=#FFFFFF>\n");
+      rsprintf("<tr><td align=center colspan=2>\n");
       rsprintf("<b>Select a sequence file:</b><br>\n");
       rsprintf("<select name=\"fs\" id=\"fs\" size=20 style=\"width:300\">\n");
       
@@ -1640,7 +1652,7 @@ void show_seq_page()
             rsprintf("</td></tr></table></td></tr>\n");
             
             if (seq.error[0]) {
-               rsprintf("<tr><td bgcolor=red colspan=2><b>");
+               rsprintf("<tr><td class=\"redLight\" colspan=2><b>");
                strencode(seq.error);
                rsprintf("</b></td></tr>\n");
             }
@@ -1818,7 +1830,8 @@ void show_seq_page()
    }
    
    rsprintf("</table>\n");
-   rsprintf("</form></body></html>\r\n");
+   //rsprintf("</form>\r\n");
+   page_footer();
 }
 
 /*------------------------------------------------------------------*/

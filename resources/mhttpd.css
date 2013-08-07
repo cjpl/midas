@@ -1,8 +1,410 @@
+/*--------------------------------------------
+Condensed version of MIDAS 2013 Style Sheet by 
+Bill Mills (TRIUMF) for compact viewing,
+for the MIDAS team.  Notice anything ugly or
+unusable?  File an issue at MIDAS' Bitbucket
+(remember to include your browser version,
+and a screenshot if possible), and the designer
+will adress it ASAP.
+--------------------------------------------*/
+
+
+/*
+	CSS reset for maximum browser consistency.
+	http://meyerweb.com/eric/tools/css/reset/ 
+	v2.0 | 20110126
+	License: none (public domain)
+*/
+
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed, 
+figure, figcaption, footer, header, hgroup, 
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	font-size: 100%;
+	font: inherit;
+	vertical-align: baseline;
+}
+
+/* HTML5 display-role reset for older browsers */
+article, aside, details, figcaption, figure, 
+footer, header, hgroup, menu, nav, section {
+	display: block;
+}
 body {
-  margin:3px;
-  color:black;
-  background-color:white;
-  font-family:verdana,tahoma,sans-serif;
+	line-height: 1;
+}
+ol, ul {
+	list-style: none;
+}
+blockquote, q {
+	quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+	content: '';
+	content: none;
+}
+table {
+	border-collapse: separate;
+	border-spacing: 0;
+}
+/*end CSS reset*/
+
+/*ask the box model to please behave in a sane manner*/
+* { 
+	box-sizing: border-box; 
+}
+
+/*generic elements////////////////////////////////////////////////////*/
+
+body {
+	font-family:verdana,tahoma,sans-serif;
+	color:#111111;
+	background-color: #EEEEEE;
+	min-width: -moz-min-content;
+	min-width: -webkit-min-content; /*currently (July 2013) only FF and Chrome support min-content, expand to other browsers as they catch up.*/
+	text-align:center;
+}
+
+form {
+	height:100%;
+}
+
+table {
+	/*center all tables*/
+	margin-left: auto;
+	margin-right: auto;
+	/*don't mash cells into each other*/
+	border-spacing: 1px;
+}
+
+td{
+	/*pad cells proportionally to text size:*/;
+	padding:0.25em;
+	/*center cell contents*/
+	text-align: center;
+
+	border:1px solid #EEEEEE;
+}
+
+th, h1, h3{
+	/*pad cells proportionally to text size:*/;
+	padding:0.25em;	
+	text-align: center;
+}
+
+p{
+	line-height: 1.5em;
+}
+
+select{
+	font-size: 100%;
+}
+
+/*generic button style*/
+button, input[type=button], input[type=submit], input[type=reset]{
+	background-color: #CCCCCC; /*#00B26B;*/
+	color: #444444;
+	font-size: 120%;
+	padding:0.25em;
+	padding-left: 0.5em;
+	padding-right: 0.5em;
+	border:1px solid #808080;
+	border-radius: 5px;
+	margin-bottom:1px;
+}
+
+button:hover, input[type=button]:hover, input[type=submit]:hover, input[type=reset]:hover{
+	background-color: #888888; /*#8e44ad;*/
+}
+
+td.ODBdirectory{
+	text-align: left;
+	background-color: #EEEEEE;
+	padding-left: 2em;
+}
+
+td.titleCell{
+	font-weight: bold;
+}
+
+tr.titleRow{
+	font-weight: bold;
+	background-color: #EEEEEE !important;
+}
+
+table.headerTable{
+	width:100%;
+	color:#EEEEEE;
+	background-color: #E0E0E0;
+	border: 1em solid #E0E0E0;
+	border-left: 1em solid #E0E0E0;
+	border-right: 1em solid #E0E0E0;
+	border-collapse: collapse;
+	border-spacing: 0;
+	margin-bottom: 0.5em;
+}
+
+table.headerTable td{
+	border: none;
+}
+
+div.footerDiv{
+	background-color: #808080;
+	text-align: center;
+	padding:1em;
+	color:#EEEEEE;
+
+	height:3em;
+}
+
+div.push{
+	height:3em;
+}
+
+div.footerDiv a{
+	color: #f1c40f;
+}
+
+input[type=text]{
+	font-size: 100%
+}
+
+div.wrapper{
+    min-height: 100%;
+    height: auto !important;
+    height: 100%;
+    margin: 0 auto -3em;
+}
+
+.dialogTable, .messageBox, .genericTable{
+	border-radius: 12px;
+	border: 2px solid #00B26B;
+	background-color: #EEEEEE;
+	color:#111111;
+	padding:0.5em;
+	margin-top: 0em;
+	margin-bottom:1em;
+}
+
+table.dialogTable td{
+	border:none;
+}
+
+.historyTable td{
+	text-align: left;
+}
+
+.ODBpath{
+	text-align: left;
+	font-size: 120%;
+	background-color: #EEEEEE;
+}
+
+/*Status page objects/////////////////////////////////////////////////*/
+
+/*status page master table*/
+#statusTable{
+	padding:0.5em;
+	padding-top: 0em;
+	background-color: #EEEEEE;
+}
+
+/*experiment title*/
+#experimentTitle{
+	text-align: center;
+	font-size: 120%;
+}
+
+/*status page time*/
+#masterTime{
+	text-align: center;
+	font-size: 120%;
+}
+
+/*Equipment table*/
+.subStatusTable, .alarmTable{
+	border:2px solid #00B26B;
+	border-radius: 12px;	
+	padding:2px;
+}
+
+.subStatusTitle{
+	font-size: 120%;
+	font-weight: bold;
+	border-radius:12px;
+	background-color:#3498db; 
+	color:#EEEEEE; 
+}
+
+/*make sure fills in subStatusTable cells don't have sharp corners poking into the curved table corner"*/
+.subStatusTable tr:first-child td:first-child{
+	border-top-left-radius: 12px;
+}
+.subStatusTable tr:first-child td:last-child{
+	border-top-right-radius: 12px;
+}
+.subStatusTable tr:last-child td:first-child{
+	border-bottom-left-radius: 12px;
+}
+.subStatusTable tr:last-child td:last-child{
+	border-bottom-right-radius: 12px;
+}
+
+.meterCell{
+	padding: 0px;
+	border:1px solid black;
+}
+
+#runNumberCell{
+	font-size:150%;
+	vertical-align: middle;
+	border-radius: 12px;
+	border:2px solid #EEEEEE;
+	width:15%;
+}
+
+.alarmTable{
+	border-spacing: 0px 1px;
+}
+
+.alarmTable td{
+	border: none;
+}
+
+.greenLight{
+	background-color: #00E600;
+	border-radius: 5px;
+	border: 1px solid #000000 !important;
+}
+
+.redLight{
+	background-color: #c0392b;
+	border-radius: 5px;
+	border: 1px solid #000000 !important;
+	color: #EEEEEE;
+
+	animation-name: pulse;
+	-webkit-animation-name: pulse;	
+
+	animation-duration: 1.5s;	
+	-webkit-animation-duration: 1.5s;
+
+	animation-iteration-count: 0; /*infinite*/
+	-webkit-animation-iteration-count: 0; /*infinite*/
+}
+
+@keyframes pulse{
+	0% {
+		background-color:#EEEEEE;
+		border-color:#EEEEEE;
+	}
+	50% {
+		background-color:#c0392b;
+		border-color:#000000;
+	}
+	100% {
+		background-color:#EEEEEE;
+		border-color:#EEEEEE;
+	}
+
+}
+
+@-webkit-keyframes pulse{
+	0% {
+		background-color:#EEEEEE;
+		border-color:#EEEEEE;
+	}
+	50% {
+		background-color:#c0392b;
+		border-color:#000000;
+	}
+	100% {
+		background-color:#EEEEEE;
+		border-color:#EEEEEE;
+	}
+
+}
+
+.yellowLight{
+	background-color: #f1c40f;
+	border-radius: 5px;
+	border: 1px solid #000000 !important;
+}
+
+.msgService{
+	background-color: #999999;
+	border-radius: 12px;
+}
+
+/*---- ODB pages ----*/
+.ODBkey{
+	text-align: left;
+	padding-left: 2em;
+}
+
+.ODBvalue{
+	text-align: left;
+}
+
+.ODBtable{
+	border-radius: 25px;
+	border: 2px solid #00B26B;
+	background-color: #EEEEEE;
+	color:#111111;
+	padding:0.5em;
+	margin-top: 1em;
+	margin-bottom:1em;
+}
+
+.genericStripe{
+	border-spacing: 0px 1px;
+}
+
+.genericStripe td{
+	border:none;
+}
+
+/*table striping*/
+.ODBtable tr:nth-child(odd), #stripeList tr:nth-child(even), .alarmTable tr:nth-child(even), .historyTable tr:nth-child(odd), .genericStripe tr:nth-child(odd), .messageBox p:nth-child(odd){
+	background-color: #CCCCCC;
+}
+
+#stripeList{
+	border-spacing: 0px 1px;
+}
+
+#stripeList td{
+	border:none;
+}
+
+table.ODBtable td{
+	border:none;
+}
+
+/*---- Messages Page----*/
+.messageBox{
+	text-align: left;
+	max-height:70%;
+	overflow:scroll;
+	line-height: 0.75em;
+	margin-left: auto;
+	margin-right: auto;
+	margin-top:0.25em;
+	max-width: -webkit-max-content;
+	max-width: -moz-max-content;
 }
 
 /* standard link colors and decorations */
