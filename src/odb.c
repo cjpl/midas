@@ -6234,7 +6234,7 @@ INT db_paste(HNDLE hDB, HNDLE hKeyRoot, const char *buffer)
 int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
 {
    char type[256], data[256], test_str[256], buf[10000];
-   int i, index, status, size, tid, num_values;
+   int i, idx, status, size, tid, num_values;
    HNDLE hKey;
    PMXML_NODE child;
 
@@ -6323,20 +6323,20 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
          for (i = 0; i < mxml_get_number_of_children(node); i++) {
             child = mxml_subnode(node, i);
             if (mxml_get_attribute(child, "index"))
-               index = atoi(mxml_get_attribute(child, "index"));
+               idx = atoi(mxml_get_attribute(child, "index"));
             else
-               index = i;
+               idx = i;
             if (tid == TID_STRING || tid == TID_LINK) {
                size = atoi(mxml_get_attribute(node, "size"));
                if (mxml_get_value(child) == NULL)
                   db_set_data_index(hDB, hKey, "", size, i, tid);
                else {
                   strlcpy(buf, mxml_get_value(child), sizeof(buf));
-                  db_set_data_index(hDB, hKey, buf, size, index, tid);
+                  db_set_data_index(hDB, hKey, buf, size, idx, tid);
                }
             } else {
                db_sscanf(mxml_get_value(child), data, &size, 0, tid);
-               db_set_data_index(hDB, hKey, data, rpc_tid_size(tid), index, tid);
+               db_set_data_index(hDB, hKey, data, rpc_tid_size(tid), idx, tid);
             }
          }
 
