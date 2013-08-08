@@ -47,12 +47,7 @@ endif
 # MacOSX/Darwin is just a funny Linux
 #
 ifeq ($(OSTYPE),Darwin)
-OSTYPE = darwin
-endif
-
-ifeq ($(OSTYPE),darwin)
 OS_DIR = darwin
-FF = cc
 OSFLAGS = -DOS_LINUX -DOS_DARWIN -fPIC -Wno-unused-function
 LIBS = -lpthread
 endif
@@ -69,7 +64,7 @@ SRC_DIR   = $(MIDASSYS)/src
 # comment out the line and run your own frontend as follow:
 # gmake UFE=my_frontend
 #
-UFE = mtfe07
+UFE = mtfe
 
 ####################################################################
 # Lines below here should not be edited
@@ -89,7 +84,7 @@ all: $(UFE)
 $(UFE): $(LIB) $(LIB_DIR)/mfe.o $(UFE).o
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $(UFE) $(UFE).o $(LIB_DIR)/mfe.o $(LIB) $(LIBS)
 
-%.o: %.cxx
+%.o: %.c
 	$(CXX) $(USERFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
 
 clean::
