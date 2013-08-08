@@ -3031,9 +3031,14 @@ INT open_history()
    max_event_id = 0;
 
    status = db_find_key(hDB, 0, "/Equipment", &hKeyRoot);
+   if (status == DB_NO_KEY) {
+      cm_msg(MINFO, "open_history", "Cannot find /Equipment entry in database, history system is disabled");
+      return CM_SUCCESS;
+   }
+
    if (status != DB_SUCCESS) {
-      cm_msg(MERROR, "open_history", "Cannot find Equipment entry in database");
-      return 0;
+      cm_msg(MERROR, "open_history", "Cannot find /Equipment entry in database, status %d", status);
+      return status;
    }
 
    size = sizeof(int);
@@ -3457,7 +3462,7 @@ void close_history()
 
 void log_history(HNDLE hDB, HNDLE hKey, void *info)
 {
-   INT i, size;
+   INT i, size, status;
 
    for (i = 0; i < hist_log_max; i++)
       if (hist_log[i].hKeyVar == hKey)
@@ -3474,7 +3479,12 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info)
    db_get_record_size(hDB, hKey, 0, &size);
    if (size != hist_log[i].buffer_size) {
       close_history();
-      open_history();
+      status = open_history();
+      if (status != CM_SUCCESS) {
+         printf("Error in history system, aborting.\n");
+         cm_disconnect_experiment();
+         exit(1);
+      }
       return;
    }
 
@@ -3488,7 +3498,7 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info)
 #endif
 
    for (unsigned h=0; h<mh.size(); h++) {
-      int status = mh[h]->hs_write_event(hist_log[i].event_name, hist_log[i].last_log, hist_log[i].buffer_size, hist_log[i].buffer);
+      status = mh[h]->hs_write_event(hist_log[i].event_name, hist_log[i].last_log, hist_log[i].buffer_size, hist_log[i].buffer);
       if (verbose)
          if (status != HS_SUCCESS)
             printf("hs_write_event() status %d\n", status);
@@ -3522,7 +3532,12 @@ void log_system_history(HNDLE hDB, HNDLE hKey, void *info)
 
    if (i != hist_log[index].n_var) {
       close_history();
-      open_history();
+      status = open_history();
+      if (status != CM_SUCCESS) {
+         printf("Error in history system, aborting.\n");
+         cm_disconnect_experiment();
+         exit(1);
+      }
    } else {
       hist_log[index].last_log = ss_time();
 
