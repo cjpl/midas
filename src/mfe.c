@@ -18,7 +18,7 @@
 
 /*------------------------------------------------------------------*/
 
-/* items defined in frontend.c */
+/* items defined in user part of frontend */
 
 extern char *frontend_name;
 extern char *frontend_file_name;
@@ -81,10 +81,9 @@ void *frag_buffer = NULL;
 int *n_events;
 
 /* inter-thread communication */
-int rbh[10];
-int rbh_mteq = 0; // index of the ring buffer used by the EQ_MULTITHREAD equipment
+int rbh = 0;
 volatile int stop_all_threads = 0;
-int readout_thread(void *param);
+int _readout_thread(void *param);
 volatile int readout_thread_active = 0;
 void mfe_error_check(void);
 
@@ -566,7 +565,7 @@ INT register_equipment(void)
        db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
    assert(status == SUCCESS);
 
-   /* scan EQUIPMENT table from FRONTEND.C */
+   /* scan EQUIPMENT table from user frontend */
    for (idx = 0; equipment[idx].name[0]; idx++) {
       eq_info = &equipment[idx].info;
       eq_stats = &equipment[idx].stats;
@@ -776,7 +775,7 @@ INT initialize_equipment(void)
    EQUIPMENT_STATS *eq_stats;
    BOOL manual_trig_flag = FALSE;
 
-   /* scan EQUIPMENT table from FRONTEND.C */
+   /* scan EQUIPMENT table from user frontend */
    for (idx = 0; equipment[idx].name[0]; idx++) {
       eq_info = &equipment[idx].info;
       eq_stats = &equipment[idx].stats;
@@ -798,8 +797,8 @@ INT initialize_equipment(void)
                interrupt_eq = &equipment[idx];
                
                /* create ring buffer for inter-thread data transfer */
-               if (!rbh[rbh_mteq]) {
-                  rb_create(event_buffer_size, max_event_size, &rbh[rbh_mteq]);
+               if (!rbh) {
+                  rb_create(event_buffer_size, max_event_size, &rbh);
                }
                
                /* establish interrupt handler */
@@ -808,7 +807,7 @@ INT initialize_equipment(void)
             } else {
                equipment[idx].status = FE_ERR_DISABLED;
                cm_msg(MINFO, "initialize_equipment",
-                      "Equipment %s disabled in file \"frontend.c\"",
+                      "Equipment %s disabled in frontend",
                       equipment[idx].name);
             }
          }
@@ -881,23 +880,40 @@ INT initialize_equipment(void)
                   multithread_eq = &equipment[idx];
 
                   /* create ring buffer for inter-thread data transfer */
-                  if (!rbh[rbh_mteq]) {
-                     rb_create(event_buffer_size, max_event_size, &rbh[rbh_mteq]);
+                  if (!rbh) {
+                     rb_create(event_buffer_size, max_event_size, &rbh);
                   }
 
                   /* create hardware reading thread */
                   readout_enable(FALSE);
-                  ss_thread_create(readout_thread, multithread_eq);
+                  ss_thread_create(_readout_thread, multithread_eq);
                }
             } else {
                equipment[idx].status = FE_ERR_DISABLED;
                cm_msg(MINFO, "initialize_equipment",
-                      "Equipment %s disabled in file \"frontend.c\"",
+                      "Equipment %s disabled in frontend",
                       equipment[idx].name);
             }
          }
       }
 
+      /*---- initialize user events -------------------------------*/
+      
+      if (eq_info->eq_type & EQ_USER) {
+         if (equipment[idx].status != FE_ERR_DISABLED) {
+            if (eq_info->enabled) {
+               /* create ring buffer for inter-thread data transfer */
+               if (!rbh)
+                  rb_create(event_buffer_size, max_event_size, &rbh);
+            } else {
+               equipment[idx].status = FE_ERR_DISABLED;
+               cm_msg(MINFO, "initialize_equipment",
+                      "Equipment %s disabled in frontend",
+                      equipment[idx].name);
+            }
+         }
+      }
+      
       /*---- initialize slow control equipment ---------------------*/
 
       if (eq_info->eq_type & EQ_SLOW) {
@@ -1054,7 +1070,7 @@ void update_odb(EVENT_HEADER * pevent, HNDLE hKey, INT format)
             status = db_find_key(hDB, hKey, name, &hKeyRoot);
             if (status != DB_SUCCESS) {
                cm_msg(MERROR, "update_odb",
-                      "please define bank %s in BANK_LIST in frontend.c", name);
+                      "please define bank %s in BANK_LIST in frontend", name);
                continue;
             }
 
@@ -1314,7 +1330,7 @@ void interrupt_routine(void)
 
    /* get pointer for upcoming event.
       This is a blocking call if no space available */
-   status = rb_get_wp(rbh[rbh_mteq], &p, 100000);
+   status = rb_get_wp(rbh, &p, 100000);
 
    if (status == DB_SUCCESS) {
       pevent = (EVENT_HEADER *)p;
@@ -1333,7 +1349,7 @@ void interrupt_routine(void)
       if (pevent->data_size) {
 
          /* put event into ring buffer */
-         rb_increment_wp(rbh[rbh_mteq], sizeof(EVENT_HEADER) + pevent->data_size);
+         rb_increment_wp(rbh, sizeof(EVENT_HEADER) + pevent->data_size);
 
       } else
          interrupt_eq->serial_number--;
@@ -1342,7 +1358,26 @@ void interrupt_routine(void)
 
 /*------------------------------------------------------------------*/
 
-int readout_thread(void *param)
+/* routines to be called from user code */
+
+int get_event_rb()
+{
+   return rbh;
+}
+
+int stop_readout_threads()
+{
+   return stop_all_threads;
+}
+
+void signal_readout_thread_active(int flag)
+{
+   readout_thread_active = 0;
+}
+
+/*------------------------------------------------------------------*/
+
+int _readout_thread(void *param)
 {
    int status, source;
    EVENT_HEADER *pevent;
@@ -1352,7 +1387,7 @@ int readout_thread(void *param)
    while (!stop_all_threads) {
       /* obtain buffer space */
 
-      status = rb_get_wp(rbh[rbh_mteq], &p, 0);
+      status = rb_get_wp(rbh, &p, 0);
       if (stop_all_threads)
          break;
       if (status == DB_TIMEOUT) {
@@ -1403,7 +1438,7 @@ int readout_thread(void *param)
 
             if (pevent->data_size > 0) {
                /* put event into ring buffer */
-               rb_increment_wp(rbh[rbh_mteq], sizeof(EVENT_HEADER) + pevent->data_size);
+               rb_increment_wp(rbh, sizeof(EVENT_HEADER) + pevent->data_size);
             } else
                multithread_eq->serial_number--;
          }
@@ -1422,11 +1457,6 @@ int readout_thread(void *param)
 
 /*-- Receive event from readout thread or interrupt routine --------*/
 
-void set_event_rb_idx(INT rb, INT idx)
-{
-   rbh[idx] = rb;
-}
-
 int receive_trigger_event(EQUIPMENT *eq)
 {
    int i, status;
@@ -1437,16 +1467,15 @@ int receive_trigger_event(EQUIPMENT *eq)
       int nbytes;
       static int count = 0;
       if (((count++) % 100) == 0) {
-         rb_get_buffer_level(rbh[0], &nbytes);
+         rb_get_buffer_level(rbh, &nbytes);
          if (nbytes != 0)
             printf("mfe: ring buffer contains %d bytes\n", nbytes);
       }
    }
    
    i=0;
-   while(rbh[i]) {
-      //     printf("rbh[%d]=%d\n",i, rbh[i]);
-      status = rb_get_rp(rbh[i], &p, 10);
+   while(rbh) {
+      status = rb_get_rp(rbh, &p, 10);
       prb = (EVENT_HEADER *)p;
       if (status == DB_TIMEOUT)
          return 0;
@@ -1486,7 +1515,7 @@ int receive_trigger_event(EQUIPMENT *eq)
          }
       }
       
-      rb_increment_rp(rbh[i], sizeof(EVENT_HEADER) + prb->data_size);
+      rb_increment_rp(rbh, sizeof(EVENT_HEADER) + prb->data_size);
       i++;
    } // for rbh[]
 
@@ -2150,7 +2179,7 @@ INT scheduler(void)
          }
 
          /*---- send interrupt events ----*/
-         if (eq_info->eq_type & (EQ_INTERRUPT | EQ_MULTITHREAD)) {
+         if (eq_info->eq_type & (EQ_INTERRUPT | EQ_MULTITHREAD | EQ_USER)) {
             readout_start = actual_millitime;
 
             do {
@@ -2638,9 +2667,6 @@ int main(int argc, char *argv[])
 
    if (display_period)
       printf("OK\n");
-
-   // Reset the ring buffer handles for multiple thread per frontend
-   memset((char *)rbh, 0, sizeof(rbh));
 
    /* allocate buffer space */
    event_buffer = malloc(max_event_size);

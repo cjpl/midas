@@ -367,7 +367,7 @@ Equipment types */
 #define EQ_MANUAL_TRIG (1<<5)   /**< Manual triggered Event */
 #define EQ_FRAGMENTED  (1<<6)   /**< Fragmented Event */
 #define EQ_EB          (1<<7)   /**< Event run through the event builder */
-
+#define EQ_USER        (1<<8)   /**< Polling handled in user part */
 
 /** 
 Read - On flags */
@@ -1947,8 +1947,9 @@ extern "C" {
    void mfe_error(const char *error);
    void mfe_set_error(void (*dispatcher) (const char *));
    int set_equipment_status(const char *name, const char *eq_status, const char *status_color);
-   void set_event_rb(INT rb);
-   void set_event_rb_idx(INT rb, INT idx);
+   INT get_event_rb();
+   INT stop_readout_threads();
+   void signal_readout_thread_active(int flag);
 
    /*---- analyzer functions ----*/
    void EXPRT test_register(ANA_TEST * t);
