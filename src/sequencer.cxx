@@ -1405,12 +1405,12 @@ void show_seq_page()
    rsprintf("<tr><td colspan=2><input type=submit name=cmd value=Status></td></tr>\n");
    rsprintf("</table>"); //end header  
 
-   rsprintf("<table class=\"dialogTable\">");
+   rsprintf("<table class=\"sequencerTable\">");
    /*---- menu buttons ----*/
    
    if (!equal_ustring(getparam("cmd"), "Load Script") && !isparam("fs")) {
       rsprintf("<tr>\n");
-      rsprintf("<td colspan=2>\n");
+      rsprintf("<td colspan=2 style=\"text-align:center\">\n");
       
       if (seq.running) {
          if (seq.stop_after_run)

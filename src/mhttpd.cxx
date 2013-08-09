@@ -1863,8 +1863,8 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             strcpy(col, "#00E600");
          
          rsprintf("<td class=\"meterCell\">\n");
-         rsprintf("<div style=\"background-color:%s;width:%dpx;height:23px;\">\n", col, (int)(chn_stats.disk_level*150));
-         rsprintf("<div style=\"position:relative;top:2px;left:15px\">%1.1lf&nbsp;%%</div>\n", chn_stats.disk_level*100);
+         rsprintf("<div style=\"background-color:%s;width:%dpx;height:100%%; position:relative; display:inline-block; top:-4px;\">\n", col, 100);  //(int)(chn_stats.disk_level*150)
+         rsprintf("<div style=\"position:relative; left:15px; top:2px;\">%1.1lf&nbsp;%%</div></div>\n", chn_stats.disk_level*100);
          rsprintf("</td></tr>\n");
       }
    }
@@ -4597,6 +4597,9 @@ void show_sc_page(char *path, int refresh)
       rsprintf("<input type=submit name=cmd value=Help>\n");
    }
    rsprintf("</tr>\n\n");
+   rsprintf("</table>");  //end header table
+
+   rsprintf("<table class=\"genericStripe\">");  //body table
 
    /*---- enumerate SC equipment ----*/
 
@@ -4989,7 +4992,8 @@ void show_sc_page(char *path, int refresh)
       }
    }
 
-   rsprintf("</table></form>\r\n");
+   rsprintf("</table>\n");
+   page_footer();
 }
 
 /*------------------------------------------------------------------*/
