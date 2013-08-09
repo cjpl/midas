@@ -1665,6 +1665,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
 
    /* count hidden equipments */
    n_hidden = 0;
+#ifdef USE_HIDDEN_EQ
    if (db_find_key(hDB, 0, "/equipment", &hkey) == DB_SUCCESS) {
       for (i = 0 ;; i++) {
          db_enum_key(hDB, hkey, i, &hsubkey);
@@ -1681,6 +1682,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
          }
       }
    }
+#endif
    
    rsprintf("<tr><td colspan=6><table class=\"subStatusTable\" id=\"stripeList\" width=100%%>\n");
    rsprintf("<tr><th colspan=6 class=\"subStatusTitle\">Equipment</th><tr>\n");
@@ -1715,8 +1717,10 @@ void show_status_page(int refresh, const char *cookie_wpwd)
                db_get_record(hDB, hkeytmp, &equipment, &size, 0);
             
             /* skip hidden equipments */
+#ifdef USE_HIDDEN_EQ
             if (equipment.hidden && !expand_equipment)
                continue;
+#endif
          }
 
          db_find_key(hDB, hsubkey, "Statistics", &hkeytmp);
