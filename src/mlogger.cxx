@@ -2971,12 +2971,12 @@ INT open_history()
 
          status = db_get_value(hDB, 0, "/Logger/ODBC_DSN", dsn, &size, TID_STRING, FALSE);
          if (status==DB_SUCCESS) {
-            cm_msg(MERROR, "open_history", "mlogger ODB setting /Logger/ODBC_DSN is obsolete, please delete it. Use /Logger/History/1/ODBC_DSN");
+            cm_msg(MERROR, "open_history", "mlogger ODB setting /Logger/ODBC_DSN is obsolete, please delete it. Use /Logger/History/1/Writer_ODBC_DSN");
          }
 
          size = sizeof(dsn);
          strlcpy(dsn, "history_writer", sizeof(dsn));
-         status = db_get_value(hDB, hKey, "ODBC_DSN", dsn, &size, TID_STRING, TRUE);
+         status = db_get_value(hDB, hKey, "Writer_ODBC_DSN", dsn, &size, TID_STRING, TRUE);
          assert(status == DB_SUCCESS);
 
          if (active) {
