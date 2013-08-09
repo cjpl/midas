@@ -316,3 +316,25 @@ function ODBEdit(path)
       window.location.reload();
    }
 }
+
+function OS(p, path)
+{
+   ODBSet(path, p.childNodes[0].value);
+   
+   var link = document.createElement('a');
+   link.innerHTML = p.childNodes[0].value;
+   link.href = path+"?cmd=Set";
+   link.onclick = function(){OL(p,path);return false;};
+   
+   setTimeout(function(){p.appendChild(link);p.removeChild(p.childNodes[0])}, 10);
+}
+
+function OL(p, path)
+{
+   var cur_val = p.childNodes[0].innerHTML;
+   var odb_path = path.split('?')[0];
+
+   var size = cur_val.length+10;
+   p.innerHTML = "<input type=\"text\" size=\""+size+"\" value=\""+cur_val+"\" onKeydown=\"if(event.keyCode==13)OS(this.parentNode,\'"+odb_path+"\');\" onBlur=\"OS(this.parentNode,\'"+odb_path+"\');\" >";
+   p.childNodes[0].focus();
+}

@@ -957,8 +957,8 @@ void show_header(HNDLE hDB, const char *title, const char *method, const char *p
       rsprintf
           ("<body><form name=\"form1\" method=\"POST\" action=\"%s\" enctype=\"multipart/form-data\">\n\n",
            str);
-   else
-      rsprintf("<body><form name=\"form1\" method=\"%s\" action=\"%s\">\n\n", method,
+   else if (equal_ustring(method, "GET"))
+      rsprintf("<body><form name=\"form1\" method=\"GET\" action=\"%s\">\n\n", method,
                str);
 
    /* title row */
@@ -8125,8 +8125,18 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    strlcpy(str, dec_path, sizeof(str));
    if (strrchr(str, '/'))
       strlcpy(str, strrchr(str, '/')+1, sizeof(str));
-   show_header(hDB, "MIDAS online database", "GET", str, 1, 0);
+   show_header(hDB, "MIDAS online database", "", str, 1, 0);
 
+   /* add one "../" for each level */
+   tmp_path[0] = 0;
+   for (p = dec_path ; *p ; p++)
+      if (*p == '/')
+         strlcat(tmp_path, "../", sizeof(tmp_path));
+   strlcat(tmp_path, "../mhttpd.js", sizeof(tmp_path));
+
+   /* use mhttpd.js file */
+   rsprintf("<script type=\"text/javascript\" src=\"%s\"></script>\n", tmp_path);
+   
    /* find key via path */
    status = db_find_key(hDB, 0, dec_path, &hkeyroot);
    if (status != DB_SUCCESS) {
@@ -8157,19 +8167,19 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    }
 
    /*---- menu buttons ----*/
-
    rsprintf("<tr><td colspan=2>\n");
    if (elog_mode) {
-      rsprintf("<input type=submit name=cmd value=ELog>\n");
+      rsprintf("<input type=button value=ELog onclick=\"self.location=\'?cmd=Alarms\';\">\n");
       rsprintf("</tr>\n");
    } else {
-      rsprintf("<input type=submit name=cmd value=Alarms>\n");
-      rsprintf("<input type=submit name=cmd value=Programs>\n");
-      rsprintf("<input type=submit name=cmd value=Status>\n");
-      rsprintf("<input type=submit name=cmd value=Help>\n");
+      rsprintf("<input type=button value=Alarms onclick=\"self.location=\'?cmd=Alarms\';\">\n");
+      rsprintf("<input type=button value=Programs onclick=\"self.location=\'?cmd=Programs\';\">\n");
+      rsprintf("<input type=button value=Status onclick=\"self.location=\'?cmd=Status\';\">\n");
+      rsprintf("<input type=button value=Help onclick=\"self.location=\'?cmd=Help\';\">\n");
       rsprintf("</tr>\n");
 
    }
+
    /*---- end page header ----*/
    rsprintf("</table>\n");
 
@@ -8179,10 +8189,10 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    //buttons:
    if(!elog_mode){
       rsprintf("<tr><td colspan=2>\n");
-      rsprintf("<input type=submit name=cmd value=Find>\n");
-      rsprintf("<input type=submit name=cmd value=Create>\n");
-      rsprintf("<input type=submit name=cmd value=Delete>\n");
-      rsprintf("<input type=submit name=cmd value=\"Create Elog from this page\"></td></tr>\n");
+      rsprintf("<input type=button value=Find onclick=\"self.location=\'?cmd=Alarms\';\">\n");
+      rsprintf("<input type=button value=Create onclick=\"self.location=\'?cmd=Alarms\';\">\n");
+      rsprintf("<input type=button value=Delete onclick=\"self.location=\'?cmd=Alarms\';\">\n");
+      rsprintf("<input type=button value=\"Create Elog from this page\" onclick=\"self.location=\'?cmd=Create Elog from this page\';\"></td></tr>\n");
    }
 
    /*---- ODB display -----------------------------------------------*/
@@ -8291,12 +8301,12 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
                   if (strcmp(data_str, hex_str) != 0 && hex_str[0]) {
                      if (link_name[0]) {
                         rsprintf("<tr><td class=\"ODBkey\">");
-                        rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\"><a href=\"%s\">%s (%s)</a><br></tr>\n",
-                             keyname, link_ref, link_name, ref, data_str, hex_str);
+                        rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\"><a href=\"%s\" onClick=\"OL(this.parentNode,\'%s\');return false;\">%s (%s)</a><br></tr>\n",
+                             keyname, link_ref, link_name, ref, ref, data_str, hex_str);
                      } else {
                         rsprintf("<tr><td class=\"ODBkey\">");
-                        rsprintf("%s<td class=\"ODBvalue\"><a href=\"%s\">%s (%s)</a><br></tr>\n",
-                                 keyname, ref, data_str, hex_str);
+                        rsprintf("%s<td class=\"ODBvalue\"><a href=\"%s\" onClick=\"OL(this.parentNode,\'%s\');return false;\">%s (%s)</a><br></tr>\n",
+                                 keyname, ref, ref, data_str, hex_str);
                      }
                   } else {
                      if (strchr(data_str, '\n')) {
@@ -8315,11 +8325,11 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
                      } else {
                         if (link_name[0]) {
                            rsprintf("<tr><td class=\"ODBkey\">");
-                           rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\"><a href=\"%s\">",
-                                keyname, link_ref, link_name, ref);
+                           rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\"><a href=\"%s\" onClick=\"OL(this.parentNode,\'%s\');return false;\">",
+                                keyname, link_ref, link_name, ref, ref);
                         } else
-                           rsprintf("<tr><td class=\"ODBkey\">%s<td class=\"ODBvalue\"><a href=\"%s\">", keyname,
-                                    ref);
+                           rsprintf("<tr><td class=\"ODBkey\">%s<td class=\"ODBvalue\"><a href=\"%s\" onClick=\"OL(this.parentNode,\'%s\');return false;\">", keyname,
+                                    ref, ref);
                         strencode(data_str);
                         rsprintf("</a><br></tr>\n");
                      }
@@ -8355,10 +8365,10 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
                            rsprintf("<tr>");
 
                         if (strcmp(data_str, hex_str) != 0 && hex_str[0])
-                           rsprintf("<td class=\"ODBvalue\"><a href=\"%s\">[%d] %s (%s)</a><br></tr>\n", ref, j,
+                           rsprintf("<td class=\"ODBvalue\"><a href=\"%s\" onClick=\"OL(this.parentNode,\'%s\');return false;\">[%d] %s (%s)</a><br></tr>\n", ref, ref, j,
                                     data_str, hex_str);
                         else
-                           rsprintf("<td class=\"ODBvalue\"><a href=\"%s\">[%d] %s</a><br></tr>\n", ref, j,
+                           rsprintf("<td class=\"ODBvalue\"><a href=\"%s\" onClick=\"OL(this.parentNode,\'%s\');return false;\">[%d] %s</a><br></tr>\n", ref, ref, j,
                                     data_str);
                      }
                   }
