@@ -65,13 +65,8 @@ DWORD run_start_time, subrun_start_time;
 
 LOG_CHN log_chn[MAX_CHANNELS];
 
-//#define OLD_HISTORY 1
-
 struct hist_log_s {
    char event_name[256];
-#ifdef OLD_HISTORY
-   WORD event_id;
-#endif
    char *buffer;
    INT buffer_size;
    HNDLE hKeyVar;
@@ -2724,12 +2719,6 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
 
    /* check for duplicate event id's */
    for (i=0; i<index; i++) {
-#ifdef OLD_HISTORY
-      if (hist_log[i].event_id == event_id) {
-         cm_msg(MERROR, "add_event", "Duplicate event id %d for \'%s\'", event_id, event_name);
-         return 0;
-      }
-#endif
       if (strcmp(hist_log[i].event_name, event_name) == 0) {
          cm_msg(MERROR, "add_event", "Duplicate event name \'%s\' with event id %d", event_name, event_id);
          return 0;
@@ -2779,19 +2768,11 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
       }
    }
 
-#ifdef OLD_HISTORY
-   status = hs_define_event(event_id, (char*)event_name, (TAG*)tags, sizeof(TAG) * ntags);
-   assert(status == DB_SUCCESS);
-#endif
-
    status = db_get_record_size(hDB, hKey, 0, &size);
    assert(status == DB_SUCCESS);
 
    /* setup hist_log structure for this event */
    strlcpy(hist_log[index].event_name, event_name, sizeof(hist_log[index].event_name));
-#ifdef OLD_HISTORY
-   hist_log[index].event_id    = event_id;
-#endif
    hist_log[index].n_var       = ntags;
    hist_log[index].hKeyVar     = hKey;
    hist_log[index].buffer_size = size;
@@ -2824,98 +2805,13 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
    return SUCCESS;
 }
 
-#ifdef OLD_HISTORY
-static int get_event_id(int eq_id, const char* eq_name, const char* var_name)
-{
-   HNDLE hDB, hKeyRoot;
-   char name[NAME_LENGTH+NAME_LENGTH+2];
-   int status, i;
-   WORD max_id = 0;
-
-   strlcpy(name, eq_name, sizeof(name));
-   strlcat(name, ":", sizeof(name));
-   strlcat(name, var_name, sizeof(name));
-
-   //printf("Looking for event id for \'%s\'\n", name);
-
-   cm_get_experiment_database(&hDB, NULL);
-   
-   status = db_find_key(hDB, 0, "/History/Events", &hKeyRoot);
-   if (status == DB_SUCCESS) {
-      for (i = 0;; i++) {
-         HNDLE hKey;
-         KEY key;
-         WORD evid;
-         int size;
-         char tmp[NAME_LENGTH+NAME_LENGTH+2];
-         
-         status = db_enum_key(hDB, hKeyRoot, i, &hKey);
-         if (status != DB_SUCCESS)
-           break;
-         
-         status = db_get_key(hDB, hKey, &key);
-         assert(status == DB_SUCCESS);
-         
-         //printf("key \'%s\'\n", key.name);
-         
-         evid = (WORD) strtol(key.name, NULL, 0);
-         if (evid == 0)
-            continue;
-
-         size = sizeof(tmp);
-         status = db_get_data(hDB, hKey, tmp, &size, TID_STRING);
-         //printf("status %d\n", status);
-         assert(status == DB_SUCCESS);
-
-         //printf("got %d \'%s\' looking for \'%s\'\n", evid, tmp, name);
-
-         if (equal_ustring(name, tmp))
-            return evid;
-
-         if (evid/1000 == eq_id)
-            max_id = evid;
-      }
-   }
-
-   //printf("eq_id %d, max_id %d\n", eq_id, max_id);
-
-   if (max_id == 0)
-      max_id = eq_id * 1000;
-
-   if (max_id < 1000)
-      max_id = 1000;
-
-   while (1) {
-      char tmp[NAME_LENGTH+NAME_LENGTH+2];
-      HNDLE hKey;
-      WORD evid = max_id + 1;
-
-      sprintf(tmp,"/History/Events/%d", evid);
-
-      status = db_find_key(hDB, 0, tmp, &hKey);
-      if (status == DB_SUCCESS) {
-         max_id = evid;
-         assert(max_id < 65000);
-         continue;
-      }
-
-      status = db_set_value(hDB, 0, tmp, name, strlen(name)+1, 1, TID_STRING);
-      assert(status == DB_SUCCESS);
-
-      return evid;
-   }
-
-   /* not reached */
-   return 0;
-}
-#endif
-
 INT open_history()
 {
    INT size, index, i_tag, status, i, j, li, max_event_id;
    int ieq;
    INT n_var, n_tags, n_names = 0;
    HNDLE hKeyRoot, hKeyVar, hKeyNames, hLinkKey, hVarKey, hKeyEq, hHistKey, hKey;
+   HNDLE hKeyHist;
    DWORD history;
    TAG *tag = NULL;
    KEY key, varkey, linkkey, histkey;
@@ -2925,92 +2821,217 @@ INT open_history()
    int count_events = 0;
    int global_per_variable_history = 0;
 
+   // delete old history channels
+
    for (unsigned i=0; i<mh.size(); i++)
       delete mh[i];
    mh.clear();
 
-   i = 1;
-   size = sizeof(i);
-   status = db_get_value(hDB, 0, "/Logger/WriteFileHistory", &i, &size, TID_BOOL, TRUE);
-   assert(status==DB_SUCCESS);
+   // create and initialize the history channels tree
 
-   if (i) {
-      MidasHistoryInterface* hi = MakeMidasHistory();
-      assert(hi);
+   status = db_find_key(hDB, 0, "/Logger/History", &hKeyHist);
 
-      //hi->hs_set_debug(debug);
-      
-      status = hi->hs_connect(NULL);
-      if (status != HS_SUCCESS) {
-         cm_msg(MERROR, "open_history", "Cannot connect to MIDAS history, status %d", status);
-         return status;
-      }
+   if (status == DB_NO_KEY) {
+      int active;
+      char type[NAME_LENGTH];
+      int debug;
 
-      mh.push_back(hi);
+      // create entry for the MIDAS history
+
+      strlcpy(type, "MIDAS", sizeof(type));
+      size = sizeof(type);
+      status = db_get_value(hDB, 0, "/Logger/History/0/Type", type, &size, TID_STRING, TRUE);
+      assert(status==DB_SUCCESS);
+
+      active = 1;
+      size = sizeof(active);
+      status = db_get_value(hDB, 0, "/Logger/History/0/Active", &active, &size, TID_BOOL, TRUE);
+      assert(status==DB_SUCCESS);
+
+      debug = 0;
+      size = sizeof(debug);
+      status = db_get_value(hDB, 0, "/Logger/History/0/Debug", &debug, &size, TID_INT, TRUE);
+      assert(status==DB_SUCCESS);
+
+      // create entry for ODBC (MySQL) history
+
+      strlcpy(type, "ODBC", sizeof(type));
+      size = sizeof(type);
+      status = db_get_value(hDB, 0, "/Logger/History/1/Type", type, &size, TID_STRING, TRUE);
+      assert(status==DB_SUCCESS);
+
+      active = 0;
+      size = sizeof(active);
+      status = db_get_value(hDB, 0, "/Logger/History/1/Active", &active, &size, TID_BOOL, TRUE);
+      assert(status==DB_SUCCESS);
+
+      debug = 0;
+      size = sizeof(debug);
+      status = db_get_value(hDB, 0, "/Logger/History/1/Debug", &debug, &size, TID_INT, TRUE);
+      assert(status==DB_SUCCESS);
+
+      // create entry for SQLITE history
+
+      strlcpy(type, "SQLITE", sizeof(type));
+      size = sizeof(type);
+      status = db_get_value(hDB, 0, "/Logger/History/2/Type", type, &size, TID_STRING, TRUE);
+      assert(status==DB_SUCCESS);
+
+      active = 0;
+      size = sizeof(active);
+      status = db_get_value(hDB, 0, "/Logger/History/2/Active", &active, &size, TID_BOOL, TRUE);
+      assert(status==DB_SUCCESS);
+
+      debug = 0;
+      size = sizeof(debug);
+      status = db_get_value(hDB, 0, "/Logger/History/2/Debug", &debug, &size, TID_INT, TRUE);
+      assert(status==DB_SUCCESS);
+
+      status = db_find_key(hDB, 0, "/Logger/History", &hKeyHist);
    }
 
+   if (status != DB_SUCCESS) {
+      cm_msg(MERROR, "open_history", "Something is wrong with /Logger/History, db_find_key() status %d", status);
+      return status;
+   }
+
+   // loop over history channels
+
+   for (int ichan = 0; ; ichan++) {
+      status = db_enum_key(hDB, hKeyHist, ichan, &hKey);
+      if (status != DB_SUCCESS)
+         break;
+
+      MidasHistoryInterface* hi = NULL;
+      char type[NAME_LENGTH];
+      int active;
+      int debug;
+
+      active = 0;
+      size = sizeof(active);
+      status = db_get_value(hDB, hKey, "Active", &active, &size, TID_BOOL, TRUE);
+      assert(status == DB_SUCCESS);
+
+      strlcpy(type, "", sizeof(type));
+      size = sizeof(type);
+      status = db_get_value(hDB, hKey, "Type", type, &size, TID_STRING, TRUE);
+      assert(status == DB_SUCCESS);
+      
+      debug = 0;
+      size = sizeof(debug);
+      status = db_get_value(hDB, hKey, "Debug", &debug, &size, TID_INT, TRUE);
+      assert(status == DB_SUCCESS);
+
+      printf("channel %d, active %d, type [%s], debug %d\n", ichan, active, type, debug);
+
+      if (strcasecmp(type, "MIDAS")==0) {
+
+         i = 1;
+         size = sizeof(i);
+         status = db_get_value(hDB, 0, "/Logger/WriteFileHistory", &i, &size, TID_BOOL, FALSE);
+         if (status==DB_SUCCESS) {
+            cm_msg(MERROR, "open_history", "mlogger ODB setting /Logger/WriteFileHistory is obsolete, please delete it. Use /Logger/History/0/Active instead");
+            if (i==0)
+               active = 0;
+         }
+
+         i = 0;
+         size = sizeof(i);
+         status = db_get_value(hDB, hKey, "PerVariableHistory", &i, &size, TID_INT, TRUE);
+         assert(status==DB_SUCCESS);
+
+         if (i)
+            global_per_variable_history = 1;
+   
+         if (active) {
+            hi = MakeMidasHistory();
+            assert(hi);
+
+            hi->hs_set_debug(debug);
+            
+            status = hi->hs_connect(NULL);
+            if (status != HS_SUCCESS) {
+               cm_msg(MERROR, "open_history", "Cannot connect to MIDAS history, status %d", status);
+               return status;
+            }
+         }
+
+      } else if (strcasecmp(type, "ODBC")==0) {
 #ifdef HAVE_ODBC
-   int debug = 0;
-   size = sizeof(debug);
-   status = db_get_value(hDB, 0, "/Logger/ODBC_Debug", &debug, &size, TID_INT, TRUE);
-   assert(status==DB_SUCCESS);
+         i = 0;
+         size = sizeof(i);
+         status = db_get_value(hDB, 0, "/Logger/ODBC_Debug", &i, &size, TID_INT, FALSE);
+         if (status==DB_SUCCESS) {
+            cm_msg(MERROR, "open_history", "mlogger ODB setting /Logger/ODBC_Debug is obsolete, please delete it. Use /Logger/History/1/Debug");
+         }
+         
+         char dsn[256];
+         size = sizeof(dsn);
+         dsn[0] = 0;
 
-   /* check ODBC connection */
-   char dsn[256];
-   size = sizeof(dsn);
-   dsn[0] = 0;
+         status = db_get_value(hDB, 0, "/Logger/ODBC_DSN", dsn, &size, TID_STRING, FALSE);
+         if (status==DB_SUCCESS) {
+            cm_msg(MERROR, "open_history", "mlogger ODB setting /Logger/ODBC_DSN is obsolete, please delete it. Use /Logger/History/1/ODBC_DSN");
+         }
 
-   status = db_get_value(hDB, 0, "/Logger/ODBC_DSN", dsn, &size, TID_STRING, TRUE);
-   assert(status==DB_SUCCESS);
+         size = sizeof(dsn);
+         strlcpy(dsn, "history_writer", sizeof(dsn));
+         status = db_get_value(hDB, hKey, "ODBC_DSN", dsn, &size, TID_STRING, TRUE);
+         assert(status == DB_SUCCESS);
 
-   if (debug == 2) {
-
-      MidasHistoryInterface* hi = MakeMidasHistorySqlDebug();
-      assert(hi);
-
-      hi->hs_set_debug(debug);
+         if (active) {
+            if (debug == 2) {
+               hi = MakeMidasHistorySqlDebug();
+               assert(hi);
+            } else if (strlen(dsn) > 1) {
+               hi = MakeMidasHistoryODBC();
+               assert(hi);
+            }
+            
+            hi->hs_set_debug(debug);
       
-      status = hi->hs_connect(dsn);
-      if (status != HS_SUCCESS) {
-         cm_msg(MERROR, "open_history", "Cannot connect to SQL debug driver \'%s\', status %d", dsn, status);
-         return status;
-      }
+            status = hi->hs_connect(dsn);
+            if (status != HS_SUCCESS) {
+               cm_msg(MERROR, "open_history", "Cannot connect to ODBC SQL driver \'%s\', status %d. Check .odbc.ini and MIDAS documentation", dsn, status);
+               return status;
+            }
 
-      mh.push_back(hi);
-
-   } else if (strlen(dsn)>1 && dsn[0]!='#') {
-
-      MidasHistoryInterface* hi = MakeMidasHistoryODBC();
-      assert(hi);
-
-      hi->hs_set_debug(debug);
-      
-      status = hi->hs_connect(dsn);
-      if (status != HS_SUCCESS) {
-         cm_msg(MERROR, "open_history", "Cannot connect to ODBC database with DSN \'%s\', status %d", dsn, status);
-         return status;
-      }
-
-      mh.push_back(hi);
-   }
+            global_per_variable_history = 1;
+         }
 #endif
+      } else if (strcasecmp(type, "SQLITE")==0) {
+
+      }
+
+      if (hi) {
+         hi->hs_set_debug(debug);
+         mh.push_back(hi);
+      }
+   }
+
+   // prepare history channels
 
    for (unsigned i=0; i<mh.size(); i++) {
       status = mh[i]->hs_clear_cache();
       assert(status == HS_SUCCESS);
    }
 
-#ifdef OLD_HISTORY
-   /* set directory for history files */
-   size = sizeof(str);
-   str[0] = 0;
-   status = db_get_value(hDB, 0, "/Logger/History Dir", str, &size, TID_STRING, FALSE);
-   if (status != DB_SUCCESS)
-      db_get_value(hDB, 0, "/Logger/Data Dir", str, &size, TID_STRING, TRUE);
+   // check global per-variable history settings
 
-   if (str[0] != 0)
-      hs_set_path(str);
-#endif
+   i = 0;
+   size = sizeof(i);
+   status = db_get_value(hDB, 0, "/Logger/PerVariableHistory", &i, &size, TID_INT, FALSE);
+   if (status==DB_SUCCESS) {
+      cm_msg(MERROR, "open_history", "mlogger ODB setting /Logger/PerVariableHistory is obsolete, please delete it. Use /Logger/History/0/PerVariableHistory instead");
+      if (i)
+         global_per_variable_history = i;
+   }
+
+   if (global_per_variable_history) {
+      cm_msg(MINFO, "open_history", "Per-variable history is enabled");
+   }
+
+   // setup history links
 
    if (db_find_key(hDB, 0, "/History/Links", &hKeyRoot) != DB_SUCCESS ||
        db_find_key(hDB, 0, "/History/Links/System", &hKeyRoot) != DB_SUCCESS) {
@@ -3032,18 +3053,14 @@ INT open_history()
 
    status = db_find_key(hDB, 0, "/Equipment", &hKeyRoot);
    if (status == DB_NO_KEY) {
-      cm_msg(MINFO, "open_history", "Cannot find /Equipment entry in database, history system is disabled");
+      cm_msg(MINFO, "open_history", "Cannot find /Equipment entry in database, history system is inactive");
       return CM_SUCCESS;
    }
 
    if (status != DB_SUCCESS) {
-      cm_msg(MERROR, "open_history", "Cannot find /Equipment entry in database, status %d", status);
+      cm_msg(MERROR, "open_history", "Cannot find /Equipment entry in database, db_find_key() status %d", status);
       return status;
    }
-
-   size = sizeof(int);
-   status = db_get_value(hDB, 0, "/History/PerVariableHistory", &global_per_variable_history, &size, TID_INT, TRUE);
-   assert(status==DB_SUCCESS);
 
    /* loop over equipment */
    index = 0;
@@ -3246,11 +3263,6 @@ INT open_history()
                WORD event_id = 0;
                char event_name[NAME_LENGTH];
 
-#ifdef OLD_HISTORY
-               event_id = get_event_id(eq_id, eq_name, varkey.name);
-               assert(event_id > 0);
-#endif
-
                strlcpy(event_name, eq_name, NAME_LENGTH);
                strlcat(event_name, "/", NAME_LENGTH);
                strlcat(event_name, varkey.name, NAME_LENGTH);
@@ -3412,10 +3424,6 @@ INT open_history()
       }
    }
 
-#ifdef OLD_HISTORY
-   hs_define_event(0, (char*)event_name, tag, sizeof(TAG) * 2);
-#endif
-
    free(tag);
    tag = NULL;
 
@@ -3493,10 +3501,6 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info)
    if (verbose)
       printf("write history event: \'%s\', timestamp %d, buffer %p, size %d\n", hist_log[i].event_name, hist_log[i].last_log, hist_log[i].buffer, hist_log[i].buffer_size);
 
-#ifdef OLD_HISTORY
-   hs_write_event(hist_log[i].event_id, hist_log[i].buffer, hist_log[i].buffer_size);
-#endif
-
    for (unsigned h=0; h<mh.size(); h++) {
       status = mh[h]->hs_write_event(hist_log[i].event_name, hist_log[i].last_log, hist_log[i].buffer_size, hist_log[i].buffer);
       if (verbose)
@@ -3540,10 +3544,6 @@ void log_system_history(HNDLE hDB, HNDLE hKey, void *info)
       }
    } else {
       hist_log[index].last_log = ss_time();
-
-#ifdef OLD_HISTORY
-      hs_write_event(hist_log[index].event_id, hist_log[index].buffer, hist_log[index].buffer_size);
-#endif
 
       for (unsigned h=0; h<mh.size(); h++)
          mh[h]->hs_write_event(hist_log[index].event_name, hist_log[index].last_log, hist_log[index].buffer_size, hist_log[index].buffer);
@@ -3844,10 +3844,6 @@ static int write_history(DWORD transition, DWORD run_number)
    DWORD eb[2];
    eb[0] = transition;
    eb[1] = run_number;
-
-#ifdef OLD_HISTORY
-   hs_write_event(0, eb, sizeof(eb));
-#endif
 
    time_t now = time(NULL);
 
