@@ -912,7 +912,7 @@ const char *call_col[] = {"#B0FFB0", "#C0FFC0", "#D0FFD0", "#E0FFE0"};
 
 void show_seq_page()
 {
-   INT i, size, n,  width, state, eob, last_line, error_line;
+   INT i, size, n,  width, state, eob, last_line, error_line, sectionEmpty;
    HNDLE hDB;
    char str[256], path[256], dir[256], error[256], comment[256], filename[256], data[256], buffer[10000], line[256], name[32];
    time_t now;
@@ -1405,7 +1405,7 @@ void show_seq_page()
    rsprintf("<tr><td colspan=2><input type=submit name=cmd value=Status></td></tr>\n");
    rsprintf("</table>"); //end header  
 
-   rsprintf("<table class=\"sequencerTable\">");
+   rsprintf("<table>");  //generic table for menu row
    /*---- menu buttons ----*/
    
    if (!equal_ustring(getparam("cmd"), "Load Script") && !isparam("fs")) {
@@ -1455,13 +1455,17 @@ void show_seq_page()
       
       rsprintf("</td></tr>\n");
    }
+
+   rsprintf("</table>");  //end menu table
    
+   rsprintf("<table><tr><td>"); //wrapper table to keep all sub-tables the same width
+   rsprintf("<table id=\"topTable\" class=\"sequencerTable\" width=100%%>");  //first table ends up being different things depending on context; refactor.
    /*---- file selector ----*/
    
    if (equal_ustring(getparam("cmd"), "Load Script") || isparam("fs")) {
-      rsprintf("<tr><td align=center colspan=2>\n");
-      rsprintf("<b>Select a sequence file:</b><br>\n");
-      rsprintf("<select name=\"fs\" id=\"fs\" size=20 style=\"width:300\">\n");
+      rsprintf("<tr><th class=\"subStatusTitle\" colspan=2>\n");
+      rsprintf("<b>Select a sequencer file:</b><br></th></tr>\n");
+      rsprintf("<tr><td><select name=\"fs\" id=\"fs\" size=20 style=\"width:300\">\n");
       
       if (isparam("dir"))
          strlcpy(dir, getparam("dir"), sizeof(dir));
@@ -1575,11 +1579,12 @@ void show_seq_page()
       rsprintf("<input type=hidden name=dir value=\"%s\">", dir);
       rsprintf("</td></tr>\n");
       
-      rsprintf("<tr><td align=center colspan=2 id=\"cmnt\">&nbsp;</td></tr>\n");
-      rsprintf("<tr><td align=center colspan=2>\n");
+      rsprintf("<tr><td style=\"text-align:center\" colspan=2 id=\"cmnt\">&nbsp;</td></tr>\n");
+      rsprintf("<tr><td style=\"text-align:center\" colspan=2>\n");
       rsprintf("<input type=button onClick=\"load();\" value=\"Load\">\n");
       rsprintf("<input type=submit name=cmd value=\"Cancel\">\n");
       rsprintf("</td></tr>\n");
+      rsprintf("</table>");
    }
    
    /*---- show XML file ----*/
@@ -1587,6 +1592,7 @@ void show_seq_page()
    else {
       if (seq.filename[0]) {
          if (equal_ustring(getparam("cmd"), "Edit Script")) {
+            rsprintf("<tr><th class=\"subStatusTitle\">Script Editor</th></tr>");
             rsprintf("<tr><td colspan=2>Filename:<b>%s</b>&nbsp;&nbsp;", seq.filename);
             rsprintf("<input type=submit name=cmd value=\"Save\">\n");
             rsprintf("<input type=submit name=cmd value=\"Cancel\">\n");
@@ -1604,14 +1610,17 @@ void show_seq_page()
                fclose(f);
             }
             rsprintf("</textarea></td></tr>\n");
-            rsprintf("<tr><td align=center colspan=2>\n");
+            rsprintf("<tr><td style=\"text-align:center;\" colspan=2>\n");
             rsprintf("<input type=submit name=cmd value=\"Save\">\n");
             rsprintf("<input type=submit name=cmd value=\"Cancel\">\n");
             rsprintf("</td></tr>\n");
          } else {
-            if (seq.stop_after_run)
+            sectionEmpty = 1;
+            rsprintf("<tr><th class=\"subStatusTitle\">Progress</th></tr>");
+            if (seq.stop_after_run){
+               sectionEmpty = 0;
                rsprintf("<tr id=\"msg\" style=\"display:table-row\"><td colspan=2><b>Sequence will be stopped after current run</b></td></tr>\n");
-            else
+            } else
                rsprintf("<tr id=\"msg\" style=\"display:none\"><td colspan=2><b>Sequence will be stopped after current run</b></td></tr>\n");
             
             for (i=0 ; i<4 ; i++) {
@@ -1636,15 +1645,28 @@ void show_seq_page()
                rsprintf("<td width=\"100%%\"><table id=\"runprgs\" width=\"%d%%\" height=\"25\">\n", width);
                rsprintf("<tr><td style=\"background-color:#80FF80;border:2px solid #008000;border-top:2px solid #E0E0FF;border-left:2px solid #E0E0FF;\">&nbsp;\n");
                rsprintf("</td></tr></table></td></tr></table></td></tr>\n");
+               sectionEmpty=0;
             }
             if (seq.paused) {
                rsprintf("<tr><td align=\"center\" colspan=2 style=\"background-color:#FFFF80;\"><b>Sequencer is paused</b>\n");
                rsprintf("</td></tr>\n");
+               sectionEmpty=0;
             }
             if (seq.finished) {
                rsprintf("<tr><td colspan=2 style=\"background-color:#80FF80;\"><b>Sequence is finished</b>\n");
                rsprintf("</td></tr>\n");
+               sectionEmpty=0;
             }
+            rsprintf("</table>"); //end progress table
+            //hide progress table if nothing in it:
+            if(sectionEmpty == 1){
+               rsprintf("<script type=\"text/JavaScript\">");
+               rsprintf("var element = document.getElementById(\"topTable\");");
+               rsprintf("element.parentNode.removeChild(element);");               
+               rsprintf("</script>");
+            }
+
+            rsprintf("<table class=\"sequencerTable\" width=\"100%%\"><tr><th class=\"subStatusTitle\">Sequencer File</th></tr>");  //start file display table
             
             rsprintf("<tr><td colspan=2><table width=100%%><tr><td>Filename:<b>%s</b></td>", seq.filename);
             if (stristr(seq.filename, ".msl"))
@@ -1778,14 +1800,17 @@ void show_seq_page()
                   rsprintf("<tr><td colspan=2><b>Cannot open file \"%s\"</td></tr>\n", str);
                }
             }
+            rsprintf("</tr></table></td></tr>\n");
          }
          
-         rsprintf("</tr></table></td></tr>\n");
+         rsprintf("</table>"); //end sequencer file table
             
+
          /*---- show messages ----*/
          if (seq.running) {
+            rsprintf("<table class=\"sequencerTable\" width=100%%><tr><th class=\"subStatusTitle\">Messages</th></tr>");
             rsprintf("<tr><td colspan=2>\n");
-            rsprintf("<font style=\"font-family:monospace\">\n");
+            rsprintf("<font id=\"sequencerMessages\" style=\"font-family:monospace\">\n");
             rsprintf("<a href=\"../?cmd=Messages\">...</a><br>\n");
             
             cm_msg_retrieve(10, buffer, sizeof(buffer));
@@ -1814,22 +1839,32 @@ void show_seq_page()
                
                /* check for error */
                if (strstr(line, ",ERROR]"))
-                  rsprintf("<span style=\"color:white;background-color:red\">%s</span>", str);
+                  rsprintf("<div style=\"color:white;background-color:red;\" width=100%%>%s</div>", str);
                else
-                  rsprintf("%s", str);
+                  rsprintf("<div>%s</div>", str);
                
                rsprintf("<br>\n");
             } while (!eob && *pline);
-            
+
+            //some JS to reverse the order of messages, so latest appears at the top:
+            rsprintf("<script type=\"text/JavaScript\">");
+            rsprintf("var messages = document.getElementById(\"sequencerMessages\");");
+            rsprintf("var i = messages.childNodes.length;");
+            rsprintf("while (i--)");
+            rsprintf("messages.appendChild(messages.childNodes[i]);");
+            rsprintf("</script>");
             
             rsprintf("</font></td></tr>\n");
          }
+         rsprintf("</table>\n");
       } else {
-         rsprintf("<tr><td colspan=2><b>No script loaded</b></td></tr>\n");
+         rsprintf("<div><b>No script loaded</b></div>\n");
       }
    }
    
-   rsprintf("</table>\n");
+
+
+   rsprintf("</td></tr></table>"); //end wrapper table
    //rsprintf("</form>\r\n");
    page_footer();
 }
