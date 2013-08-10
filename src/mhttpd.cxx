@@ -1863,7 +1863,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             strcpy(col, "#00E600");
          
          rsprintf("<td class=\"meterCell\">\n");
-         rsprintf("<div style=\"background-color:%s;width:%dpx;height:100%%; position:relative; display:inline-block; top:-4px;\">\n", col, 100);  //(int)(chn_stats.disk_level*150)
+         rsprintf("<div style=\"background-color:%s;width:%dpx;height:100%%; position:relative; display:inline-block; top:-4px;\">\n", col, (int)(chn_stats.disk_level*150));
          rsprintf("<div style=\"position:relative; left:15px; top:2px;\">%1.1lf&nbsp;%%</div></div>\n", chn_stats.disk_level*100);
          rsprintf("</td></tr>\n");
       }
