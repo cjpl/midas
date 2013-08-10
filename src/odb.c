@@ -6234,6 +6234,7 @@ INT db_paste(HNDLE hDB, HNDLE hKeyRoot, const char *buffer)
 int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
 {
    char type[256], data[256], test_str[256];
+   char *buf = NULL;
    int i, idx, status, size, tid, num_values;
    HNDLE hKey;
    PMXML_NODE child;
@@ -6318,6 +6319,13 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
          }
       }
 
+      if (tid == TID_STRING || tid == TID_LINK) {
+         size = atoi(mxml_get_attribute(node, "size"));
+         buf = malloc(size);
+         assert(buf);
+         buf[0] = 0;
+      }
+
       if (num_values) {
          /* evaluate array */
          for (i = 0; i < mxml_get_number_of_children(node); i++) {
@@ -6327,35 +6335,42 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
             else
                idx = i;
             if (tid == TID_STRING || tid == TID_LINK) {
-               size = atoi(mxml_get_attribute(node, "size"));
-               if (mxml_get_value(child) == NULL)
-                  db_set_data_index(hDB, hKey, "", size, i, tid);
-               else {
-                  //char *buf;
-                  //const char *data = mxml_get_value(child);
-                  //size = strlen(data);
-                  //buf = malloc(size);
-                  char buf[10000];
-                  strlcpy(buf, mxml_get_value(child), sizeof(buf));
-                  db_set_data_index(hDB, hKey, buf, size, idx, tid);
+               if (mxml_get_value(child) == NULL) {
+                  status = db_set_data_index(hDB, hKey, "", size, i, tid);
+                  assert(status == DB_SUCCESS);
+               } else {
+                  strlcpy(buf, mxml_get_value(child), size);
+                  status = db_set_data_index(hDB, hKey, buf, size, idx, tid);
+                  assert(status == DB_SUCCESS);
                }
             } else {
                db_sscanf(mxml_get_value(child), data, &size, 0, tid);
-               db_set_data_index(hDB, hKey, data, rpc_tid_size(tid), idx, tid);
+               status = db_set_data_index(hDB, hKey, data, rpc_tid_size(tid), idx, tid);
+               assert(status == DB_SUCCESS);
             }
          }
 
       } else {                  /* single value */
          if (tid == TID_STRING || tid == TID_LINK) {
             size = atoi(mxml_get_attribute(node, "size"));
-            if (mxml_get_value(node) == NULL)
-               db_set_data(hDB, hKey, "", size, 1, tid);
-            else
-               db_set_data(hDB, hKey, mxml_get_value(node), size, 1, tid);
+            if (mxml_get_value(node) == NULL) {
+               status = db_set_data(hDB, hKey, "", size, 1, tid);
+               assert(status == DB_SUCCESS);
+            } else {
+               strlcpy(buf, mxml_get_value(node), size);
+               status = db_set_data(hDB, hKey, buf, size, 1, tid);
+               assert(status == DB_SUCCESS);
+            }
          } else {
             db_sscanf(mxml_get_value(node), data, &size, 0, tid);
-            db_set_data(hDB, hKey, data, rpc_tid_size(tid), 1, tid);
+            status = db_set_data(hDB, hKey, data, rpc_tid_size(tid), 1, tid);
+            assert(status == DB_SUCCESS);
          }
+      }
+
+      if (buf) {
+         free(buf);
+         buf = NULL;
       }
    }
 
@@ -8344,8 +8359,6 @@ void merge_records(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
    HNDLE hKeyInit;
    KEY initkey, key;
 
-   printf("merge_records! %d %d %p %d %p\n", hDB, hKey, pkey, level, info);
-
    /* avoid compiler warnings */
    status = level;
    p = info;
@@ -8371,7 +8384,6 @@ void merge_records(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
          while (1) {
             /* copy data from original key to new key */
             status = db_get_data(hDB, hKey, buffer, &size, initkey.type);
-            printf("status %d, size %d\n", status, size);
             if (status == DB_SUCCESS) {
                status = db_set_data(hDB, hKeyInit, buffer, initkey.total_size, initkey.num_values, initkey.type);
                assert(status == DB_SUCCESS);
@@ -8380,7 +8392,6 @@ void merge_records(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
             if (status == DB_TRUNCATED) {
                size *= 2;
                allocbuffer = realloc(allocbuffer, size);
-               printf("alloc %d, %p\n", size, buffer);
                assert(allocbuffer != NULL);
                buffer = allocbuffer;
                continue;
