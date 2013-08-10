@@ -6233,7 +6233,7 @@ INT db_paste(HNDLE hDB, HNDLE hKeyRoot, const char *buffer)
 */
 int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
 {
-   char type[256], data[256], test_str[256], buf[10000];
+   char type[256], data[256], test_str[256];
    int i, idx, status, size, tid, num_values;
    HNDLE hKey;
    PMXML_NODE child;
@@ -6331,6 +6331,11 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
                if (mxml_get_value(child) == NULL)
                   db_set_data_index(hDB, hKey, "", size, i, tid);
                else {
+                  //char *buf;
+                  //const char *data = mxml_get_value(child);
+                  //size = strlen(data);
+                  //buf = malloc(size);
+                  char buf[10000];
                   strlcpy(buf, mxml_get_value(child), sizeof(buf));
                   db_set_data_index(hDB, hKey, buf, size, idx, tid);
                }
@@ -8333,11 +8338,13 @@ INT db_notify_clients(HNDLE hDB, HNDLE hKey, BOOL bWalk)
 /*------------------------------------------------------------------*/
 void merge_records(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
 {
-   char full_name[256], buffer[10000];
+   char full_name[256];
    INT status, size;
    void *p;
    HNDLE hKeyInit;
    KEY initkey, key;
+
+   printf("merge_records! %d %d %p %d %p\n", hDB, hKey, pkey, level, info);
 
    /* avoid compiler warnings */
    status = level;
@@ -8357,12 +8364,32 @@ void merge_records(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
       assert(status == DB_SUCCESS);
 
       if (initkey.type != TID_KEY && initkey.type == key.type) {
-         /* copy data from original key to new key */
-         size = sizeof(buffer);
-         status = db_get_data(hDB, hKey, buffer, &size, initkey.type);
-         assert(status == DB_SUCCESS);
-         status = db_set_data(hDB, hKeyInit, buffer, initkey.total_size, initkey.num_values, initkey.type);
-         assert(status == DB_SUCCESS);
+         char* allocbuffer = NULL;
+         char  stackbuffer[10000];
+         char* buffer = stackbuffer;
+         size = sizeof(stackbuffer);
+         while (1) {
+            /* copy data from original key to new key */
+            status = db_get_data(hDB, hKey, buffer, &size, initkey.type);
+            printf("status %d, size %d\n", status, size);
+            if (status == DB_SUCCESS) {
+               status = db_set_data(hDB, hKeyInit, buffer, initkey.total_size, initkey.num_values, initkey.type);
+               assert(status == DB_SUCCESS);
+               break;
+            }
+            if (status == DB_TRUNCATED) {
+               size *= 2;
+               allocbuffer = realloc(allocbuffer, size);
+               printf("alloc %d, %p\n", size, buffer);
+               assert(allocbuffer != NULL);
+               buffer = allocbuffer;
+               continue;
+            }
+            cm_msg(MERROR, "merge_records", "aborting on unexpected failure of db_get_data(%s), status %d", full_name, status);
+            abort();
+         }
+         if (allocbuffer)
+            free(allocbuffer);
       }
    } else if (status == DB_NO_KEY) {
       /* do nothing */
@@ -8370,12 +8397,11 @@ void merge_records(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
       status = db_find_link(hDB, 0, full_name, &hKeyInit);
       if (status == DB_SUCCESS) {
          size = sizeof(full_name);
-         db_get_data(hDB, hKeyInit, full_name, &size, TID_LINK);
+         status = db_get_data(hDB, hKeyInit, full_name, &size, TID_LINK);
       }
       cm_msg(MERROR, "merge_records", "Invalid link \"%s\"", full_name);
    } else {
-      cm_msg(MERROR, "merge_records",
-             "aborting on unexpected failure of db_find_key(%s), status %d", full_name, status);
+      cm_msg(MERROR, "merge_records", "aborting on unexpected failure of db_find_key(%s), status %d", full_name, status);
       abort();
    }
 }
