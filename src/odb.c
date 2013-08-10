@@ -135,6 +135,8 @@ void free_key(DATABASE_HEADER * pheader, void *address, INT size)
    if (size == 0)
       return;
 
+   assert(address != pheader);
+
    /* quadword alignment for alpha CPU */
    size = ALIGN8(size);
 
@@ -253,6 +255,8 @@ void free_data(DATABASE_HEADER * pheader, void *address, INT size)
 
    if (size == 0)
       return;
+
+   assert(address != pheader);
 
    /* quadword alignment for alpha CPU */
    size = ALIGN8(size);
@@ -530,6 +534,13 @@ static int db_validate_key(DATABASE_HEADER * pheader, int recurse, const char *p
              "Warning: corrected key \"%s\" size: total_size=%d, should be %d*%d=%d",
              path, pkey->total_size, pkey->item_size, pkey->num_values, pkey->item_size * pkey->num_values);
       pkey->total_size = pkey->item_size * pkey->num_values;
+   }
+
+   /* check and correct key size */
+   if (pkey->data == 0 && pkey->total_size != 0) {
+      cm_msg(MINFO, "db_validate_key", "Warning: corrected key \"%s\" size: data pointer is zero, total_size is %d, should be zero", path, pkey->total_size);
+      pkey->num_values = 0;
+      pkey->total_size = 0;
    }
 
    /* check access mode */
@@ -3114,6 +3125,7 @@ INT db_set_value(HNDLE hDB, HNDLE hKeyRoot, const char *key_name, const void *da
          pkey->data = (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data, pkey->total_size, data_size);
 
          if (pkey->data == 0) {
+            pkey->total_size = 0;
             db_unlock_database(hDB);
             cm_msg(MERROR, "db_set_value", "online database full");
             return DB_FULL;
@@ -4781,6 +4793,7 @@ INT db_set_data(HNDLE hDB, HNDLE hKey, const void *data, INT buf_size, INT num_v
          pkey->data = (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data, pkey->total_size, buf_size);
 
          if (pkey->data == 0) {
+            pkey->total_size = 0;
             db_unlock_database(hDB);
             cm_msg(MERROR, "db_set_data", "online database full");
             return DB_FULL;
@@ -4889,6 +4902,7 @@ INT db_set_link_data(HNDLE hDB, HNDLE hKey, const void *data, INT buf_size, INT 
          pkey->data = (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data, pkey->total_size, buf_size);
 
          if (pkey->data == 0) {
+            pkey->total_size = 0;
             db_unlock_database(hDB);
             cm_msg(MERROR, "db_set_link_data", "online database full");
             return DB_FULL;
@@ -5018,6 +5032,8 @@ INT db_set_num_values(HNDLE hDB, HNDLE hKey, INT num_values)
          pkey->data = (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data, pkey->total_size, new_size);
 
          if (pkey->data == 0) {
+            pkey->total_size = 0;
+            pkey->num_values = 0;
             db_unlock_database(hDB);
             cm_msg(MERROR, "db_set_num_values", "hkey %d, num_values %d, new_size %d, online database full", hKey, num_values, new_size);
             return DB_FULL;
@@ -5150,10 +5166,11 @@ INT db_set_data_index(HNDLE hDB, HNDLE hKey, const void *data, INT data_size, IN
 
       /* increase data size if necessary */
       if (idx >= pkey->num_values || pkey->item_size == 0) {
-         pkey->data =
-             (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data, pkey->total_size, data_size * (idx + 1));
+         pkey->data = (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data, pkey->total_size, data_size * (idx + 1));
 
          if (pkey->data == 0) {
+            pkey->total_size = 0;
+            pkey->num_values = 0;
             db_unlock_database(hDB);
             cm_msg(MERROR, "db_set_data_index", "online database full");
             return DB_FULL;
@@ -5265,10 +5282,11 @@ INT db_set_link_data_index(HNDLE hDB, HNDLE hKey, const void *data, INT data_siz
 
       /* increase data size if necessary */
       if (idx >= pkey->num_values || pkey->item_size == 0) {
-         pkey->data =
-             (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data, pkey->total_size, data_size * (idx + 1));
+         pkey->data = (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data, pkey->total_size, data_size * (idx + 1));
 
          if (pkey->data == 0) {
+            pkey->total_size = 0;
+            pkey->num_values = 0;
             db_unlock_database(hDB);
             cm_msg(MERROR, "db_set_data_index", "online database full");
             return DB_FULL;
@@ -5395,10 +5413,11 @@ INT db_set_data_index2(HNDLE hDB, HNDLE hKey, const void *data, INT data_size, I
 
       /* increase key size if necessary */
       if (idx >= pkey->num_values) {
-         pkey->data =
-             (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data, pkey->total_size, data_size * (idx + 1));
+         pkey->data = (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data, pkey->total_size, data_size * (idx + 1));
 
          if (pkey->data == 0) {
+            pkey->total_size = 0;
+            pkey->num_values = 0;
             db_unlock_database(hDB);
             cm_msg(MERROR, "db_set_data_index2", "online database full");
             return DB_FULL;
