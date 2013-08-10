@@ -117,13 +117,26 @@ select{
 button, input[type=button], input[type=submit], input[type=reset]{
 	background-color: #CCCCCC; /*#00B26B;*/
 	color: #444444;
-	font-size: 120%;
+	font-size: 100%;
 	padding:0.25em;
 	padding-left: 0.5em;
 	padding-right: 0.5em;
 	border:1px solid #808080;
 	border-radius: 5px;
 	margin-bottom:1px;
+	background-image: linear-gradient(bottom, #E0E0E0 67%, #B8B8B8 0%);
+	background-image: -o-linear-gradient(bottom, #E0E0E0 67%, #B8B8B8 0%);
+	background-image: -moz-linear-gradient(bottom, #E0E0E0 67%, #B8B8B8 0%);
+	background-image: -webkit-linear-gradient(bottom, #E0E0E0 67%, #B8B8B8 0%);
+	background-image: -ms-linear-gradient(bottom, #E0E0E0 67%, #B8B8B8 0%);
+
+	background-image: -webkit-gradient(
+		linear,
+		left bottom,
+		left top,
+		color-stop(0.67, #E0E0E0),
+		color-stop(0, #B8B8B8)
+	);
 }
 
 button:hover, input[type=button]:hover, input[type=submit]:hover, input[type=reset]:hover{
@@ -149,12 +162,23 @@ table.headerTable{
 	width:100%;
 	color:#EEEEEE;
 	background-color: #E0E0E0;
-	border: 1em solid #E0E0E0;
-	border-left: 1em solid #E0E0E0;
-	border-right: 1em solid #E0E0E0;
+	border-bottom:1px solid #000000;
 	border-collapse: collapse;
 	border-spacing: 0;
 	margin-bottom: 0.5em;
+	background-image: linear-gradient(bottom, #E0E0E0 67%, #B8B8B8 0%);
+	background-image: -o-linear-gradient(bottom, #E0E0E0 67%, #B8B8B8 0%);
+	background-image: -moz-linear-gradient(bottom, #E0E0E0 67%, #B8B8B8 0%);
+	background-image: -webkit-linear-gradient(bottom, #E0E0E0 67%, #B8B8B8 0%);
+	background-image: -ms-linear-gradient(bottom, #E0E0E0 67%, #B8B8B8 0%);
+
+	background-image: -webkit-gradient(
+		linear,
+		left bottom,
+		left top,
+		color-stop(0.67, #E0E0E0),
+		color-stop(0, #B8B8B8)
+	);
 }
 
 table.headerTable td{
@@ -166,7 +190,7 @@ div.footerDiv{
 	text-align: center;
 	padding:1em;
 	color:#EEEEEE;
-
+	border-top:1px solid #000000;
 	height:3em;
 }
 
@@ -189,7 +213,7 @@ div.wrapper{
     margin: 0 auto -3em;
 }
 
-.dialogTable, .messageBox, .genericTable{
+.dialogTable, .messageBox, .genericTable, .sequencerTable{
 	border-radius: 12px;
 	border: 2px solid #00B26B;
 	background-color: #EEEEEE;
@@ -199,7 +223,11 @@ div.wrapper{
 	margin-bottom:1em;
 }
 
-table.dialogTable td{
+table.sequencerTable td{
+	text-align: left;
+}
+
+table.dialogTable, table.sequencerTable td{
 	border:none;
 }
 
@@ -263,9 +291,10 @@ table.dialogTable td{
 	border-bottom-right-radius: 12px;
 }
 
-.meterCell{
+td.meterCell{
 	padding: 0px;
 	border:1px solid black;
+	text-align: left;
 }
 
 #runNumberCell{
@@ -378,7 +407,7 @@ table.dialogTable td{
 }
 
 /*table striping*/
-.ODBtable tr:nth-child(odd), #stripeList tr:nth-child(even), .alarmTable tr:nth-child(even), .historyTable tr:nth-child(odd), .genericStripe tr:nth-child(odd), .messageBox p:nth-child(odd){
+.ODBtable tr:nth-child(odd), #stripeList tr:nth-child(even), .alarmTable tr:nth-of-type(odd), .historyTable tr:nth-child(odd), .genericStripe tr:nth-child(odd), .messageBox p:nth-child(odd){
 	background-color: #CCCCCC;
 }
 
@@ -397,7 +426,7 @@ table.ODBtable td{
 /*---- Messages Page----*/
 .messageBox{
 	text-align: left;
-	max-height:70%;
+	max-height:95%;
 	overflow:scroll;
 	line-height: 0.75em;
 	margin-left: auto;
