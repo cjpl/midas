@@ -330,12 +330,11 @@ function ODBFinishInlineEdit(p, path)
    setTimeout(function(){p.appendChild(link);p.removeChild(p.childNodes[0])}, 10);
 }
 
-function ODBInlineEdit(p, path)
+function ODBInlineEdit(p, odb_path)
 {
-   //var cur_val = p.childNodes[0].innerHTML;
-   var odb_path = path.split('?')[0];
    var cur_val = ODBGet(odb_path);
    var size = cur_val.length+10;
+   
    p.innerHTML = "<input type=\"text\" size=\""+size+"\" value=\""+cur_val+"\" onKeydown=\"if(event.keyCode==13)ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\');\" onBlur=\"ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\');\" >";
    p.childNodes[0].focus();
 }
