@@ -873,8 +873,8 @@ void page_footer()  //wraps up body wrapper and inserts page footer
    str[0] = 0;
    cm_get_experiment_database(&hDB, NULL);
    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
-   rsprintf("<div style=\"display:inline; float:left;\">MIDAS Experiment %s</div>", str);
-   rsprintf("<div style=\"display:inline;\">MIDAS 2013 - <a href=\"https://midas.triumf.ca/MidasWiki/index.php/Main_Page\" > Documentation</a> - <a href=\"https://bitbucket.org/tmidas/midas\">Code</a></div>");
+   rsprintf("<div style=\"display:inline; float:left;\">Experiment %s</div>", str);
+   rsprintf("<div style=\"display:inline;\"><a href=\"?cmd=Help\">Help</a></div>");
    time(&now);
    rsprintf("<div style=\"display:inline; float:right;\">%s</div>", ctime(&now));
    rsprintf("</div>\n");
@@ -893,28 +893,63 @@ void show_help_page()
    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
    rsprintf("<html><head>\n");
-   rsprintf("<title>MIDAS WWW Gateway Help</title>\n");
+   rsprintf("<title>MIDAS Help</title>\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
    rsprintf("</head>\n\n");
 
    rsprintf("<body>\n");
-   rsprintf("<h1>Using the MIDAS WWW Gateway</h1>\n");
-   rsprintf("With the MIDAS WWW Gateway basic experiment control can be achieved.\n");
-   rsprintf("The status page displays the current run status including front-end\n");
-   rsprintf("and logger statistics. The Start and Stop buttons can start and stop\n");
-   rsprintf("a run. The ODB button switches into the Online Database mode, where\n");
-   rsprintf
-       ("the contents of the experiment database can be displayed and modified.<P>\n\n");
 
-   rsprintf("For more information, refer to the\n");
-   rsprintf("<A HREF=\"http://midas.psi.ch/htmldoc/index.html\">PSI MIDAS manual</A>,\n");
-   rsprintf
-       ("<A HREF=\"http://ladd00.triumf.ca/~daqweb/doc/midas/html/\">Triumf MIDAS manual</A>.<P>\n\n");
+   rsprintf("<form method=\"GET\" style=\"height:auto;\" action=\".\">\n");
 
-   rsprintf("<hr>\n");
-   rsprintf("<address>\n");
-   rsprintf("<a href=\"http://pibeta.psi.ch/~stefan\">S. Ritt</a>, 26 Sep 2000");
-   rsprintf("</address>");
-
+   rsprintf("<div class=\"wrapper\">\n");
+   rsprintf("<table class=\"headerTable\">\n");
+   rsprintf("<tr><td colspan=7><input type=submit name=cmd value=Status></td></tr>\n");
+   rsprintf("</table>\n");
+   
+   rsprintf("<table class=\"subStatusTable\">\n");
+   rsprintf("  <tr>\n");
+   rsprintf("    <td class=\"subStatusTitle\">MIDAS Help Page</td>\n");
+   rsprintf("  </tr>\n");
+   rsprintf("  <tr>\n");
+   rsprintf("    <td>\n");
+   rsprintf("      <table>\n");
+   rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\">Documentation:</td>\n");
+   rsprintf("          <td style=\"text-align:left;\"><a href=\"http://midas.triumf.ca\">http://midas.triumf.ca</a></td>\n");
+   rsprintf("        </tr>\n");
+   rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\">Discussion Forum:</td>\n");
+   rsprintf("          <td style=\"text-align:left;\"><a href=\"https://midas.triumf.ca/elog/Midas/\">https://midas.triumf.ca/elog/Midas/</a></td>\n");
+   rsprintf("        </tr>\n");
+   rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\">Code:</td>\n");
+   rsprintf("          <td style=\"text-align:left;\"><a href=\"http://bitbucket.org/tmidas/midas/\">http://bitbucket.org/tmidas/midas/</a></td>\n");
+   rsprintf("        </tr>\n");
+   rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\">Version:</td>\n");
+   rsprintf("          <td style=\"text-align:left;\">%s</td>\n", cm_get_version());
+   rsprintf("        </tr>\n");
+   rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\">Revision:</td>\n");
+   char str[256];
+   strlcpy(str, "https://bitbucket.org/tmidas/midas/commits/all?search=", sizeof(str));
+   if (strrchr(cm_get_revision(), '-'))
+      strlcat(str, strrchr(cm_get_revision(), '-')+2, sizeof(str));
+   rsprintf("          <td style=\"text-align:left;\"><a href=\"%s\">%s</a></td>\n", str, cm_get_revision());
+   rsprintf("        </tr>\n");
+   rsprintf("      </table>\n");
+   rsprintf("    </td>\n");
+   rsprintf("  </tr>\n");
+   rsprintf("</table>\n");
+   
+   rsprintf("<div class=\"push\" style=\"height:5em;\"></div>\n");
+   rsprintf("</div>\n");
+   rsprintf("<div class=\"footerDiv\" style=\"font-size:10pt;height:5em;\">\n");
+   rsprintf("<div style=\"display:inline;\">\n");
+   rsprintf("Contributions: Pierre-Andre Amaudruz - Sergio Ballestrero - Suzannah Daviel - Peter Green - Qing Gu - Greg Hackman - Gertjan Hofman - Paul Knowles - Exaos Lee - Rudi Meier - Bill Mills - Glenn Moloney - Dave Morris - John M O'Donnell - Konstantin Olchanski - Chris Pearson - Renee Poutissou - Stefan Ritt - Tamsen Schurman - Andreas Suter - Jan M.Wouters - Piotr Adam Zolnierczuk\n");
+   rsprintf("</div></div>\n");
+   
+   rsprintf("</form>\n");
    rsprintf("</body></html>\r\n");
 }
 

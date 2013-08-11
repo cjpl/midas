@@ -1207,10 +1207,14 @@ void show_seq_page()
    rsprintf("         sline.style.display = 'none';\n");
    rsprintf("      else\n");
    rsprintf("         sline.style.display = 'inline';\n");
-   rsprintf("      if (scurrent_line > 10 || sshow_all_lines)\n");
-   rsprintf("          document.getElementById('slinedots1').style.display = 'inline';\n");
-   rsprintf("      else\n");
-   rsprintf("          document.getElementById('slinedots1').style.display = 'none';\n");
+   rsprintf("      if (scurrent_line > 10) {\n");
+   rsprintf("         document.getElementById('supperarrow').style.display = 'inline';\n");
+   rsprintf("         if (sshow_all_lines)\n");
+   rsprintf("            document.getElementById('supperarrow').style.display = '&#x25BC';\n");
+   rsprintf("         else\n");
+   rsprintf("            document.getElementById('supperarrow').style.display = '&#x25B2';\n");
+   rsprintf("      } else\n");
+   rsprintf("          document.getElementById('supperarrow').style.display = 'none';\n");
    rsprintf("      if (sl == serror_line)\n");
    rsprintf("         sline.style.backgroundColor = '#FF0000';\n");
    rsprintf("      else if (sl == scurrent_line)\n");
@@ -1244,10 +1248,14 @@ void show_seq_page()
    rsprintf("         line.style.display = 'none';\n");
    rsprintf("      else\n");
    rsprintf("         line.style.display = 'inline';\n");
-   rsprintf("      if (current_line > 10 || show_all_lines)\n");
-   rsprintf("          document.getElementById('linedots1').style.display = 'inline';\n");
-   rsprintf("      else\n");
-   rsprintf("          document.getElementById('linedots1').style.display = 'none';\n");
+   rsprintf("      if (current_line > 10) {\n");
+   rsprintf("         document.getElementById('upperarrow').style.display = 'inline';\n");
+   rsprintf("         if (show_all_lines)\n");
+   rsprintf("            document.getElementById('upperarrow').style.display = '&#x25BC';\n");
+   rsprintf("         else\n");
+   rsprintf("            document.getElementById('upperarrow').style.display = '&#x25B2';\n");
+   rsprintf("      } else\n");
+   rsprintf("          document.getElementById('upperarrow').style.display = 'none';\n");
    rsprintf("      if (l == error_line)\n");
    rsprintf("         line.style.backgroundColor = '#FF0000';\n");
    rsprintf("      else if (l == current_line)\n");
@@ -1272,17 +1280,25 @@ void show_seq_page()
    rsprintf("         line.style.backgroundColor = '#FFFFFF';\n");
    rsprintf("   }\n");
    rsprintf("   \n");
-   rsprintf("   if (document.getElementById('linedots2')) {\n");
-   rsprintf("      if (current_line < last_line-10 && !show_all_lines)\n");
-   rsprintf("         document.getElementById('linedots2').style.display = 'inline';\n");
-   rsprintf("      else\n");
-   rsprintf("         document.getElementById('linedots2').style.display = 'none';\n");
+   rsprintf("   if (document.getElementById('lowerarrow')) {\n");
+   rsprintf("      if (current_line < last_line-10) {\n");
+   rsprintf("         document.getElementById('lowerarrow').style.display = 'inline';\n");
+   rsprintf("         if (show_all_lines)\n");
+   rsprintf("            document.getElementById('lowerarrow').innerHTML = '&#x25B2';\n");
+   rsprintf("         else\n");
+   rsprintf("            document.getElementById('lowerarrow').innerHTML = '&#x25BC';\n");
+   rsprintf("      } else\n");
+   rsprintf("         document.getElementById('lowerarrow').style.display = 'none';\n");
    rsprintf("   }\n");
-   rsprintf("   if (document.getElementById('slinedots2')) {\n");
-   rsprintf("      if (scurrent_line < slast_line-10 && !show_all_lines)\n");
-   rsprintf("         document.getElementById('slinedots2').style.display = 'inline';\n");
-   rsprintf("      else\n");
-   rsprintf("         document.getElementById('slinedots2').style.display = 'none';\n");
+   rsprintf("   if (document.getElementById('slowerarrow')) {\n");
+   rsprintf("      if (scurrent_line < slast_line-10) {\n");
+   rsprintf("         document.getElementById('slowerarrow').style.display = 'inline';\n");
+   rsprintf("         if (sshow_all_lines)\n");
+   rsprintf("            document.getElementById('slowerarrow').innerHTML = '&#x25B2';\n");
+   rsprintf("         else\n");
+   rsprintf("            document.getElementById('slowerarrow').innerHTML = '&#x25BC';\n");
+   rsprintf("      } else\n");
+   rsprintf("         document.getElementById('slowerarrow').style.display = 'none';\n");
    rsprintf("   }\n");
    rsprintf("   \n");
    rsprintf("   var wl = document.getElementById('wait_label');\n");
@@ -1348,12 +1364,20 @@ void show_seq_page()
    rsprintf("function show_lines()\n");
    rsprintf("{\n");
    rsprintf("   show_all_lines = !show_all_lines;\n");
+   rsprintf("   if (show_all_lines)\n");
+   rsprintf("      document.getElementById('upperarrow').innerHTML = '&#x25BC';\n");
+   rsprintf("   else\n");
+   rsprintf("      document.getElementById('upperarrow').innerHTML = '&#x25B2';\n");
    rsprintf("   seq_refresh();\n");
    rsprintf("}\n");
    rsprintf("\n");
    rsprintf("function sshow_lines()\n");
    rsprintf("{\n");
    rsprintf("   sshow_all_lines = !sshow_all_lines;\n");
+   rsprintf("   if (sshow_all_lines)\n");
+   rsprintf("      document.getElementById('supperarrow').innerHTML = '&#x25BC';\n");
+   rsprintf("   else\n");
+   rsprintf("      document.getElementById('supperarrow').innerHTML = '&#x25B2';\n");
    rsprintf("   seq_refresh();\n");
    rsprintf("}\n");
    rsprintf("\n");
@@ -1695,8 +1719,8 @@ void show_seq_page()
                   buf[size] = 0;
                   close(fh);
                   
-                  rsprintf("<tr><td colspan=2 valign=\"top\">\n");
-                  rsprintf("<div onClick=\"sshow_lines();\" id=\"slinedots1\" style=\"display:none;\">...<br></div>\n");
+                  rsprintf("<tr><td style=\"background-color:#FFFFFF\" colspan=2 valign=\"top\">\n");
+                  rsprintf("<a onClick=\"sshow_lines();return false;\" href=\"#\" id=\"supperarrow\" style=\"display:none;\">&#x25B2</a><br>\n");
                   
                   pline = buf;
                   for (int line=1 ; *pline ; line++) {
@@ -1725,7 +1749,7 @@ void show_seq_page()
                      if (*pline == '\r')
                         pline++;
                   }
-                  rsprintf("<div onClick=\"sshow_lines();\" id=\"slinedots2\" style=\"display:none;\">...<br></div>\n");
+                  rsprintf("<a onClick=\"sshow_lines();return false;\" href=\"#\" id=\"slowerarrow\" style=\"display:none;\">&#x25BC</a><br>\n");
                   rsprintf("</td>\n");
                   free(buf);
                   buf = NULL;
@@ -1740,11 +1764,11 @@ void show_seq_page()
             /*---- Right (XML) pane ----*/
             
             if (stristr(seq.filename, ".msl"))
-               rsprintf("<td id=\"xml_pane\" style=\"border-left-width:1px;border-left-style:solid;border-color:black;display:none;\">\n");
+               rsprintf("<td id=\"xml_pane\" style=\"background-color:#FFFFFF;border-left-width:1px;border-left-style:solid;border-color:black;display:none;\">\n");
             else
                rsprintf("<td colspan=2 id=\"xml_pane\">\n");
 
-            rsprintf("<div onClick=\"show_lines();\" id=\"linedots1\" style=\"display:none;\">...<br></div>\n");
+            rsprintf("<a onClick=\"show_lines();return false;\" href=\"#\" id=\"upperarrow\" style=\"display:none;\">&#x25B2</a><br>\n");
             
             strlcpy(str, seq.path, sizeof(str));
             strlcat(str, seq.filename, sizeof(str));
@@ -1791,7 +1815,7 @@ void show_seq_page()
                   if (*pline == '\r')
                      pline++;
                }
-               rsprintf("<div onClick=\"show_lines();\" id=\"linedots2\" style=\"display:none;\">...<br></div>\n");
+               rsprintf("<a onClick=\"show_lines();return false;\" href=\"#\" id=\"lowerarrow\" style=\"display:none;\">&#x25BC</a><br>\n");
                rsprintf("</td>\n");
                free(buf);
                buf = NULL;
