@@ -314,6 +314,7 @@ td.meterCell{
 	padding: 0px;
 	border:1px solid black;
 	text-align: left;
+	height:26px;
 }
 
 #runNumberCell{
