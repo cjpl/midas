@@ -239,8 +239,12 @@ div.wrapper{
 
 table.sequencerTable td{
 	text-align: left;
-	width: 100%
 }
+
+table.sequencerTable td table{
+	margin: 0px;
+}
+
 
 table.dialogTable td{
 	border:none;

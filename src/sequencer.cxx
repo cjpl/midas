@@ -1625,12 +1625,12 @@ void show_seq_page()
             
             for (i=0 ; i<4 ; i++) {
                rsprintf("<tr id=\"loop%d\" style=\"display:none\"><td colspan=2>\n", i);
-               rsprintf("<table width=\"100%%\"><tr><td id=\"loop_label%d\">Loop&nbsp;%d:</td>\n", i, i);
+               rsprintf("<table width=\"100%%\"><tr><td style=\"width:150px;\" id=\"loop_label%d\">Loop&nbsp;%d:</td>\n", i, i);
                if (seq.loop_n[i] <= 0)
                   width = 0;
                else
                   width = (int)(((double)seq.loop_counter[i]/seq.loop_n[i])*100+0.5);
-               rsprintf("<td width=\"100%%\"><table id=\"loopprgs%d\" width=\"%d%%\" height=\"25\">\n", i, width);
+               rsprintf("<td><table id=\"loopprgs%d\" width=\"%d%%\" height=\"25\">\n", i, width);
                rsprintf("<tr><td style=\"background-color:%s;", bar_col[i]);
                rsprintf("border:2px solid #000080;border-top:2px solid #E0E0FF;border-left:2px solid #E0E0FF;\">&nbsp;\n");
                rsprintf("</td></tr></table></td></tr></table></td></tr>\n");
@@ -1641,8 +1641,8 @@ void show_seq_page()
                   width = 0;
                else
                   width = (int)(((double)seq.wait_value/seq.wait_limit)*100+0.5);
-               rsprintf("<table width=\"100%%\"><tr><td id=\"wait_label\">Run:</td>\n");
-               rsprintf("<td width=\"100%%\"><table id=\"runprgs\" width=\"%d%%\" height=\"25\">\n", width);
+               rsprintf("<table width=\"100%%\"><tr><td style=\"width:150px\" id=\"wait_label\">Run:</td>\n");
+               rsprintf("<td><table id=\"runprgs\" width=\"%d%%\" height=\"25\">\n", width);
                rsprintf("<tr><td style=\"background-color:#80FF80;border:2px solid #008000;border-top:2px solid #E0E0FF;border-left:2px solid #E0E0FF;\">&nbsp;\n");
                rsprintf("</td></tr></table></td></tr></table></td></tr>\n");
                sectionEmpty=0;
