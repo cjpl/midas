@@ -8301,12 +8301,12 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
                   if (strcmp(data_str, hex_str) != 0 && hex_str[0]) {
                      if (link_name[0]) {
                         rsprintf("<tr><td class=\"ODBkey\">");
-                        rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\"><a href=\"%s\" onClick=\"OL(this.parentNode,\'%s\');return false;\">%s (%s)</a><br></tr>\n",
-                             keyname, link_ref, link_name, ref, ref, data_str, hex_str);
+                        rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\"><a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">%s (%s)</a><br></tr>\n",
+                             keyname, link_ref, link_name, ref, ref, ref, data_str, hex_str);
                      } else {
                         rsprintf("<tr><td class=\"ODBkey\">");
-                        rsprintf("%s<td class=\"ODBvalue\"><a href=\"%s\" onClick=\"OL(this.parentNode,\'%s\');return false;\">%s (%s)</a><br></tr>\n",
-                                 keyname, ref, ref, data_str, hex_str);
+                        rsprintf("%s<td class=\"ODBvalue\"><a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">%s (%s)</a><br></tr>\n",
+                                 keyname, ref, ref, ref, data_str, hex_str);
                      }
                   } else {
                      if (strchr(data_str, '\n')) {
@@ -8325,11 +8325,11 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
                      } else {
                         if (link_name[0]) {
                            rsprintf("<tr><td class=\"ODBkey\">");
-                           rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\"><a href=\"%s\" onClick=\"OL(this.parentNode,\'%s\');return false;\">",
-                                keyname, link_ref, link_name, ref, ref);
+                           rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\"><a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">",
+                                keyname, link_ref, link_name, ref, ref, ref);
                         } else
-                           rsprintf("<tr><td class=\"ODBkey\">%s<td class=\"ODBvalue\"><a href=\"%s\" onClick=\"OL(this.parentNode,\'%s\');return false;\">", keyname,
-                                    ref, ref);
+                           rsprintf("<tr><td class=\"ODBkey\">%s<td class=\"ODBvalue\"><a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">", keyname,
+                                    ref, ref, ref);
                         strencode(data_str);
                         rsprintf("</a><br></tr>\n");
                      }
@@ -8365,10 +8365,10 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
                            rsprintf("<tr>");
 
                         if (strcmp(data_str, hex_str) != 0 && hex_str[0])
-                           rsprintf("<td class=\"ODBvalue\"><a href=\"%s\" onClick=\"OL(this.parentNode,\'%s\');return false;\">[%d] %s (%s)</a><br></tr>\n", ref, ref, j,
+                           rsprintf("<td class=\"ODBvalue\"><a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\">[%d] %s (%s)</a><br></tr>\n", ref, ref, j,
                                     data_str, hex_str);
                         else
-                           rsprintf("<td class=\"ODBvalue\"><a href=\"%s\" onClick=\"OL(this.parentNode,\'%s\');return false;\">[%d] %s</a><br></tr>\n", ref, ref, j,
+                           rsprintf("<td class=\"ODBvalue\"><a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\">[%d] %s</a><br></tr>\n", ref, ref, j,
                                     data_str);
                      }
                   }
