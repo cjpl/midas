@@ -1004,8 +1004,8 @@ void show_header(HNDLE hDB, const char *title, const char *method, const char *p
       rsprintf
           ("<body><form name=\"form1\" method=\"POST\" action=\"%s\" enctype=\"multipart/form-data\">\n\n",
            str);
-   else
-      rsprintf("<body><form name=\"form1\" method=\"%s\" action=\"%s\">\n\n", method,
+   else if (equal_ustring(method, "GET"))
+      rsprintf("<body><form name=\"form1\" method=\"GET\" action=\"%s\">\n\n", method,
                str);
 
    /* title row */
@@ -4574,7 +4574,7 @@ void show_sc_page(char *path, int refresh)
    char group_name[MAX_GROUPS][32], data[256], back_path[256], *p;
    HNDLE hDB, hkey, hkeyeq, hkeyset, hkeynames, hkeyvar, hkeyroot;
    KEY eqkey, key, varkey;
-   char data_str[256], hex_str[256];
+   char data_str[256], hex_str[256], odb_path[256];
 
    cm_get_experiment_database(&hDB, NULL);
 
@@ -4630,8 +4630,9 @@ void show_sc_page(char *path, int refresh)
    }
 
    sprintf(str, "%s", group);
-   show_header(hDB, "MIDAS slow control", "GET", str, 8, i_edit == -1 ? refresh : 0);
-
+   show_header(hDB, "MIDAS slow control", "", str, 8, i_edit == -1 ? refresh : 0);
+   rsprintf("<script type=\"text/javascript\" src=\"mhttpd.js\"></script>\n");
+   
    /*---- menu buttons ----*/
 
    rsprintf("<tr><td colspan=15>\n");
@@ -4639,9 +4640,10 @@ void show_sc_page(char *path, int refresh)
    if (equal_ustring(getparam("cmd"), "Edit"))
       rsprintf("<input type=submit name=cmd value=Set>\n");
    else {
-      rsprintf("<input type=submit name=cmd value=ODB>\n");
-      rsprintf("<input type=submit name=cmd value=Status>\n");
-      rsprintf("<input type=submit name=cmd value=Help>\n");
+      rsprintf("<input type=button value=Alarms onclick=\"self.location=\'?cmd=Alarms\';\">\n");
+      rsprintf("<input type=button value=Programs onclick=\"self.location=\'?cmd=Programs\';\">\n");
+      rsprintf("<input type=button value=Status onclick=\"self.location=\'?cmd=Status\';\">\n");
+      rsprintf("<input type=button value=Help onclick=\"self.location=\'?cmd=Help\';\">\n");
    }
    rsprintf("</tr>\n\n");
    rsprintf("</table>");  //end header table
@@ -4846,16 +4848,17 @@ void show_sc_page(char *path, int refresh)
                   return;
                }
                if (n_var == i_edit) {
-                  rsprintf
-                      ("<td align=center><input type=text size=10 maxlenth=80 name=value value=\"%s\">\n",
-                       str);
+                  rsprintf("<td align=center>");
+                  rsprintf("<input type=text size=10 maxlenth=80 name=value value=\"%s\">\n", str);
                   rsprintf("<input type=submit size=20 name=cmd value=Set>\n");
                   rsprintf("<input type=hidden name=index value=%d>\n", i_edit);
                   n_var++;
                } else {
                   sprintf(ref, "%s/%s?cmd=Edit&index=%d", eq_name, group, n_var);
+                  sprintf(odb_path, "Equipment/%s/Variables/%s[%d]", eq_name, varkey.name, i);
 
-                  rsprintf("<td align=center><a href=\"%s%s\">%s</a>", back_path, ref, str);
+                  rsprintf("<td align=center>");
+                  rsprintf("<a href=\"%s%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" >%s</a>", back_path, ref, odb_path, str);
                   n_var++;
                }
             } else
@@ -8160,7 +8163,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    int i, j, keyPresent, scan, size, status;
    char str[256], tmp_path[256], url_path[256], data_str[TEXT_SIZE], 
       hex_str[256], ref[256], keyname[32], link_name[256], link_ref[256],
-      full_path[256], root_path[256];
+      full_path[256], root_path[256], odb_path[256];
    char *p, *pd;
    char data[TEXT_SIZE];
    HNDLE hDB, hkey, hkeyroot;
@@ -8176,8 +8179,18 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    strlcpy(str, dec_path, sizeof(str));
    if (strrchr(str, '/'))
       strlcpy(str, strrchr(str, '/')+1, sizeof(str));
-   show_header(hDB, "MIDAS online database", "GET", str, 1, 0);
+   show_header(hDB, "MIDAS online database", "", str, 1, 0);
 
+   /* add one "../" for each level */
+   tmp_path[0] = 0;
+   for (p = dec_path ; *p ; p++)
+      if (*p == '/')
+         strlcat(tmp_path, "../", sizeof(tmp_path));
+   strlcat(tmp_path, "../mhttpd.js", sizeof(tmp_path));
+
+   /* use mhttpd.js file */
+   rsprintf("<script type=\"text/javascript\" src=\"%s\"></script>\n", tmp_path);
+   
    /* find key via path */
    status = db_find_key(hDB, 0, dec_path, &hkeyroot);
    if (status != DB_SUCCESS) {
@@ -8208,19 +8221,19 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    }
 
    /*---- menu buttons ----*/
-
    rsprintf("<tr><td colspan=2>\n");
    if (elog_mode) {
-      rsprintf("<input type=submit name=cmd value=ELog>\n");
+      rsprintf("<input type=button value=ELog onclick=\"self.location=\'?cmd=Alarms\';\">\n");
       rsprintf("</tr>\n");
    } else {
-      rsprintf("<input type=submit name=cmd value=Alarms>\n");
-      rsprintf("<input type=submit name=cmd value=Programs>\n");
-      rsprintf("<input type=submit name=cmd value=Status>\n");
-      rsprintf("<input type=submit name=cmd value=Help>\n");
+      rsprintf("<input type=button value=Alarms onclick=\"self.location=\'?cmd=Alarms\';\">\n");
+      rsprintf("<input type=button value=Programs onclick=\"self.location=\'?cmd=Programs\';\">\n");
+      rsprintf("<input type=button value=Status onclick=\"self.location=\'?cmd=Status\';\">\n");
+      rsprintf("<input type=button value=Help onclick=\"self.location=\'?cmd=Help\';\">\n");
       rsprintf("</tr>\n");
 
    }
+
    /*---- end page header ----*/
    rsprintf("</table>\n");
 
@@ -8230,10 +8243,10 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    //buttons:
    if(!elog_mode){
       rsprintf("<tr><td colspan=2>\n");
-      rsprintf("<input type=submit name=cmd value=Find>\n");
-      rsprintf("<input type=submit name=cmd value=Create>\n");
-      rsprintf("<input type=submit name=cmd value=Delete>\n");
-      rsprintf("<input type=submit name=cmd value=\"Create Elog from this page\"></td></tr>\n");
+      rsprintf("<input type=button value=Find onclick=\"self.location=\'?cmd=Alarms\';\">\n");
+      rsprintf("<input type=button value=Create onclick=\"self.location=\'?cmd=Alarms\';\">\n");
+      rsprintf("<input type=button value=Delete onclick=\"self.location=\'?cmd=Alarms\';\">\n");
+      rsprintf("<input type=button value=\"Create Elog from this page\" onclick=\"self.location=\'?cmd=Create Elog from this page\';\"></td></tr>\n");
    }
 
    /*---- ODB display -----------------------------------------------*/
@@ -8293,6 +8306,10 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
          strlcpy(full_path, str, sizeof(full_path));
          urlEncode(full_path, sizeof(full_path));
          strlcpy(keyname, key.name, sizeof(keyname));
+         strlcpy(odb_path, dec_path, sizeof(odb_path));
+         if (odb_path[0] && odb_path[strlen(odb_path) - 1] != '/')
+            strlcat(odb_path, "/", sizeof(odb_path));
+         strlcat(odb_path, key.name, sizeof(odb_path));
 
          /* resolve links */
          link_name[0] = 0;
@@ -8318,11 +8335,11 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
             rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td><b><font color=\"red\">&lt;cannot resolve link&gt;</font><b></tr>\n",
                  keyname, link_ref, link_name);
          } else {
-            if (key.type == TID_KEY && scan==0) {
+            if (key.type == TID_KEY && scan == 0) {
                /* for keys, don't display data value */
                rsprintf("<tr><td colspan=2 class=\"ODBdirectory\"><a href=\"%s\">&#x25B6 %s</a><br></tr>\n",
                        full_path, keyname);
-            } else if(key.type != TID_KEY && scan==1) {
+            } else if(key.type != TID_KEY && scan == 1) {
                /* display single value */
                if (key.num_values == 1) {
                   size = sizeof(data);
@@ -8341,13 +8358,17 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
 
                   if (strcmp(data_str, hex_str) != 0 && hex_str[0]) {
                      if (link_name[0]) {
-                        rsprintf("<tr><td class=\"ODBkey\">");
-                        rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\"><a href=\"%s\">%s (%s)</a><br></tr>\n",
-                             keyname, link_ref, link_name, ref, data_str, hex_str);
+                        rsprintf("<tr><td class=\"ODBkey\">\n");
+                        rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\">\n", keyname, link_ref, link_name);
+                        rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, odb_path);
+                        rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">%s (%s)</a></tr>\n",
+                             odb_path, data_str, hex_str);
                      } else {
-                        rsprintf("<tr><td class=\"ODBkey\">");
-                        rsprintf("%s<td class=\"ODBvalue\"><a href=\"%s\">%s (%s)</a><br></tr>\n",
-                                 keyname, ref, data_str, hex_str);
+                        rsprintf("<tr><td class=\"ODBkey\">\n");
+                        rsprintf("%s<td class=\"ODBvalue\">", keyname);
+                        rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, odb_path);
+                        rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">%s (%s)</a></tr>\n",
+                                 odb_path, data_str, hex_str);
                      }
                   } else {
                      if (strchr(data_str, '\n')) {
@@ -8365,14 +8386,17 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
                         rsprintf("<a href=\"%s\">Edit</a></tr>\n", ref);
                      } else {
                         if (link_name[0]) {
-                           rsprintf("<tr><td class=\"ODBkey\">");
-                           rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\"><a href=\"%s\">",
-                                keyname, link_ref, link_name, ref);
-                        } else
-                           rsprintf("<tr><td class=\"ODBkey\">%s<td class=\"ODBvalue\"><a href=\"%s\">", keyname,
-                                    ref);
+                           rsprintf("<tr><td class=\"ODBkey\">\n");
+                           rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\">", keyname, link_ref, link_name);
+                           rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, odb_path);
+                           rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">", odb_path);
+                        } else {
+                           rsprintf("<tr><td class=\"ODBkey\">%s<td class=\"ODBvalue\">", keyname);
+                           rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, odb_path);
+                           rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">", odb_path);
+                        }
                         strencode(data_str);
-                        rsprintf("</a><br></tr>\n");
+                        rsprintf("</a></tr>\n");
                      }
                   }
                } else {
@@ -8401,16 +8425,19 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
                         }
 
                         sprintf(ref, "%s?cmd=Set&index=%d", full_path, j);
-
+                        sprintf(str, "%s[%d]", odb_path, j);
+                        
                         if (j > 0)
                            rsprintf("<tr>");
 
+                        rsprintf("<td class=\"ODBvalue\">[%d]&nbsp;", j);
+                        rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, str);
+                        rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">", str);
+
                         if (strcmp(data_str, hex_str) != 0 && hex_str[0])
-                           rsprintf("<td class=\"ODBvalue\"><a href=\"%s\">[%d] %s (%s)</a><br></tr>\n", ref, j,
-                                    data_str, hex_str);
+                           rsprintf("%s (%s)</a></tr>\n", data_str, hex_str);
                         else
-                           rsprintf("<td class=\"ODBvalue\"><a href=\"%s\">[%d] %s</a><br></tr>\n", ref, j,
-                                    data_str);
+                           rsprintf("%s</a></tr>\n", data_str);
                      }
                   }
                }

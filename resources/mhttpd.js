@@ -316,3 +316,49 @@ function ODBEdit(path)
       window.location.reload();
    }
 }
+
+function ODBFinishInlineEdit(p, path)
+{
+   var value;
+ 
+   if (p.ODBsent == true)
+      return;
+   
+   if (p.childNodes.length == 2)
+      value = p.childNodes[1].value;
+   else
+      value = p.childNodes[0].value;
+   
+   ODBSet(path, value);
+   p.ODBsent = true;
+   
+   var link = document.createElement('a');
+   link.innerHTML = value;
+   link.href = path+"?cmd=Set";
+   link.onclick = function(){ODBInlineEdit(p,path);return false;};
+   link.onfocus = function(){ODBInlineEdit(p,path);};
+   
+   if (p.childNodes.length == 2)
+      setTimeout(function(){p.appendChild(link);p.removeChild(p.childNodes[1])}, 10);
+   else
+      setTimeout(function(){p.appendChild(link);p.removeChild(p.childNodes[0])}, 10);
+}
+
+function ODBInlineEdit(p, odb_path)
+{
+   var cur_val = ODBGet(odb_path);
+   var size = cur_val.length+10;
+   var index;
+   
+   p.ODBsent = false;
+   if (p.childNodes.length == 2) {
+      index = odb_path.substr(odb_path.indexOf('['));
+   
+      p.innerHTML = index+"&nbsp;<input type=\"text\" size=\""+size+"\" value=\""+cur_val+"\" onKeydown=\"if(event.keyCode==13)ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\');\" onBlur=\"ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\');\" >";
+      setTimeout(function(){p.childNodes[1].focus();p.childNodes[1].select();}, 10); // needed for Firefox
+   } else {
+      p.innerHTML = "<input type=\"text\" size=\""+size+"\" value=\""+cur_val+"\" onKeydown=\"if(event.keyCode==13)ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\');\" onBlur=\"ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\');\" >";
+
+      setTimeout(function(){p.childNodes[0].focus();p.childNodes[0].select();}, 10); // needed for Firefox
+   }
+}
