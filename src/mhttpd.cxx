@@ -1950,10 +1950,10 @@ void show_status_page(int refresh, const char *cookie_wpwd)
                   if (k == 0) {
                      if (ftp_mode)
                         rsprintf
-                            ("<tr><th colspan=2>Lazy Destination<th>Progress<th>File Name<th>Speed [MB/s]<th>Total</tr>\n");
+                            ("<tr class=\"titleRow\"><th colspan=2>Lazy Destination<th>Progress<th>File Name<th>Speed [MB/s]<th>Total</tr>\n");
                      else
                         rsprintf
-                            ("<tr><th colspan=2>Lazy Label<th>Progress<th>File Name<th># Files<th>Total</tr>\n");
+                            ("<tr class=\"titleRow\"><th colspan=2>Lazy Label<th>Progress<th>File Name<th># Files<th>Total</tr>\n");
                   }
                   previous_mode = ftp_mode;
                   if (ftp_mode) {
