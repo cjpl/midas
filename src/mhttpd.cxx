@@ -1819,7 +1819,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    /*---- Logging channels ----*/
 
    rsprintf
-       ("<tr class=\"titleRow\"><th colspan=2>Channel<th>Events<th>MB written<th>Compression<th>Disk level</tr>\n");
+       ("<tr class=\"titleRow\"><th colspan=2>Channel<th>Events<th>MB written<th>Compr.<th>Disk level</tr>\n");
 
    if (db_find_key(hDB, 0, "/Logger/Channels", &hkey) == DB_SUCCESS) {
       for (i = 0;; i++) {
@@ -1880,7 +1880,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
          else
             rsprintf("<tr><td colspan=2 class=\"yellowLight\">");
 
-         rsprintf("<B><a href=\"%s\">#%s:</a></B>&nbsp;&nbsp;%s", ref, key.name, str);
+         rsprintf("<B><a href=\"%s\">#%s:</a></B> %s", ref, key.name, str);
 
          /* statistics */
 
