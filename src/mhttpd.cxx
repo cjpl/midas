@@ -1672,12 +1672,12 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    size = sizeof(str); 
    if (db_get_value(hDB, 0, "/Experiment/Run parameters/Comment", str, 
                     &size, TID_STRING, FALSE) == DB_SUCCESS) 
-      rsprintf("<tr align=center class=\"titleRow\"><td colspan=5><b>%s</b></td></tr>\n", 
+      rsprintf("<tr class=\"titleRow\"><td style=\"text-align:left;\" colspan=5><b>%s</b></td></tr>\n", 
                str); 
    size = sizeof(str); 
    if (db_get_value(hDB, 0, "/Experiment/Run parameters/Run Description", str, 
                     &size, TID_STRING, FALSE) == DB_SUCCESS) 
-      rsprintf("<tr align=center class=\"titleRow\"><td colspan=5><b>%s</b></td></tr>\n", 
+      rsprintf("<tr class=\"titleRow\"><td style=\"text-align:left;\" colspan=5><b>%s</b></td></tr>\n", 
                str); 
  
    /*---- Status items ----*/
@@ -1693,7 +1693,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             rsprintf("<tr><td colspan=6><table class=\"genericStripe\" width=100%%>\n");
 
          db_get_key(hDB, hsubkey, &key);
-         rsprintf("<tr><td align=right width=30%% class=\"titleCell\">%s:</td>", key.name);
+         rsprintf("<tr><td style=\"text-align:left;\" width=30%% class=\"titleCell\">%s:</td>", key.name);
          
          db_enum_key(hDB, hkey, i, &hsubkey);
          db_get_key(hDB, hsubkey, &key);
@@ -1965,10 +1965,10 @@ void show_status_page(int refresh, const char *cookie_wpwd)
                   if (k == 0) {
                      if (ftp_mode)
                         rsprintf
-                            ("<tr class=\"titleRow\"><th colspan=2>Lazy Destination<th>Progress<th>File Name<th>Speed [MB/s]<th>Total</tr>\n");
+                            ("<tr style=\"font-weight:bold;\" class=\"titleRow\"><th colspan=2>Lazy Destination<th>Progress<th>File Name<th>Speed [MB/s]<th>Total</tr>\n");
                      else
                         rsprintf
-                            ("<tr class=\"titleRow\"><th colspan=2>Lazy Label<th>Progress<th>File Name<th># Files<th>Total</tr>\n");
+                            ("<tr style=\"font-weight:bold;\" class=\"titleRow\"><th colspan=2>Lazy Label<th>Progress<th>File Name<th># Files<th>Total</tr>\n");
                   }
                   previous_mode = ftp_mode;
                   if (ftp_mode) {
