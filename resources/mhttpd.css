@@ -206,6 +206,7 @@ div.footerDiv{
 	color:#EEEEEE;
 	border-top:1px solid #000000;
 	height:3em;
+	overflow:scroll;
 }
 
 div.push{
