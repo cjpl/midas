@@ -8376,14 +8376,14 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
                         if (j > 0)
                            rsprintf("<tr>");
 
-                        rsprintf("<td class=\"ODBvalue\">\n");
+                        rsprintf("<td class=\"ODBvalue\">[%d]&nbsp;", j);
                         rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, str);
-                        rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">\n", str);
+                        rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">", str);
 
                         if (strcmp(data_str, hex_str) != 0 && hex_str[0])
-                           rsprintf("[%d] %s (%s)</a><br></tr>\n", j, data_str, hex_str);
+                           rsprintf("%s (%s)</a><br></tr>\n", data_str, hex_str);
                         else
-                           rsprintf("[%d] %s</a><br></tr>\n", j, data_str);
+                           rsprintf("%s</a><br></tr>\n", data_str);
                      }
                   }
                }
