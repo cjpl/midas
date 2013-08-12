@@ -282,6 +282,11 @@ table.dialogTable td{
 	font-size: 120%;
 }
 
+#runButton{
+	padding:0.25em;
+	margin-top:0.5em;
+}
+
 /*Equipment table*/
 .subStatusTable, .alarmTable{
 	border:2px solid #00B26B;

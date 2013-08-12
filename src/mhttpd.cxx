@@ -1320,11 +1320,11 @@ void show_status_page(int refresh, const char *cookie_wpwd)
 
       if (stricmp(str, "Start") == 0) {
          if (runinfo.state == STATE_STOPPED)
-            rsprintf("<input type=submit name=cmd %s value=Start>\n", runinfo.transition_in_progress?"disabled":"");
+            rsprintf("<input id=\"runButton\" type=submit name=cmd %s value=Start>\n", runinfo.transition_in_progress?"disabled":"");
          else {
             rsprintf("<noscript>\n");
             if (runinfo.state == STATE_PAUSED || runinfo.state == STATE_RUNNING)
-               rsprintf("<input type=submit name=cmd %s value=Stop>\n", runinfo.transition_in_progress?"disabled":"");
+               rsprintf("<input id=\"runButton\" type=submit name=cmd %s value=Stop>\n", runinfo.transition_in_progress?"disabled":"");
             rsprintf("</noscript>\n");
             rsprintf("<script type=\"text/javascript\">\n");
             rsprintf("<!--\n");
@@ -1335,7 +1335,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             rsprintf("      window.location.href = '?cmd=Stop';\n");
             rsprintf("}\n");
             if (runinfo.state == STATE_PAUSED || runinfo.state == STATE_RUNNING)
-               rsprintf("document.write('<input type=button %s value=Stop onClick=\"stop();\">\\n');\n", runinfo.transition_in_progress?"disabled":"");
+               rsprintf("document.write('<input id=\"runButton\" type=button %s value=Stop onClick=\"stop();\">\\n');\n", runinfo.transition_in_progress?"disabled":"");
             rsprintf("//-->\n");
             rsprintf("</script>\n");
          }
@@ -1343,7 +1343,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
          if (runinfo.state != STATE_STOPPED) {
             rsprintf("<noscript>\n");
             if (runinfo.state == STATE_RUNNING)
-               rsprintf("<input type=submit name=cmd %s value=Pause>\n", runinfo.transition_in_progress?"disabled":"");
+               rsprintf("<input id=\"runButton\" type=submit name=cmd %s value=Pause>\n", runinfo.transition_in_progress?"disabled":"");
             rsprintf("</noscript>\n");
             rsprintf("<script type=\"text/javascript\">\n");
             rsprintf("<!--\n");
@@ -1354,14 +1354,14 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             rsprintf("      window.location.href = '?cmd=Pause';\n");
             rsprintf("}\n");
             if (runinfo.state == STATE_RUNNING)
-               rsprintf("document.write('<input type=button %s value=Pause onClick=\"pause();\"\\n>');\n", runinfo.transition_in_progress?"disabled":"");
+               rsprintf("document.write('<input id=\"runButton\" type=button %s value=Pause onClick=\"pause();\"\\n>');\n", runinfo.transition_in_progress?"disabled":"");
             rsprintf("//-->\n");
             rsprintf("</script>\n");
             if (runinfo.state == STATE_PAUSED)
-               rsprintf("<input type=submit name=cmd %s value=Resume>\n", runinfo.transition_in_progress?"disabled":"");
+               rsprintf("<input id=\"runButton\" type=submit name=cmd %s value=Resume>\n", runinfo.transition_in_progress?"disabled":"");
          }
       } else
-         rsprintf("<input type=submit name=cmd value=\"%s\">\n", str);
+         rsprintf("<input id=\"runButton\" type=submit name=cmd value=\"%s\">\n", str);
 
       p = strtok(NULL, ",");
    }
@@ -1568,13 +1568,18 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    rsprintf("<tr><th colspan=6 class=\"subStatusTitle\">Run Status</th></tr>\n");
 
    if (runinfo.state == STATE_STOPPED)
-      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"redLight\">Run<br>%d<br>Stopped", runinfo.run_number);
+      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"redLight\">Run<br>%d<br>Stopped<div id=\"foot\"></div>", runinfo.run_number);
    else if (runinfo.state == STATE_PAUSED)
-      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"yellowLight\">Run<br>%d<br>Paused", runinfo.run_number);
+      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"yellowLight\">Run<br>%d<br>Paused<div id=\"foot\"></div>", runinfo.run_number);
    else if (runinfo.state == STATE_RUNNING)
-      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"greenLight\">Run<br>%d<br>Running", runinfo.run_number);
+      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"greenLight\">Run<br>%d<br>Running<div id=\"foot\"></div>", runinfo.run_number);
    else
-      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"yellowLight\">Run<br>%d<br>Run State Unknown", runinfo.run_number);
+      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"yellowLight\">Run<br>%d<br>Run State Unknown<div id=\"foot\"></div>", runinfo.run_number);
+
+   //move the run transition button into runNumberCell
+   rsprintf("<script type=\"text/javascript\">\n");
+   rsprintf("document.getElementById(\"runNumberCell\").insertBefore(document.getElementById(\"runButton\"), document.getElementById(\"foot\").nextSibling)");
+   rsprintf("</script>");
 
    /*---- time ----*/
    rsprintf("<td colspan=2>Start: %s", runinfo.start_time);
