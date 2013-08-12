@@ -436,6 +436,11 @@ td.meterCell{
 	background-color: #CCCCCC;
 }
 
+/*client table checkers*/
+#clientsTable td:nth-child(odd){
+	background-color: #CCCCCC;
+}
+
 #stripeList{
 	border-spacing: 0px 1px;
 }
@@ -462,10 +467,15 @@ table.ODBtable td{
 }
 
 /* standard link colors and decorations */
-a:link { color:#0000FF; text-decoration:none }
+a:link { color:#0000FF; text-decoration:underline }
 a:visited { color:#800080; text-decoration:none }
 a:hover { color:#0000FF; text-decoration:underline }
 a:active { color:#0000FF; text-decoration:underline }
 a:focus { color:#0000FF; text-decoration:underline }
+
+/*MSCB*/
+.vars td.v1:nth-child(odd), .vars td.v2:nth-child(odd){
+	background-color: #EEEEEE !important;
+}
 
 

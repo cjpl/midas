@@ -972,7 +972,7 @@ void show_help_page()
    rsprintf("console.log(footerHeight);");
    rsprintf("document.getElementById(\"helpPush\").style.height = footerHeight+\"px\";");
    rsprintf("document.getElementById(\"helpFooter\").style.height=footerHeight+\"px\";");
-   rsprintf("document.getElementById(\"helpWrapper\").style.height=-parseFloat(footerHeight, 10)+\"px\";");
+   rsprintf("document.getElementById(\"helpWrapper\").style.margin= \"0 auto -\"+parseFloat(footerHeight)+\"px\";");
    rsprintf("};");
    rsprintf("window.onresize();");
    rsprintf("</script>");
@@ -2036,7 +2036,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    if (db_find_key(hDB, 0, "/System/Clients", &hkey) == DB_SUCCESS) {
 
       /*---- Client Table ----*/
-      rsprintf("<tr><td colspan=6><table class=\"subStatusTable\" width=100%%>\n");
+      rsprintf("<tr><td colspan=6><table class=\"subStatusTable\" id=\"clientsTable\" width=100%%>\n");
       rsprintf("<tr><th colspan=6 class=\"subStatusTitle\">Clients</th><tr>\n");
 
       for (i = 0;; i++) {
