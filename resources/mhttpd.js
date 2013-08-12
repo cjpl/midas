@@ -321,14 +321,17 @@ function ODBFinishInlineEdit(p, path)
 {
    var value;
  
-   if (p.childNodes.length == 3)
-      return; // second call of ODBFinishInlineEdit due to onBlur
+   if (p.ODBsent == true)
+      return;
+   
    if (p.childNodes.length == 2)
       value = p.childNodes[1].value;
    else
       value = p.childNodes[0].value;
    
    ODBSet(path, value);
+   p.ODBsent = true;
+   
    var link = document.createElement('a');
    link.innerHTML = value;
    link.href = path+"?cmd=Set";
@@ -347,11 +350,12 @@ function ODBInlineEdit(p, odb_path)
    var size = cur_val.length+10;
    var index;
    
-   if (odb_path.indexOf('[') >= 0) {
+   p.ODBsent = false;
+   if (p.childNodes.length == 2) {
       index = odb_path.substr(odb_path.indexOf('['));
    
       p.innerHTML = index+"&nbsp;<input type=\"text\" size=\""+size+"\" value=\""+cur_val+"\" onKeydown=\"if(event.keyCode==13)ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\');\" onBlur=\"ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\');\" >";
-      p.childNodes[1].focus();
+      setTimeout(function(){p.childNodes[1].focus();p.childNodes[1].select();}, 10); // needed for Firefox
    } else {
       p.innerHTML = "<input type=\"text\" size=\""+size+"\" value=\""+cur_val+"\" onKeydown=\"if(event.keyCode==13)ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\');\" onBlur=\"ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\');\" >";
 
