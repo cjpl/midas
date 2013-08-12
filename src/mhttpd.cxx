@@ -952,11 +952,14 @@ void show_help_page()
    rsprintf("</form>\n");
 
    rsprintf("<script type=\"text/javascript\">\n");
+   rsprintf("window.onresize = function(){");
    rsprintf("var footerHeight = parseInt(document.getElementById(\"contribList\").offsetHeight,10)+25;");
    rsprintf("console.log(footerHeight);");
    rsprintf("document.getElementById(\"helpPush\").style.height = footerHeight+\"px\";");
    rsprintf("document.getElementById(\"helpFooter\").style.height=footerHeight+\"px\";");
    rsprintf("document.getElementById(\"helpWrapper\").style.height=-parseFloat(footerHeight, 10)+\"px\";");
+   rsprintf("};");
+   rsprintf("window.onresize();");
    rsprintf("</script>");
 
    rsprintf("</body></html>\r\n");
