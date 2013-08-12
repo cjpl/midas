@@ -1168,10 +1168,34 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, MidasHistoryInterface **mh)
    int debug;
    KEY key;
 
+   *mh = NULL;
+
+   if (flags & HS_GET_DEFAULT) {
+      HNDLE hKeyChan;
+      char hschanname[NAME_LENGTH];
+
+      size = sizeof(hschanname);
+      strlcpy(hschanname, "0", sizeof(hschanname));
+
+      status = db_get_value(hDB, 0, "/History/HistoryChannel", hschanname, &size, TID_STRING, TRUE);
+      assert(status == DB_SUCCESS);
+
+      status = db_find_key(hDB, 0, "/Logger/History", &hKeyChan);
+      if (status != DB_SUCCESS) {
+         cm_msg(MERROR, "hs_get_history", "Cannot find /Logger/History, db_find_key() status %d", status);
+         return status;
+      }
+
+      status = db_find_key(hDB, hKeyChan, hschanname, &hKey);
+      if (status == DB_NO_KEY) {
+         cm_msg(MERROR, "hs_get_history", "Misconfigured history, /History/HistoryChannel is \'%s\' not present in /Logger/History, db_find_key() status %d", hschanname, status);
+         return HS_FILE_ERROR;
+      }
+      assert(status == DB_SUCCESS);
+   }
+
    status = db_get_key(hDB, hKey, &key);
    assert(status == DB_SUCCESS);
-
-   *mh = NULL;
 
    active = 0;
    size = sizeof(active);

@@ -9748,8 +9748,8 @@ int time_to_sec(const char *str)
 
 static MidasHistoryInterface* get_history(bool reset = false)
 {
-   int status, size;
-   HNDLE hDB, hKeyChan, hKey;
+   int status;
+   HNDLE hDB;
    static MidasHistoryInterface* mh = NULL;
 
    if (reset && mh) {
@@ -9761,31 +9761,12 @@ static MidasHistoryInterface* get_history(bool reset = false)
    if (mh)
       return mh;
 
-   cm_get_experiment_database(&hDB, NULL);
+   status = cm_get_experiment_database(&hDB, NULL);
+   assert(status == CM_SUCCESS);
 
-   char hschanname[NAME_LENGTH];
-
-   size = sizeof(hschanname);
-   strlcpy(hschanname, "0", sizeof(hschanname));
-
-   status = db_get_value(hDB, 0, "/History/HistoryChannel", hschanname, &size, TID_STRING, TRUE);
-   assert(status == DB_SUCCESS);
-
-   status = db_find_key(hDB, 0, "/Logger/History", &hKeyChan);
-   if (status == DB_NO_KEY)
-      return NULL;
-   assert(status == DB_SUCCESS);
-
-   status = db_find_key(hDB, hKeyChan, hschanname, &hKey);
-   if (status == DB_NO_KEY) {
-      cm_msg(MERROR, "get_history", "Misconfigured history, /History/HistoryChannel is \'%s\' not present in /Logger/History, db_find_key() status %d", hschanname, status);
-      return NULL;
-   }
-   assert(status == DB_SUCCESS);
-
-   status = hs_get_history(hDB, hKey, HS_GET_READER|HS_GET_INACTIVE, &mh);
+   status = hs_get_history(hDB, 0, HS_GET_READER|HS_GET_INACTIVE|HS_GET_DEFAULT, &mh);
    if (status != HS_SUCCESS || mh==NULL) {
-      cm_msg(MERROR, "get_history", "Cannot configure history channel \'%s\', hs_get_history() status %d", hschanname, status);
+      cm_msg(MERROR, "get_history", "Cannot configure history, hs_get_history() status %d", status);
       mh = NULL;
       return NULL;
    }

@@ -28,9 +28,10 @@ MidasHistoryInterface* MakeMidasHistory();
 MidasHistoryInterface* MakeMidasHistoryODBC();
 MidasHistoryInterface* MakeMidasHistorySqlDebug();
 
-#define HS_GET_READER 1
-#define HS_GET_WRITER 2
+#define HS_GET_READER   1
+#define HS_GET_WRITER   2
 #define HS_GET_INACTIVE 4
+#define HS_GET_DEFAULT  8
 
 // construct history interface class from logger history channel definition in /Logger/History/0/...
 int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, MidasHistoryInterface **mh);
