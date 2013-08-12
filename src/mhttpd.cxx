@@ -249,6 +249,7 @@ int vaxis(gdImagePtr im, gdFont * font, int col, int gcol, int x1, int y1, int w
 void haxis(gdImagePtr im, gdFont * font, int col, int gcol, int x1, int y1, int width,
            int minor, int major, int text, int label, int grid, double xmin, double xmax);
 void get_elog_url(char *url, int len);
+void get_resource_dir(char *str, int size);
 
 /* functions from sequencer.cxx */
 extern void show_seq_page();
@@ -887,6 +888,8 @@ void page_footer()  //wraps up body wrapper and inserts page footer
 
 void show_help_page()
 {
+   char str[256];
+
    /* header */
    rsprintf("HTTP/1.0 200 Document follows\r\n");
    rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
@@ -913,6 +916,19 @@ void show_help_page()
    rsprintf("  <tr>\n");
    rsprintf("    <td>\n");
    rsprintf("      <table>\n");
+
+   rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\">Experiment:</td>\n");
+   cm_get_experiment_name(str, sizeof(str));
+   rsprintf("          <td style=\"text-align:left;\">%s</td>\n", str);
+   rsprintf("        </tr>\n");
+   
+   rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\">Resource directory:</td>\n");
+   get_resource_dir(str, sizeof(str));
+   rsprintf("          <td style=\"text-align:left;\">%s</td>\n", str);
+   rsprintf("        </tr>\n");
+
    rsprintf("        <tr>\n");
    rsprintf("          <td style=\"text-align:right;\">Documentation:</td>\n");
    rsprintf("          <td style=\"text-align:left;\"><a href=\"http://midas.triumf.ca\">http://midas.triumf.ca</a></td>\n");
@@ -931,7 +947,6 @@ void show_help_page()
    rsprintf("        </tr>\n");
    rsprintf("        <tr>\n");
    rsprintf("          <td style=\"text-align:right;\">Revision:</td>\n");
-   char str[256];
    strlcpy(str, "https://bitbucket.org/tmidas/midas/commits/all?search=", sizeof(str));
    if (strrchr(cm_get_revision(), '-'))
       strlcat(str, strrchr(cm_get_revision(), '-')+2, sizeof(str));
@@ -13227,6 +13242,28 @@ void send_icon(const char *icon)
 
 /*------------------------------------------------------------------*/
 
+void get_resource_dir(char *str, int size)
+{
+   HNDLE hDB;
+   
+   cm_get_experiment_database(&hDB, NULL);
+   if (db_get_value(hDB, 0, "/Experiment/Resources", str, &size, TID_STRING, FALSE) == DB_SUCCESS) {
+      if (str[strlen(str)-1] != DIR_SEPARATOR)
+         strlcat(str, DIR_SEPARATOR_STR, size);
+      return;
+   }
+   
+   if (getenv("MIDASSYS")) {
+      strlcpy(str, getenv("MIDASSYS"), size);
+      if (str[strlen(str)-1] != DIR_SEPARATOR)
+         strlcat(str, DIR_SEPARATOR_STR, size);
+      strlcat(str, "resources/", size);
+      return;
+   }
+   
+   cm_msg(MERROR, "get_resource_dir", "/Experiment/Resources and MIDASSYS not defined. Cannot obtain paht to resources");
+}
+
 /* internal minimal CSS for better readable fonts */
 
 char mhttpd_css[] = "body {\
@@ -13247,7 +13284,7 @@ a:focus { color:#0000FF; text-decoration:underline }\
 
 void send_css()
 {
-   int length, fh, size;
+   int length, fh;
    char str[256], format[256], filename[256];
    time_t now;
    struct tm *gmt;
@@ -13269,24 +13306,10 @@ void send_css()
 
    /* look for external CSS file */
    cm_get_experiment_database(&hDB, NULL);
-   size = sizeof(filename);
    fh = 0;
-   str[0] = 0;
-   if (db_get_value(hDB, 0, "/Experiment/Resources", str, &size, TID_STRING, FALSE) == DB_SUCCESS) {
-      strlcpy(filename, str, sizeof(filename));
-      if (filename[strlen(filename)-1] != DIR_SEPARATOR)
-         strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
-      strlcat(filename, "mhttpd.css", sizeof(filename));
-      fh = open(filename, O_RDONLY | O_BINARY);
-   }
-
-   if (fh <= 0 && getenv("MIDASSYS")) {
-      strlcpy(filename, getenv("MIDASSYS"), sizeof(filename));
-      if (filename[strlen(filename)-1] != DIR_SEPARATOR)
-         strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
-      strlcat(filename, "resources/mhttpd.css", sizeof(filename));
-      fh = open(filename, O_RDONLY | O_BINARY);
-   }
+   get_resource_dir(filename, sizeof(filename));
+   strlcat(filename, "mhttpd.css", sizeof(filename));
+   fh = open(filename, O_RDONLY | O_BINARY);
    
    if (fh > 0) {
       fstat(fh, &stat_buf);
@@ -13651,27 +13674,13 @@ void send_js()
    rsprintf("Expires: %s\r\n", str);
    rsprintf("Content-Type: text/javascript\r\n");
 
-   /* look for external CSS file */
+   /* look for external JS file */
    cm_get_experiment_database(&hDB, NULL);
-   size = sizeof(filename);
    fh = 0;
-   str[0] = 0;
-   if (db_get_value(hDB, 0, "/Experiment/Resources", str, &size, TID_STRING, FALSE) == DB_SUCCESS) {
-      strlcpy(filename, str, sizeof(filename));
-      if (filename[strlen(filename)-1] != DIR_SEPARATOR)
-         strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
-      strlcat(filename, "mhttpd.js", sizeof(filename));
-      fh = open(filename, O_RDONLY | O_BINARY);
-   }
-   
-   if (fh <= 0 && getenv("MIDASSYS")) {
-      strlcpy(filename, getenv("MIDASSYS"), sizeof(filename));
-      if (filename[strlen(filename)-1] != DIR_SEPARATOR)
-         strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
-      strlcat(filename, "resources/mhttpd.js", sizeof(filename));
-      fh = open(filename, O_RDONLY | O_BINARY);
-   }
-   
+   get_resource_dir(filename, sizeof(filename));
+   strlcat(filename, "mhttpd.js", sizeof(filename));
+   fh = open(filename, O_RDONLY | O_BINARY);
+      
    if (fh > 0) {
       fstat(fh, &stat_buf);
       length = stat_buf.st_size;
