@@ -13272,7 +13272,7 @@ void send_css()
    size = sizeof(filename);
    fh = 0;
    str[0] = 0;
-   if (db_get_value(hDB, 0, "/Custom/Path", str, &size, TID_STRING, FALSE) == DB_SUCCESS) {
+   if (db_get_value(hDB, 0, "/Experiment/Resources", str, &size, TID_STRING, FALSE) == DB_SUCCESS) {
       strlcpy(filename, str, sizeof(filename));
       if (filename[strlen(filename)-1] != DIR_SEPARATOR)
          strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
@@ -13656,30 +13656,38 @@ void send_js()
    size = sizeof(filename);
    fh = 0;
    str[0] = 0;
-   if (db_get_value(hDB, 0, "/Custom/Path", str, &size, TID_STRING, FALSE) == DB_SUCCESS) {
+   if (db_get_value(hDB, 0, "/Experiment/Resources", str, &size, TID_STRING, FALSE) == DB_SUCCESS) {
       strlcpy(filename, str, sizeof(filename));
       if (filename[strlen(filename)-1] != DIR_SEPARATOR)
          strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
       strlcat(filename, "mhttpd.js", sizeof(filename));
       fh = open(filename, O_RDONLY | O_BINARY);
-      if (fh > 0) {
-         fstat(fh, &stat_buf);
-         length = stat_buf.st_size;
-         rsprintf("Content-Length: %d\r\n\r\n", length);
-         
-         return_length = strlen(return_buffer) + length;
-         read(fh, return_buffer + strlen(return_buffer), length);
-         close(fh);
-      }
    }
    
-   if (fh <= 0)  {
-      length = strlen(mhttpd_js);
+   if (fh <= 0 && getenv("MIDASSYS")) {
+      strlcpy(filename, getenv("MIDASSYS"), sizeof(filename));
+      if (filename[strlen(filename)-1] != DIR_SEPARATOR)
+         strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
+      strlcat(filename, "resources/mhttpd.js", sizeof(filename));
+      fh = open(filename, O_RDONLY | O_BINARY);
+   }
+   
+   if (fh > 0) {
+      fstat(fh, &stat_buf);
+      length = stat_buf.st_size;
       rsprintf("Content-Length: %d\r\n\r\n", length);
       
       return_length = strlen(return_buffer) + length;
-      memcpy(return_buffer + strlen(return_buffer), mhttpd_js, length);
+      read(fh, return_buffer + strlen(return_buffer), length);
+      close(fh);
+      return;
    }
+   
+   length = strlen(mhttpd_js);
+   rsprintf("Content-Length: %d\r\n\r\n", length);
+   
+   return_length = strlen(return_buffer) + length;
+   memcpy(return_buffer + strlen(return_buffer), mhttpd_js, length);
 }
 
 /*------------------------------------------------------------------*/
