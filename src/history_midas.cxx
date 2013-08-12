@@ -1160,4 +1160,126 @@ MidasHistoryInterface* MakeMidasHistory()
    return new MidasHistory();
 }
 
+int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, MidasHistoryInterface **mh)
+{
+   int status, size;
+   char type[NAME_LENGTH];
+   int active;
+   int debug;
+   KEY key;
+
+   status = db_get_key(hDB, hKey, &key);
+   assert(status == DB_SUCCESS);
+
+   *mh = NULL;
+
+   active = 0;
+   size = sizeof(active);
+   status = db_get_value(hDB, hKey, "Active", &active, &size, TID_BOOL, TRUE);
+   assert(status == DB_SUCCESS);
+   
+   strlcpy(type, "", sizeof(type));
+   size = sizeof(type);
+   status = db_get_value(hDB, hKey, "Type", type, &size, TID_STRING, TRUE);
+   assert(status == DB_SUCCESS);
+   
+   debug = 0;
+   size = sizeof(debug);
+   status = db_get_value(hDB, hKey, "Debug", &debug, &size, TID_INT, TRUE);
+   assert(status == DB_SUCCESS);
+   
+   printf("channel hkey %d, name \'%s\', active %d, type [%s], debug %d\n", hKey, key.name, active, type, debug);
+
+   if (strcasecmp(type, "MIDAS")==0) {
+      int i;
+      
+      i = 1;
+      size = sizeof(i);
+      status = db_get_value(hDB, 0, "/Logger/WriteFileHistory", &i, &size, TID_BOOL, FALSE);
+      if (status==DB_SUCCESS) {
+         cm_msg(MERROR, "hs_get_history", "mlogger ODB setting /Logger/WriteFileHistory is obsolete, please delete it. Use /Logger/History/0/Active instead");
+         if (i==0)
+            active = 0;
+      }
+      
+      if (active || (flags & HS_GET_INACTIVE)) {
+         *mh = MakeMidasHistory();
+         assert(*mh);
+         
+         (*mh)->hs_set_debug(debug);
+         
+         status = (*mh)->hs_connect(NULL);
+         if (status != HS_SUCCESS) {
+            cm_msg(MERROR, "hs_get_history", "Cannot connect to MIDAS history, status %d", status);
+            return status;
+         }
+
+         cm_msg(MINFO, "hs_get_history", "Connected history channel \'%s\' type MIDAS history", key.name);
+      }
+      
+   } else if (strcasecmp(type, "ODBC")==0) {
+      int i;
+
+      i = 0;
+      size = sizeof(i);
+      status = db_get_value(hDB, 0, "/Logger/ODBC_Debug", &i, &size, TID_INT, FALSE);
+      if (status==DB_SUCCESS) {
+         cm_msg(MERROR, "hs_get_history", "mlogger ODB setting /Logger/ODBC_Debug is obsolete, please delete it. Use /Logger/History/1/Debug");
+      }
+      
+      char dsn[256];
+      size = sizeof(dsn);
+      dsn[0] = 0;
+      
+      status = db_get_value(hDB, 0, "/Logger/ODBC_DSN", dsn, &size, TID_STRING, FALSE);
+      if (status==DB_SUCCESS) {
+         cm_msg(MERROR, "hs_get_history", "mlogger ODB setting /Logger/ODBC_DSN is obsolete, please delete it. Use /Logger/History/1/Writer_ODBC_DSN");
+      }
+
+      if (flags & HS_GET_WRITER) {
+         size = sizeof(dsn);
+         strlcpy(dsn, "history_writer", sizeof(dsn));
+         status = db_get_value(hDB, hKey, "Writer_ODBC_DSN", dsn, &size, TID_STRING, TRUE);
+         assert(status == DB_SUCCESS);
+      }
+      
+      if (flags & HS_GET_READER) {
+         size = sizeof(dsn);
+         strlcpy(dsn, "history_reader", sizeof(dsn));
+         status = db_get_value(hDB, hKey, "Reader_ODBC_DSN", dsn, &size, TID_STRING, TRUE);
+         assert(status == DB_SUCCESS);
+      }
+      
+      if (active || (flags & HS_GET_INACTIVE)) {
+         if (debug == 2) {
+            *mh = MakeMidasHistorySqlDebug();
+            assert(*mh);
+         } else if (strlen(dsn) > 1) {
+            *mh = MakeMidasHistoryODBC();
+            assert(*mh);
+         }
+         
+         (*mh)->hs_set_debug(debug);
+         
+         status = (*mh)->hs_connect(dsn);
+         if (status != HS_SUCCESS) {
+            cm_msg(MERROR, "hs_get_history", "Cannot connect to ODBC SQL driver \'%s\', status %d. Check .odbc.ini and MIDAS documentation", dsn, status);
+            return status;
+         }
+
+         cm_msg(MINFO, "hs_get_history", "Connected history channel \'%s\' type ODBC (MySQL), DSN \'%s\'", key.name, dsn);
+      }
+   } else if (strcasecmp(type, "SQLITE")==0) {
+      
+   }
+
+   if (*mh == NULL)
+      return HS_FILE_ERROR;
+   
+   strlcpy((*mh)->name, key.name, sizeof((*mh)->name));
+   strlcpy((*mh)->type, type, sizeof((*mh)->type));
+
+   return HS_SUCCESS;
+}
+
 // end

@@ -9783,80 +9783,14 @@ static MidasHistoryInterface* get_history(bool reset = false)
    }
    assert(status == DB_SUCCESS);
 
-   char type[NAME_LENGTH];
-   int active;
-   int debug;
-      
-   active = 0;
-   size = sizeof(active);
-   status = db_get_value(hDB, hKey, "Active", &active, &size, TID_BOOL, TRUE);
-   assert(status == DB_SUCCESS);
-
-   strlcpy(type, "", sizeof(type));
-   size = sizeof(type);
-   status = db_get_value(hDB, hKey, "Type", type, &size, TID_STRING, TRUE);
-   assert(status == DB_SUCCESS);
-   
-   debug = 0;
-   size = sizeof(debug);
-   status = db_get_value(hDB, hKey, "Debug", &debug, &size, TID_INT, TRUE);
-   assert(status == DB_SUCCESS);
-
-   printf("channel \'%s\', active %d, type [%s], debug %d\n", hschanname, active, type, debug);
-
-   if (strcasecmp(type, "MIDAS")==0) {
-      mh = MakeMidasHistory();
-      assert(mh);
-
-      mh->hs_set_debug(debug);
-         
-      status = mh->hs_connect(NULL);
-      if (status != HS_SUCCESS) {
-         cm_msg(MERROR, "get_history", "Cannot connect to MIDAS history, hs_connect() status %d", status);
-         return NULL;
-      }
-   } else if (strcasecmp(type, "ODBC")==0) {
-#ifdef HAVE_ODBC
-      int i = 0;
-      size = sizeof(i);
-      status = db_get_value(hDB, 0, "/History/ODBC_Debug", &i, &size, TID_INT, FALSE);
-      if (status==DB_SUCCESS) {
-         cm_msg(MERROR, "get_history", "ODB setting /History/ODBC_Debug is obsolete, please delete it. Use /Logger/History/1/Debug");
-      }
-      
-      char dsn[256];
-      size = sizeof(dsn);
-      dsn[0] = 0;
-      
-      status = db_get_value(hDB, 0, "/History/ODBC_DSN", dsn, &size, TID_STRING, FALSE);
-      if (status==DB_SUCCESS) {
-         cm_msg(MERROR, "get_history", "ODB setting /History/ODBC_DSN is obsolete, please delete it. Use /Logger/History/1/Reader_ODBC_DSN");
-      }
-
-      size = sizeof(dsn);
-      strlcpy(dsn, "history_reader", sizeof(dsn));
-      status = db_get_value(hDB, hKey, "Reader_ODBC_DSN", dsn, &size, TID_STRING, TRUE);
-      assert(status == DB_SUCCESS);
-
-      if (debug == 2) {
-         mh = MakeMidasHistorySqlDebug();
-         assert(mh);
-      } else if (strlen(dsn) > 1) {
-         mh = MakeMidasHistoryODBC();
-         assert(mh);
-      }
-      
-      mh->hs_set_debug(debug);
-      
-      status = mh->hs_connect(dsn);
-      if (status != HS_SUCCESS) {
-         cm_msg(MERROR, "get_history", "Cannot connect to ODBC SQL driver \'%s\', status %d. Check .odbc.ini and MIDAS documentation", dsn, status);
-         return NULL;
-      }
-#endif
-   } else if (strcasecmp(type, "SQLITE")==0) {
-
+   status = hs_get_history(hDB, hKey, HS_GET_READER|HS_GET_INACTIVE, &mh);
+   if (status != HS_SUCCESS || mh==NULL) {
+      cm_msg(MERROR, "get_history", "Cannot configure history channel \'%s\', hs_get_history() status %d", hschanname, status);
+      mh = NULL;
+      return NULL;
    }
+
+   cm_msg(MINFO, "get_history", "Reading history from channel \'%s\' type \'%s\'", mh->name, mh->type);
 
    return mh;
 }

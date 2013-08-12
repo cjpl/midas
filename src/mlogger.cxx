@@ -2903,108 +2903,26 @@ INT open_history()
          break;
 
       MidasHistoryInterface* hi = NULL;
-      char type[NAME_LENGTH];
-      int active;
-      int debug;
 
-      active = 0;
-      size = sizeof(active);
-      status = db_get_value(hDB, hKey, "Active", &active, &size, TID_BOOL, TRUE);
-      assert(status == DB_SUCCESS);
+      status = hs_get_history(hDB, hKey, HS_GET_WRITER, &hi);
 
-      strlcpy(type, "", sizeof(type));
-      size = sizeof(type);
-      status = db_get_value(hDB, hKey, "Type", type, &size, TID_STRING, TRUE);
-      assert(status == DB_SUCCESS);
-      
-      debug = 0;
-      size = sizeof(debug);
-      status = db_get_value(hDB, hKey, "Debug", &debug, &size, TID_INT, TRUE);
-      assert(status == DB_SUCCESS);
-
-      printf("channel %d, active %d, type [%s], debug %d\n", ichan, active, type, debug);
-
-      if (strcasecmp(type, "MIDAS")==0) {
-
-         i = 1;
-         size = sizeof(i);
-         status = db_get_value(hDB, 0, "/Logger/WriteFileHistory", &i, &size, TID_BOOL, FALSE);
-         if (status==DB_SUCCESS) {
-            cm_msg(MERROR, "open_history", "mlogger ODB setting /Logger/WriteFileHistory is obsolete, please delete it. Use /Logger/History/0/Active instead");
-            if (i==0)
-               active = 0;
-         }
-
-         i = 0;
-         size = sizeof(i);
-         status = db_get_value(hDB, hKey, "PerVariableHistory", &i, &size, TID_INT, TRUE);
-         assert(status==DB_SUCCESS);
-
-         if (i)
+      if (status==HS_SUCCESS && hi) {
+         if (strcasecmp(hi->type, "MIDAS")==0) {
+            i = 0;
+            size = sizeof(i);
+            status = db_get_value(hDB, hKey, "PerVariableHistory", &i, &size, TID_INT, TRUE);
+            assert(status==DB_SUCCESS);
+            
+            if (i)
+               global_per_variable_history = 1;
+         } else if (strcasecmp(hi->type, "ODBC")==0) {
             global_per_variable_history = 1;
-   
-         if (active) {
-            hi = MakeMidasHistory();
-            assert(hi);
-
-            hi->hs_set_debug(debug);
-            
-            status = hi->hs_connect(NULL);
-            if (status != HS_SUCCESS) {
-               cm_msg(MERROR, "open_history", "Cannot connect to MIDAS history, status %d", status);
-               return status;
-            }
-         }
-
-      } else if (strcasecmp(type, "ODBC")==0) {
-#ifdef HAVE_ODBC
-         i = 0;
-         size = sizeof(i);
-         status = db_get_value(hDB, 0, "/Logger/ODBC_Debug", &i, &size, TID_INT, FALSE);
-         if (status==DB_SUCCESS) {
-            cm_msg(MERROR, "open_history", "mlogger ODB setting /Logger/ODBC_Debug is obsolete, please delete it. Use /Logger/History/1/Debug");
-         }
-         
-         char dsn[256];
-         size = sizeof(dsn);
-         dsn[0] = 0;
-
-         status = db_get_value(hDB, 0, "/Logger/ODBC_DSN", dsn, &size, TID_STRING, FALSE);
-         if (status==DB_SUCCESS) {
-            cm_msg(MERROR, "open_history", "mlogger ODB setting /Logger/ODBC_DSN is obsolete, please delete it. Use /Logger/History/1/Writer_ODBC_DSN");
-         }
-
-         size = sizeof(dsn);
-         strlcpy(dsn, "history_writer", sizeof(dsn));
-         status = db_get_value(hDB, hKey, "Writer_ODBC_DSN", dsn, &size, TID_STRING, TRUE);
-         assert(status == DB_SUCCESS);
-
-         if (active) {
-            if (debug == 2) {
-               hi = MakeMidasHistorySqlDebug();
-               assert(hi);
-            } else if (strlen(dsn) > 1) {
-               hi = MakeMidasHistoryODBC();
-               assert(hi);
-            }
-            
-            hi->hs_set_debug(debug);
-      
-            status = hi->hs_connect(dsn);
-            if (status != HS_SUCCESS) {
-               cm_msg(MERROR, "open_history", "Cannot connect to ODBC SQL driver \'%s\', status %d. Check .odbc.ini and MIDAS documentation", dsn, status);
-               return status;
-            }
-
+         } else if (strcasecmp(hi->type, "SQLITE")==0) {
             global_per_variable_history = 1;
          }
-#endif
-      } else if (strcasecmp(type, "SQLITE")==0) {
 
-      }
+         cm_msg(MINFO, "open_history", "Writing history to channel \'%s\' type \'%s\'", hi->name, hi->type);
 
-      if (hi) {
-         hi->hs_set_debug(debug);
          mh.push_back(hi);
       }
    }
