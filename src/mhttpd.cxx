@@ -901,7 +901,7 @@ void show_help_page()
 
    rsprintf("<form method=\"GET\" style=\"height:auto;\" action=\".\">\n");
 
-   rsprintf("<div class=\"wrapper\">\n");
+   rsprintf("<div class=\"wrapper\" style=\"margin: 0 auto -5em;\">\n");
    rsprintf("<table class=\"headerTable\">\n");
    rsprintf("<tr><td colspan=7><input type=submit name=cmd value=Status></td></tr>\n");
    rsprintf("</table>\n");
