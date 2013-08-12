@@ -354,6 +354,7 @@ function ODBInlineEdit(p, odb_path)
       p.childNodes[1].focus();
    } else {
       p.innerHTML = "<input type=\"text\" size=\""+size+"\" value=\""+cur_val+"\" onKeydown=\"if(event.keyCode==13)ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\');\" onBlur=\"ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\');\" >";
-      p.childNodes[0].focus();
+
+      setTimeout(function(){p.childNodes[0].focus();p.childNodes[0].select();}, 10); // needed for Firefox
    }
 }
