@@ -1275,23 +1275,25 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
          }
       }
 
-      char dsn[256];
-      size = sizeof(dsn);
-      dsn[0] = 0;
+      char writer_dsn[256];
+      char reader_dsn[256];
       
-      if (flags & HS_GET_WRITER) {
-         size = sizeof(dsn);
-         strlcpy(dsn, "history_writer", sizeof(dsn));
-         status = db_get_value(hDB, hKey, "Writer_ODBC_DSN", dsn, &size, TID_STRING, TRUE);
-         assert(status == DB_SUCCESS);
-      }
+      size = sizeof(writer_dsn);
+      strlcpy(writer_dsn, "history_writer", sizeof(writer_dsn));
+      status = db_get_value(hDB, hKey, "Writer_ODBC_DSN", writer_dsn, &size, TID_STRING, TRUE);
+      assert(status == DB_SUCCESS);
+
+      size = sizeof(reader_dsn);
+      strlcpy(reader_dsn, "history_reader", sizeof(reader_dsn));
+      status = db_get_value(hDB, hKey, "Reader_ODBC_DSN", reader_dsn, &size, TID_STRING, TRUE);
+      assert(status == DB_SUCCESS);
       
-      if (flags & HS_GET_READER) {
-         size = sizeof(dsn);
-         strlcpy(dsn, "history_reader", sizeof(dsn));
-         status = db_get_value(hDB, hKey, "Reader_ODBC_DSN", dsn, &size, TID_STRING, TRUE);
-         assert(status == DB_SUCCESS);
-      }
+      const char* dsn = "";
+
+      if (flags & HS_GET_READER)
+         dsn = reader_dsn;
+      else if (flags & HS_GET_WRITER)
+         dsn = writer_dsn;
       
       if (active || (flags & HS_GET_INACTIVE)) {
          if (debug == 2) {
@@ -1303,7 +1305,7 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
          }
          
          (*mh)->hs_set_debug(debug);
-         
+
          status = (*mh)->hs_connect(dsn);
          if (status != HS_SUCCESS) {
             cm_msg(MERROR, "hs_get_history", "Cannot connect to ODBC SQL driver \'%s\', status %d. Check .odbc.ini and MIDAS documentation", dsn, status);
