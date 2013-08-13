@@ -78,7 +78,7 @@ function ODBSet(path, value, pwdname)
 
    var request = XMLHttpRequestGeneric();
 
-   url = '?cmd=jset&odb=' + path + '&value=' + value;
+   url = '?cmd=jset&odb=' + path + '&value=' + encodeURIComponent(value);
 
    if (pwdname != undefined)
       url += '&pnam=' + pwdname;
