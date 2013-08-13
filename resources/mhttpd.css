@@ -471,7 +471,7 @@ table.ODBtable td{
 }
 
 /* standard link colors and decorations */
-a:link { color:#0000FF; text-decoration:underline }
+a:link { color:#0000FF; text-decoration:none }
 a:visited { color:#800080; text-decoration:none }
 a:hover { color:#0000FF; text-decoration:underline }
 a:active { color:#0000FF; text-decoration:underline }
