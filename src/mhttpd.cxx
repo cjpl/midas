@@ -9867,7 +9867,7 @@ static MidasHistoryInterface* get_history(bool reset = false)
    status = cm_get_experiment_database(&hDB, NULL);
    assert(status == CM_SUCCESS);
 
-   status = hs_get_history(hDB, 0, HS_GET_READER|HS_GET_INACTIVE|HS_GET_DEFAULT, &mh);
+   status = hs_get_history(hDB, 0, HS_GET_READER|HS_GET_INACTIVE|HS_GET_DEFAULT, verbose, &mh);
    if (status != HS_SUCCESS || mh==NULL) {
       cm_msg(MERROR, "get_history", "Cannot configure history, hs_get_history() status %d", status);
       mh = NULL;
@@ -10172,7 +10172,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
    /* connect to history */
    MidasHistoryInterface *mh = get_history();
    if (mh == NULL) {
-      sprintf(str, "History is not configured\n");
+      sprintf(str, "History is not configured, see messages");
       gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2, height / 2, str, red);
       goto error;
    }

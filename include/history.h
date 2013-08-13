@@ -34,7 +34,7 @@ MidasHistoryInterface* MakeMidasHistorySqlDebug();
 #define HS_GET_DEFAULT  8
 
 // construct history interface class from logger history channel definition in /Logger/History/0/...
-int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, MidasHistoryInterface **mh);
+int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistoryInterface **mh);
 
 // MIDAS history interface class
 
