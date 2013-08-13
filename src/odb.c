@@ -135,6 +135,8 @@ void free_key(DATABASE_HEADER * pheader, void *address, INT size)
    if (size == 0)
       return;
 
+   assert(address != pheader);
+
    /* quadword alignment for alpha CPU */
    size = ALIGN8(size);
 
@@ -253,6 +255,8 @@ void free_data(DATABASE_HEADER * pheader, void *address, INT size)
 
    if (size == 0)
       return;
+
+   assert(address != pheader);
 
    /* quadword alignment for alpha CPU */
    size = ALIGN8(size);
@@ -530,6 +534,13 @@ static int db_validate_key(DATABASE_HEADER * pheader, int recurse, const char *p
              "Warning: corrected key \"%s\" size: total_size=%d, should be %d*%d=%d",
              path, pkey->total_size, pkey->item_size, pkey->num_values, pkey->item_size * pkey->num_values);
       pkey->total_size = pkey->item_size * pkey->num_values;
+   }
+
+   /* check and correct key size */
+   if (pkey->data == 0 && pkey->total_size != 0) {
+      cm_msg(MINFO, "db_validate_key", "Warning: corrected key \"%s\" size: data pointer is zero, total_size is %d, should be zero", path, pkey->total_size);
+      pkey->num_values = 0;
+      pkey->total_size = 0;
    }
 
    /* check access mode */
@@ -3114,6 +3125,7 @@ INT db_set_value(HNDLE hDB, HNDLE hKeyRoot, const char *key_name, const void *da
          pkey->data = (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data, pkey->total_size, data_size);
 
          if (pkey->data == 0) {
+            pkey->total_size = 0;
             db_unlock_database(hDB);
             cm_msg(MERROR, "db_set_value", "online database full");
             return DB_FULL;
@@ -4781,6 +4793,7 @@ INT db_set_data(HNDLE hDB, HNDLE hKey, const void *data, INT buf_size, INT num_v
          pkey->data = (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data, pkey->total_size, buf_size);
 
          if (pkey->data == 0) {
+            pkey->total_size = 0;
             db_unlock_database(hDB);
             cm_msg(MERROR, "db_set_data", "online database full");
             return DB_FULL;
@@ -4889,6 +4902,7 @@ INT db_set_link_data(HNDLE hDB, HNDLE hKey, const void *data, INT buf_size, INT 
          pkey->data = (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data, pkey->total_size, buf_size);
 
          if (pkey->data == 0) {
+            pkey->total_size = 0;
             db_unlock_database(hDB);
             cm_msg(MERROR, "db_set_link_data", "online database full");
             return DB_FULL;
@@ -5018,6 +5032,8 @@ INT db_set_num_values(HNDLE hDB, HNDLE hKey, INT num_values)
          pkey->data = (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data, pkey->total_size, new_size);
 
          if (pkey->data == 0) {
+            pkey->total_size = 0;
+            pkey->num_values = 0;
             db_unlock_database(hDB);
             cm_msg(MERROR, "db_set_num_values", "hkey %d, num_values %d, new_size %d, online database full", hKey, num_values, new_size);
             return DB_FULL;
@@ -5150,10 +5166,11 @@ INT db_set_data_index(HNDLE hDB, HNDLE hKey, const void *data, INT data_size, IN
 
       /* increase data size if necessary */
       if (idx >= pkey->num_values || pkey->item_size == 0) {
-         pkey->data =
-             (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data, pkey->total_size, data_size * (idx + 1));
+         pkey->data = (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data, pkey->total_size, data_size * (idx + 1));
 
          if (pkey->data == 0) {
+            pkey->total_size = 0;
+            pkey->num_values = 0;
             db_unlock_database(hDB);
             cm_msg(MERROR, "db_set_data_index", "online database full");
             return DB_FULL;
@@ -5265,10 +5282,11 @@ INT db_set_link_data_index(HNDLE hDB, HNDLE hKey, const void *data, INT data_siz
 
       /* increase data size if necessary */
       if (idx >= pkey->num_values || pkey->item_size == 0) {
-         pkey->data =
-             (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data, pkey->total_size, data_size * (idx + 1));
+         pkey->data = (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data, pkey->total_size, data_size * (idx + 1));
 
          if (pkey->data == 0) {
+            pkey->total_size = 0;
+            pkey->num_values = 0;
             db_unlock_database(hDB);
             cm_msg(MERROR, "db_set_data_index", "online database full");
             return DB_FULL;
@@ -5395,10 +5413,11 @@ INT db_set_data_index2(HNDLE hDB, HNDLE hKey, const void *data, INT data_size, I
 
       /* increase key size if necessary */
       if (idx >= pkey->num_values) {
-         pkey->data =
-             (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data, pkey->total_size, data_size * (idx + 1));
+         pkey->data = (POINTER_T) realloc_data(pheader, (char *) pheader + pkey->data, pkey->total_size, data_size * (idx + 1));
 
          if (pkey->data == 0) {
+            pkey->total_size = 0;
+            pkey->num_values = 0;
             db_unlock_database(hDB);
             cm_msg(MERROR, "db_set_data_index2", "online database full");
             return DB_FULL;
@@ -6233,7 +6252,8 @@ INT db_paste(HNDLE hDB, HNDLE hKeyRoot, const char *buffer)
 */
 int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
 {
-   char type[256], data[256], test_str[256], buf[10000];
+   char type[256], data[256], test_str[256];
+   char *buf = NULL;
    int i, idx, status, size, tid, num_values;
    HNDLE hKey;
    PMXML_NODE child;
@@ -6318,6 +6338,13 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
          }
       }
 
+      if (tid == TID_STRING || tid == TID_LINK) {
+         size = atoi(mxml_get_attribute(node, "size"));
+         buf = malloc(size);
+         assert(buf);
+         buf[0] = 0;
+      }
+
       if (num_values) {
          /* evaluate array */
          for (i = 0; i < mxml_get_number_of_children(node); i++) {
@@ -6327,30 +6354,42 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
             else
                idx = i;
             if (tid == TID_STRING || tid == TID_LINK) {
-               size = atoi(mxml_get_attribute(node, "size"));
-               if (mxml_get_value(child) == NULL)
-                  db_set_data_index(hDB, hKey, "", size, i, tid);
-               else {
-                  strlcpy(buf, mxml_get_value(child), sizeof(buf));
-                  db_set_data_index(hDB, hKey, buf, size, idx, tid);
+               if (mxml_get_value(child) == NULL) {
+                  status = db_set_data_index(hDB, hKey, "", size, i, tid);
+                  assert(status == DB_SUCCESS);
+               } else {
+                  strlcpy(buf, mxml_get_value(child), size);
+                  status = db_set_data_index(hDB, hKey, buf, size, idx, tid);
+                  assert(status == DB_SUCCESS);
                }
             } else {
                db_sscanf(mxml_get_value(child), data, &size, 0, tid);
-               db_set_data_index(hDB, hKey, data, rpc_tid_size(tid), idx, tid);
+               status = db_set_data_index(hDB, hKey, data, rpc_tid_size(tid), idx, tid);
+               assert(status == DB_SUCCESS);
             }
          }
 
       } else {                  /* single value */
          if (tid == TID_STRING || tid == TID_LINK) {
             size = atoi(mxml_get_attribute(node, "size"));
-            if (mxml_get_value(node) == NULL)
-               db_set_data(hDB, hKey, "", size, 1, tid);
-            else
-               db_set_data(hDB, hKey, mxml_get_value(node), size, 1, tid);
+            if (mxml_get_value(node) == NULL) {
+               status = db_set_data(hDB, hKey, "", size, 1, tid);
+               assert(status == DB_SUCCESS);
+            } else {
+               strlcpy(buf, mxml_get_value(node), size);
+               status = db_set_data(hDB, hKey, buf, size, 1, tid);
+               assert(status == DB_SUCCESS);
+            }
          } else {
             db_sscanf(mxml_get_value(node), data, &size, 0, tid);
-            db_set_data(hDB, hKey, data, rpc_tid_size(tid), 1, tid);
+            status = db_set_data(hDB, hKey, data, rpc_tid_size(tid), 1, tid);
+            assert(status == DB_SUCCESS);
          }
+      }
+
+      if (buf) {
+         free(buf);
+         buf = NULL;
       }
    }
 
@@ -8333,7 +8372,7 @@ INT db_notify_clients(HNDLE hDB, HNDLE hKey, BOOL bWalk)
 /*------------------------------------------------------------------*/
 void merge_records(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
 {
-   char full_name[256], buffer[10000];
+   char full_name[256];
    INT status, size;
    void *p;
    HNDLE hKeyInit;
@@ -8357,12 +8396,30 @@ void merge_records(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
       assert(status == DB_SUCCESS);
 
       if (initkey.type != TID_KEY && initkey.type == key.type) {
-         /* copy data from original key to new key */
-         size = sizeof(buffer);
-         status = db_get_data(hDB, hKey, buffer, &size, initkey.type);
-         assert(status == DB_SUCCESS);
-         status = db_set_data(hDB, hKeyInit, buffer, initkey.total_size, initkey.num_values, initkey.type);
-         assert(status == DB_SUCCESS);
+         char* allocbuffer = NULL;
+         char  stackbuffer[10000];
+         char* buffer = stackbuffer;
+         size = sizeof(stackbuffer);
+         while (1) {
+            /* copy data from original key to new key */
+            status = db_get_data(hDB, hKey, buffer, &size, initkey.type);
+            if (status == DB_SUCCESS) {
+               status = db_set_data(hDB, hKeyInit, buffer, initkey.total_size, initkey.num_values, initkey.type);
+               assert(status == DB_SUCCESS);
+               break;
+            }
+            if (status == DB_TRUNCATED) {
+               size *= 2;
+               allocbuffer = realloc(allocbuffer, size);
+               assert(allocbuffer != NULL);
+               buffer = allocbuffer;
+               continue;
+            }
+            cm_msg(MERROR, "merge_records", "aborting on unexpected failure of db_get_data(%s), status %d", full_name, status);
+            abort();
+         }
+         if (allocbuffer)
+            free(allocbuffer);
       }
    } else if (status == DB_NO_KEY) {
       /* do nothing */
@@ -8370,12 +8427,11 @@ void merge_records(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
       status = db_find_link(hDB, 0, full_name, &hKeyInit);
       if (status == DB_SUCCESS) {
          size = sizeof(full_name);
-         db_get_data(hDB, hKeyInit, full_name, &size, TID_LINK);
+         status = db_get_data(hDB, hKeyInit, full_name, &size, TID_LINK);
       }
       cm_msg(MERROR, "merge_records", "Invalid link \"%s\"", full_name);
    } else {
-      cm_msg(MERROR, "merge_records",
-             "aborting on unexpected failure of db_find_key(%s), status %d", full_name, status);
+      cm_msg(MERROR, "merge_records", "aborting on unexpected failure of db_find_key(%s), status %d", full_name, status);
       abort();
    }
 }

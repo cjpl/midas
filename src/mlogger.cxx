@@ -2904,7 +2904,7 @@ INT open_history()
 
       MidasHistoryInterface* hi = NULL;
 
-      status = hs_get_history(hDB, hKey, HS_GET_WRITER, &hi);
+      status = hs_get_history(hDB, hKey, HS_GET_WRITER, verbose, &hi);
 
       if (status==HS_SUCCESS && hi) {
          if (strcasecmp(hi->type, "MIDAS")==0) {
@@ -2921,7 +2921,8 @@ INT open_history()
             global_per_variable_history = 1;
          }
 
-         cm_msg(MINFO, "open_history", "Writing history to channel \'%s\' type \'%s\'", hi->name, hi->type);
+         if (verbose)
+            cm_msg(MINFO, "open_history", "Writing history to channel \'%s\' type \'%s\'", hi->name, hi->type);
 
          mh.push_back(hi);
       }
@@ -2938,9 +2939,9 @@ INT open_history()
 
    i = 0;
    size = sizeof(i);
-   status = db_get_value(hDB, 0, "/Logger/PerVariableHistory", &i, &size, TID_INT, FALSE);
+   status = db_get_value(hDB, 0, "/History/PerVariableHistory", &i, &size, TID_INT, FALSE);
    if (status==DB_SUCCESS) {
-      cm_msg(MERROR, "open_history", "mlogger ODB setting /Logger/PerVariableHistory is obsolete, please delete it. Use /Logger/History/0/PerVariableHistory instead");
+      cm_msg(MERROR, "open_history", "mlogger ODB setting /History/PerVariableHistory is obsolete, please delete it. Use /Logger/History/0/PerVariableHistory instead");
       if (i)
          global_per_variable_history = i;
    }

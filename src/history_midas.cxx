@@ -1160,7 +1160,7 @@ MidasHistoryInterface* MakeMidasHistory()
    return new MidasHistory();
 }
 
-int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, MidasHistoryInterface **mh)
+int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistoryInterface **mh)
 {
    int status, size;
    char type[NAME_LENGTH];
@@ -1177,7 +1177,7 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, MidasHistoryInterface **mh)
       size = sizeof(hschanname);
       strlcpy(hschanname, "0", sizeof(hschanname));
 
-      status = db_get_value(hDB, 0, "/History/HistoryChannel", hschanname, &size, TID_STRING, TRUE);
+      status = db_get_value(hDB, 0, "/History/LoggerHistoryChannel", hschanname, &size, TID_STRING, TRUE);
       assert(status == DB_SUCCESS);
 
       status = db_find_key(hDB, 0, "/Logger/History", &hKeyChan);
@@ -1188,7 +1188,7 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, MidasHistoryInterface **mh)
 
       status = db_find_key(hDB, hKeyChan, hschanname, &hKey);
       if (status == DB_NO_KEY) {
-         cm_msg(MERROR, "hs_get_history", "Misconfigured history, /History/HistoryChannel is \'%s\' not present in /Logger/History, db_find_key() status %d", hschanname, status);
+         cm_msg(MERROR, "hs_get_history", "Misconfigured history, /History/LoggerHistoryChannel is \'%s\', not present in /Logger/History, db_find_key() status %d", hschanname, status);
          return HS_FILE_ERROR;
       }
       assert(status == DB_SUCCESS);
@@ -1211,8 +1211,9 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, MidasHistoryInterface **mh)
    size = sizeof(debug);
    status = db_get_value(hDB, hKey, "Debug", &debug, &size, TID_INT, TRUE);
    assert(status == DB_SUCCESS);
-   
-   printf("channel hkey %d, name \'%s\', active %d, type [%s], debug %d\n", hKey, key.name, active, type, debug);
+
+   if (debug_flag)
+      printf("hs_get_history: see channel hkey %d, name \'%s\', active %d, type [%s], debug %d\n", hKey, key.name, active, type, debug);
 
    if (strcasecmp(type, "MIDAS")==0) {
       int i;
@@ -1238,28 +1239,46 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, MidasHistoryInterface **mh)
             return status;
          }
 
-         cm_msg(MINFO, "hs_get_history", "Connected history channel \'%s\' type MIDAS history", key.name);
+         if (debug_flag)
+            cm_msg(MINFO, "hs_get_history", "Connected history channel \'%s\' type MIDAS history", key.name);
       }
       
    } else if (strcasecmp(type, "ODBC")==0) {
-      int i;
 
-      i = 0;
-      size = sizeof(i);
-      status = db_get_value(hDB, 0, "/Logger/ODBC_Debug", &i, &size, TID_INT, FALSE);
-      if (status==DB_SUCCESS) {
-         cm_msg(MERROR, "hs_get_history", "mlogger ODB setting /Logger/ODBC_Debug is obsolete, please delete it. Use /Logger/History/1/Debug");
-      }
+      if (1) {
+         int i;
       
+         i = 0;
+         size = sizeof(i);
+         status = db_get_value(hDB, 0, "/Logger/ODBC_Debug", &i, &size, TID_INT, FALSE);
+         if (status==DB_SUCCESS) {
+            cm_msg(MERROR, "hs_get_history", "mlogger ODB setting /Logger/ODBC_Debug is obsolete, please delete it. Use /Logger/History/1/Debug instead");
+         }
+
+         status = db_get_value(hDB, 0, "/History/ODBC_Debug", &i, &size, TID_INT, FALSE);
+         if (status==DB_SUCCESS) {
+            cm_msg(MERROR, "hs_get_history", "mhttpd ODB setting /History/ODBC_Debug is obsolete, please delete it. Use /Logger/History/1/Debug instead");
+         }
+      
+         char dsn[256];
+         size = sizeof(dsn);
+         dsn[0] = 0;
+      
+         status = db_get_value(hDB, 0, "/Logger/ODBC_DSN", dsn, &size, TID_STRING, FALSE);
+         if (status==DB_SUCCESS) {
+            cm_msg(MERROR, "hs_get_history", "mlogger ODB setting /Logger/ODBC_DSN is obsolete, please delete it. Use /Logger/History/1/Writer_ODBC_DSN instead");
+         }
+
+         status = db_get_value(hDB, 0, "/History/ODBC_DSN", dsn, &size, TID_STRING, FALSE);
+         if (status==DB_SUCCESS) {
+            cm_msg(MERROR, "hs_get_history", "mhttpd ODB setting /History/ODBC_DSN is obsolete, please delete it. Use /Logger/History/1/Reader_ODBC_DSN instead");
+         }
+      }
+
       char dsn[256];
       size = sizeof(dsn);
       dsn[0] = 0;
       
-      status = db_get_value(hDB, 0, "/Logger/ODBC_DSN", dsn, &size, TID_STRING, FALSE);
-      if (status==DB_SUCCESS) {
-         cm_msg(MERROR, "hs_get_history", "mlogger ODB setting /Logger/ODBC_DSN is obsolete, please delete it. Use /Logger/History/1/Writer_ODBC_DSN");
-      }
-
       if (flags & HS_GET_WRITER) {
          size = sizeof(dsn);
          strlcpy(dsn, "history_writer", sizeof(dsn));
@@ -1291,7 +1310,8 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, MidasHistoryInterface **mh)
             return status;
          }
 
-         cm_msg(MINFO, "hs_get_history", "Connected history channel \'%s\' type ODBC (MySQL), DSN \'%s\'", key.name, dsn);
+         if (debug_flag)
+            cm_msg(MINFO, "hs_get_history", "Connected history channel \'%s\' type ODBC (MySQL), DSN \'%s\'", key.name, dsn);
       }
    } else if (strcasecmp(type, "SQLITE")==0) {
       

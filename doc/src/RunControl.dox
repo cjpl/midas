@@ -47,6 +47,7 @@ and analyzing the data during or after the run is described under  @ref DataAnal
  - \subpage RC_run_control
     - @ref RC_odbedit_utility "odbedit"
     - @ref RC_mhttpd "mhttpd"
+ - \subpage RC_Sequencer
  - \subpage RC_Monitor
  - \subpage RC_customize_ODB
  - \subpage RC_Hot_Link
@@ -540,11 +541,11 @@ Two options for <b> Run Control </b> are provided in the MIDAS package. They are
 a program with a simple command line interface, and @ref RC_mhttpd_utility "mhttpd", the web-based 
 run control program. 
 <br>
-\b mhttpd is the usual choice for experimenters, since it provides a graphical
+ <span class="utility">mhttpd</span> is the usual choice for experimenters, since it provides a graphical
 interface, and is used both for run control and monitoring. It has many features not available in odbedit, such as history display, 
 electronic logbook, custom pages and alias-links.  However, it has limited functionality as an ODB editor. 
 <br>
-\b odbedit is very useful for debugging, is often quicker 
+ <span class="utility">odbedit</span> is very useful for debugging, is often quicker 
 and simpler to use, and is a fully functional odb editor (hence its name). It has limited monitoring
 capability. 
 <br>
@@ -590,7 +591,7 @@ CONTROLLING ...   odbedit, mhttpd pages go in here
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RC_mhttpd_custom_status" ,"RunControl", "RC_customize_ODB","RC_Monitor","end" ); // back index next {top bottom}
+pages( "RC_Sequencer" ,"RunControl", "RC_customize_ODB","RC_Monitor","end" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -866,7 +867,7 @@ Users of this utility may also be interested in a @ref RC_ROOT_analyzer_page wri
 <br>
 \htmlonly
 <script type="text/javascript">
-pages( "RC_mhttpd_custom_status" ,"RunControl", "RC_customize_ODB","RC_Monitor","" ); // back index next {top bottom}
+pages( "RC_Sequencer" ,"RunControl", "RC_customize_ODB","RC_Monitor","" ); // back index next {top bottom}
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -906,7 +907,10 @@ Customizing the ODB for Run Control involves some or all of:
  - setting up  the @ref  RC_Alarm_System
  - setting up @ref RC_mhttpd_Alias_page "alias links"
  - setting up the  @ref F_Elog "elog"
- - changing the size of the Midas buffers
+ - setting up the @RC_Sequencer and @ref  RC_Edit_On_Sequence_subdir
+ - setting up @ref RC_Status_Items_subdir "Status Items"
+ - changing the @ref customize_buffer_sizes "size of the Midas buffers"
+ 
 
 Other customization may include
  - @ref RC_starting_clients
@@ -1062,7 +1066,7 @@ mhttpd Main Status Page if set to "y" <span class="new"> (since  @ref ndf_nov_20
 </td>
 </tr>
 
-<!-- Line 5 -->
+<!-- Line 5   Edit on Start -->
 <tr>
 <td
 style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Edit
@@ -1074,13 +1078,13 @@ style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><
 <td style="vertical-align: top;">DIR<br>
 </td>
 <td style="vertical-align: top;">This subdirectory may
-contain user-defined parameters which
+contain user-defined keys or links to other ODB keys (often in the "/Experiment/Run Parameters" subdirectory)  which
 will be displayed for editing at the beginning of each run.
 See @ref RC_Edit_On_Start for details.
 </td>
 </tr>
 
-
+<!-- Line 6 -->
 <tr>
 <td
 style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
@@ -1091,7 +1095,7 @@ style="vertical-align: top; font-weight: bold; background-color: lightyellow;">E
 <td style="vertical-align: top;">BOOL
 </td>
 <td style="vertical-align: top;">Optional key. If present and set to "y" will @ref RC_Prevent_Edit_RN .
-Active for \b mhttpd only (ignored by \b odbedit)  </td>
+Active for  <span class="utility">mhttpd</span> only (ignored by  <span class="utility">odbedit</span>)  </td>
 </tr>
 
 <tr>
@@ -1099,7 +1103,7 @@ Active for \b mhttpd only (ignored by \b odbedit)  </td>
 style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
 </td>
 <td
-style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">user defined
 </td>
 <td style="vertical-align: top;"><br>
 </td>
@@ -1108,6 +1112,7 @@ style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><
 example  @ref RC_Experiment_Tree_Example "below" </td>
 </tr>
 
+<!--  Lock when Running -->
 <tr>
 <td
 style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Lock
@@ -1128,7 +1133,7 @@ that may be created by the user
 style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
 </td>
 <td
-style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">user defined
 </td>
 <td style="vertical-align: top;"><br>
 </td>
@@ -1157,14 +1162,14 @@ created by the user.<br>
 style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
 </td>
 <td
-style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">user defined
 </td>
 <td style="vertical-align: top;"><br>
 </td>
 <td style="vertical-align: top;">Optional keys may be
 created by the user to contain parameter comments associated with the  
 @ref RC_Edit_On_Start "Edit on Start" Parameters. See @ref RC_Edit_PC for details.
-Active for \b mhttpd only (ignored by \b odbedit) 
+Active for <span class="utility"</span>>mhttpd only (ignored by  <span class="utility">odbedit</span>) 
 </td>
 </tr>
 <tr>
@@ -1179,6 +1184,132 @@ style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><
 <td style="vertical-align: top;">subdirectory for user to set up
 security features. See @ref RC_Access_Control "Security" for details </td>
 </tr>
+
+<!-- Run Parameters -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Run Parameters<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td style="vertical-align: top;">DIR<br>
+</td>
+<td style="vertical-align: top;">An optional subdirectory
+that may be created by the user 
+</td>
+</tr>
+
+
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Comment
+</td>
+<td style="vertical-align: top;">BOOL
+</td>
+<td style="vertical-align: top;">Optional key. If present, will be @ref RC_Edit_RP "displayed on mhttpd main status page". 
+See  @ref RC_Run_Parameters .
+Active for  <span class="utility">mhttpd</span> only (ignored by  <span class="utility">odbedit</span>)  </td>
+</tr>
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Run Description
+</td>
+<td style="vertical-align: top;">BOOL
+</td>
+<td style="vertical-align: top;">Optional key. If present, will be   @ref RC_Edit_RP "displayed on mhttpd main status page". 
+Active for <span class="utility">mhttpd</span> only (ignored by   <span class="utility">odbedit</span>) 
+See  @ref RC_Run_Parameters .
+ </td>
+</tr>
+
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">user defined
+</td>
+<td style="vertical-align: top;"><br>
+</td>
+
+<td style="vertical-align: top;">Any number of user-defined keys or links may be defined (often used to contain the edit-on-start parameters). See
+example  @ref RC_Experiment_Tree_Example "below" </td>
+</tr>
+
+
+
+<!-- Status Items -->
+
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Status
+Items<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td style="vertical-align: top;">DIR<br>
+</td>
+<td style="vertical-align: top;">An optional subdirectory
+that may be created by the user 
+</td>
+</tr>
+
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">user defined
+</td>
+<td style="vertical-align: top;"><br>
+</td>
+
+<td style="vertical-align: top;">may contain user-defined ODB keys or  links to keys whose names and contents are to be 
+@ref  RC_Status_Items "displayed on the mhttpd main status page".
+See @ref RC_Status_Items_subdir </td>
+</tr>
+
+
+<!-- Edit on Sequence -->
+
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Edit on Sequence<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td style="vertical-align: top;">DIR<br>
+</td>
+<td style="vertical-align: top;">An optional subdirectory
+that may be created by the user 
+</td>
+</tr>
+
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;"><br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">user defined
+</td>
+<td style="vertical-align: top;"><br>
+</td>
+
+<td style="vertical-align: top;">may contain user-defined ODB keys or  links to keys whose names and contents are to be displayed
+when the Sequencer is started (by  <span class="utility">mhttpd</span>). See @ref RC_Edit_On_Sequence_subdir .</td>
+</tr>
+
+
+
 </table>
 
 
@@ -1248,7 +1379,18 @@ Experiment                      DIR
     Transition timeout          INT     1     4     21h  0   RWD  120000
     security                    DIR
         Web Password            STRING  1     32    15h  0   RWD  mim2Q41CV.GW3
-
+    Status Items                DIR
+        Experimenters           STRING  1     32    55m  0   RWD  none
+        Target                  STRING  1     104   2h   0   RWD  <span style="font-weight: bold; background-color: fuchsia; color: cyan">Liquid Helium</span>
+        Number of channels -> /Equipment/TITAN_ACQ/ppg_cycle_mode_1e/image/num channels to display
+                                INT     1     4     3h   0   RWD  24
+        pulse width (ms) -> /Equipment/TITAN_ACQ/ppg cycle/pulse1/pulse width (ms)
+                                DOUBLE  1     8     1h   0   RWD  120
+    Edit on sequence            DIR
+        Initial pulse width (ms) -> /Equipment/TITAN_ACQ/ppg cycle/pulse1/pulse width (ms)
+                                DOUBLE  1     8     1h   0   RWD  120
+        comment                 STRING  1     128   1h   0   RWD  starting width  120ms, incr 5ms per run
+        counter                 INT     1     4     1h   0   RWD  10
   @endcode  
 
 The meaning of these keys is described  @ref  RC_Experiment_tree_keys "above" and in the following sections.
@@ -1268,6 +1410,8 @@ subdirectories under the  <span class="odb">/Experiment</span> tree if they do n
     -  @ref RC_Run_Parameters "Run Parameters"            
     -  @ref RC_Lock_when_Running "Lock when running"
     -  @ref RC_Access_Control "Security"
+    -  @ref RC_Status_Items_subdir "Status Items"
+    -  @ref RC_Edit_On_Sequence_subdir "Edit on Sequence"
 
 </b>
 These keynames have a particular meaning for the MIDAS system which will be described below. 
@@ -1281,7 +1425,7 @@ These keynames have a particular meaning for the MIDAS system which will be desc
 With \b no optional "edit-on-start" parameters set up,
 when a run is started,
  - either by the @ref RC_odbedit_utility "odbedit" command @ref  RC_odbedit_start "start"
- - or by clicking the @ref RC_mhttpd_utility "mhttpd" start button (see @ref RC_mhttpd_status_menu_buttons "menu buttons" ) on the mhttpd main status page
+ - or by clicking the @ref RC_mhttpd_utility "mhttpd"  <span class="button">Start</span> button (see @ref RC_mhttpd_status_menu_buttons "menu buttons" ) on the mhttpd main status page
 
 
 
@@ -1305,8 +1449,8 @@ Are the above parameters correct? ([y]/n/q):
 \anchor idx_edit-on-start
 \anchor idx_ODB_tree_Experiment_Edit-on-Start-parameters
 
- It is often convenient to <b>display and edit additional parameters </b>
-at this time.  These parameters are known as <b>Edit-on-start</b> parameters since
+ It is often convenient to <b>display and edit additional parameters </b> when a run is started.
+These parameters are known as <b>Edit-on-start</b> parameters since
 they automatically appear every time a run starts, and they are editable by the user.
 \b Edit-on-start parameters are defined  by creating them or linking to them in a special subdirectory  named
 <span class="odb">"Edit on start"</span>  that the 
@@ -1322,7 +1466,10 @@ Are the above parameters correct? ([y]/n/q):
 @endcode
 
 The first step to setting up the <b>Edit on Start</b> parameters is to <b>create the subdirectory 
-"Edit on Start"</b> in the ODB under <b>/Experiment</b> as follows:
+"Edit on Start"</b> in the ODB under <b>/Experiment</b> as shown below. For simplicity, the examples below
+use   @ref RC_odbedit_utility "odbedit" to edit the ODB. However, users may prefer to use the mhttpd  
+@ref RC_mhttpd_ODB_page instead.
+
 \code
 $odbedit
 [local:Default:S]/>cd /experiment
@@ -1330,6 +1477,8 @@ $odbedit
 [local:Default:S]/Experiment>cd "Edit on start"
 [local:Default:S]/Edit on start>
 @endcode
+
+
 
 \anchor RC_rp
 Then the user either <b>creates the required parameters</b>, or, if the parameters already exist elsewhere in the 
@@ -1384,13 +1533,41 @@ Edit run number                 BOOL    1     4     11h  0   RWD  n
  
 \b Examples of starting a run with <b> edit on start </b> parameters are shown here:
   - using @ref RC_EOS_example2 "odbedit" or
-  - using   @ref RC_mhttpd_Edit_On_Start "mhttpd" .
+  - using   @ref RC_mhttpd_Edit_On_Start "mhttpd" 
+
+
+<br><hr><br>
+
+
 
 <!-- \level+ -->
 @subsubsection RC_parameter_comments  Parameter Comments subdirectory
 Optional parameter comments (in the <span class="odb">/Experiment/Parameter Comments</span> subdirectory) can be set up to give more information about the Edit-on-Start parameters.
 This feature is only active when using  <span class="utility">mhttpd</span>. Setting up @ref RC_Edit_PC is described in the mhttpd
 @ref RC_mhttpd_Start_page section.
+
+
+<br><hr><br>
+
+
+<!-- \level+ -->
+@subsubsection RC_Edit_On_Sequence_subdir  Edit-on-Sequence parameters
+ <span class="new">New since  @ref ndf_jun_2011  </span>
+
+\i Edit-on-sequence parameters are displayed for edit when a new @RC_Sequencer "Sequence" is started (similar to the @ref RC_Edit_On_Start "edit-on-start" parameters that 
+appear when a run is started). \i Edit-on-sequence parameters may be defined in the optional <span class="odb"> Edit on Sequence</span> subdirectory in the same way that 
+\i Edit-on-start parameters are defined in the <span class="odb">Edit on Start</span> subdirectory.
+
+
+An example of \i edit-on-sequence parameters defined in the ODB are shown below. 
+ * <center> 
+ * <span class="image">Example of edit-on-sequence parameters</span>
+ * <br><br><br>
+ * \image html edit_on_seq.png
+ * </center>
+
+These parameters will be displayed for edit on the @ref RC_Seq_start "sequencer start page".  
+
 <br><hr><br>
 
 
@@ -1399,10 +1576,34 @@ This feature is only active when using  <span class="utility">mhttpd</span>. Set
 Users often create a subdirectory  <span class="odb">/Experiment/Run Parameters</span> to contain any  parameters needed for the run.
 These may be the subject of links from the  <span class="odb">Edit on start</span> subdirectory (see  @ref RC_rp "example above"). 
 <br>
-In the case of <span class="utility">mhttpd</span>, two keys in this directory have special meaning.
-If the keys \b "Comment" or \b "Run Description" are created in the  <span class="odb">"Run Parameter"</span> subdirectory,
+Two optional keys in this directory have special meaning when running  <span class="utility">mhttpd</span>.
+
+If the following key(s) are created in the  <span class="odb">"Run Parameter"</span> subdirectory
+ -  <span class="odb">Comment</span> or 
+ -  <span class="odb">Run Description</span>
+
 the contents of each key will be displayed on an extra line on the  <span class="utility">mhttpd</span> main status page.
-See  @ref RC_Edit_RP for details.
+See  @ref RC_Edit_RP for details. 
+
+\Note
+If running the  @ref RC_Sequencer, the <span class="odb">Run Description</span> key may be set with the <span class="seq"></RunDescription></span> tag. 
+
+
+
+<br><hr><br>
+
+
+
+<!-- \level+ -->
+@subsubsection RC_Status_Items_subdir  Status Items subdirectory 
+ <span class="new">New since  @ref  ndf_feb_2011  </span>
+<br>
+Users may create a subdirectory  <span class="odb">/Experiment/Status Items</span>.
+Any keys or links created in this optional subdirectory will be displayed on the  <span class="utility">mhttpd</span> main status page.
+See @ref  RC_Status_Items . 
+
+
+
 <br><hr><br>
 
 
@@ -1460,9 +1661,12 @@ Note that other forms of ODB access control independent of these security featur
         - Write access can be restricted during a run (see  @ref RC_Lock_when_Running )
         - Individual keys or subdirectories in the experiment's ODB can be set "read only" with the
              <span class="utility">odbedit</span> command @ref  RC_odbedit_chmod "chmod".
-     
+  
+   
 
 <br><hr><br>
+
+
 
 \anchor idx_ODB_tree_Experiment_Security
 <!-- \level+  following should be  subsubsubsection (contents hierarchy) -->
@@ -2302,7 +2506,7 @@ The alarm capabilities are:
 
 The alarm system can be customized through @ref RC_odbedit_utility "ODBEdit" or the  
 @ref RC_mhttpd_ODB_page "mhttpd Alarm page".  
-Some of the features (such as colour) are applicable only to \b mhttpd.
+Some of the features (such as colour) are applicable only to  <span class="utility">mhttpd</span>.
 
 The following sections describe how to use the MIDAS Alarm System.
 
