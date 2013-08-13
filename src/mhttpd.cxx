@@ -1020,8 +1020,7 @@ void show_header(HNDLE hDB, const char *title, const char *method, const char *p
           ("<body><form name=\"form1\" method=\"POST\" action=\"%s\" enctype=\"multipart/form-data\">\n\n",
            str);
    else if (equal_ustring(method, "GET"))
-      rsprintf("<body><form name=\"form1\" method=\"GET\" action=\"%s\">\n\n", method,
-               str);
+      rsprintf("<body><form name=\"form1\" method=\"GET\" action=\"%s\">\n\n", str);
 
    /* title row */
 
