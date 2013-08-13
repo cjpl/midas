@@ -40,6 +40,7 @@ through the MIDAS Web server.
 
 The basic functionality of  <span class="utility">mhttpd</span> includes:
  - <b>Run control</b> (start/stop/pause).
+ - \b Sequencer to automatically execute a number of runs
  - Up-to-date <b>client status and  statistics display</b> (frontend(s) logger(s) etc.)
  - <b>Graphical history data</b> display.
  - <b>Electronic LogBook</b> recording/retrieval messages
@@ -47,6 +48,7 @@ The basic functionality of  <span class="utility">mhttpd</span> includes:
  - \b Slow \b control data display.
  - Listing of currently \b connected \b clients
  - Basic <b>access to ODB</b>.
+
 
 
 
@@ -58,27 +60,33 @@ These functions are available on one or more of the various \b mhttpd \b pages d
 - \subpage RC_mhttpd_ODB_page : Online Database manipulation ( an alternative to using <span class="utility">odbedit</span> )
 - \subpage RC_mhttpd_Equipment_page : Frontend information
 - \subpage RC_mhttpd_sc_page : Slow Control information
+- \subpage RC_mhttpd_CNAF_page : CAMAC access
 - \subpage RC_mhttpd_Message_page : Message Log 
 - \subpage RC_mhttpd_Elog_page : Electronic Log
 - \subpage RC_mhttpd_Program_page : Program control (clients)
 - \subpage RC_mhttpd_History_page : History display
 - \subpage RC_mhttpd_Alarm_page : Alarm system control
 - \subpage RC_mhttpd_MSCB_page MIDAS Slow Control Bus
-- \subpage RC_mhttpd_CNAF_page : CAMAC access
+- \subpage RC_mhttpd_Config_page : status page update period
 - \subpage RC_mhttpd_Alias_page : user defined  Alias page(s)
 - \subpage RC_mhttpd_Logger_page : data logger settings information
-- \subpage RC_mhttpd_Config_page : status page update period
+- \subpage RC_mhttpd_Sequencer_page : Run Sequencer
 - \subpage RC_mhttpd_Custom_page : user defined Web page(s)
+
+
+
 
 \anchor RC_mhttpd_tree_list
 Several directory trees in the ODB are <b> specific to mhttpd</b>, or have \b additional \b features if <span class="utility">mhttpd</span>
-is running. They are described below in the appropriate section.
--  @ref RC_odb_alias_tree
--  @ref RC_odb_custom_tree
--  @ref RC_odb_script_tree 
--  @ref F_ODB_Elog_Tree
--  @ref RC_Edit_On_Start 
+is running, e.g.
+-  @ref RC_odb_alias_tree "/alias tree"
+-  @ref RC_ODB_Experiment_Tree "/experiment tree "
+-  @ref RC_odb_custom_tree "/custom tree"
+-  @ref RC_odb_script_tree "/script tree"
+-  @ref F_ODB_Elog_Tree  "/elog tree"
 
+
+See @RC_customize_intro "customizing the experiment" for more information. 
 
 
 \htmlonly 
@@ -122,12 +130,17 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 The following image shows the main Status Page of one of the experiments at TRIUMF:
 
+\Note  This example predates the addition of the @ref RC_Sequencer (<span class="new"> added  @ref ndf_jun_2011 </span>), therefore 
+the <span class="button">Sequencer</span> button is not shown.
+
+
  * <center> 
  * <span class="image">MIDAS Status Page for a running experiment
  * <br><br><br>
  * \image html mhttpd_status.jpg
  * </span></center> 
  * <br>
+
 
  In this case, the experiment has been customized by
  - creating and starting some frontend(s), which define various equipment(s)
@@ -238,10 +251,14 @@ The Status Page is sub-divided in several parts:
  - @ref RC_mhttpd_status_menu_buttons 
         - @ref RC_mhttpd_status_RC_buttons
         - @ref RC_mhttpd_status_Page_buttons
- - @ref RC_mhttpd_status_script_buttons
- - @ref RC_mhttpd_status_Manual_Trigger_buttons
- - @ref RC_mhttpd_status_Alias_buttons
+ - Optional (user-defined) Buttons
+      - @ref RC_mhttpd_status_script_buttons "Script Buttons"
+      - @ref RC_mhttpd_status_Manual_Trigger_buttons
+      - @ref RC_mhttpd_status_Alias_buttons
  - @ref RC_mhttpd_status_Run_info
+ - Optional (user-defined) @ref RC_Display_Run_Parameters
+      - @ref RC_Edit_RP
+      - @ref RC_Status_Items
  - @ref RC_mhttpd_status_Equipment_info
  - @ref RC_mhttpd_status_Logger
  - @ref RC_mhttpd_status_latest_msg
@@ -256,6 +273,10 @@ These will be discussed in detail in the following sections.
  *  \image html new_status_buttons.jpg
  * </span></center> 
  * <br>
+
+\Note  This example predates the addition of the @ref RC_Sequencer (<span class="new"> added  @ref ndf_jun_2011 </span>), therefore 
+the <span class="button">Sequencer</span> button is not shown.
+
  
 @section RC_mhttpd_status_title Experiment/Date/Refresh information
 
@@ -278,7 +299,7 @@ The top row of buttons on the @ref RC_mhttpd_main_status_new "main status page" 
  -  @ref RC_mhttpd_status_RC_buttons
  -  @ref RC_mhttpd_status_Page_buttons
 
-
+<br><br>
 \anchor idx_mhttpd_buttons_run-control
 @subsection RC_mhttpd_status_RC_buttons Run Control buttons
 Depending on the @ref RC_Run_States_and_Transitions  "run state", a single or the two first buttons
@@ -394,18 +415,18 @@ the run<br>
 <span class="new">Since  @ref ndf_nov_2009 </span>, the Run Buttons may be hidden
 (see @ref RC_Experiment_tree_keys "Hide Run Buttons" ),
 
+<br><br>
 \anchor idx_mhttpd_buttons_page-switch
 @subsection RC_mhttpd_status_Page_buttons Page Switch buttons
 
 The <b>Page Switch buttons</b> on the <span class="utility">mhttpd</span> main status page
 (see  @ref RC_mhttpd_main_status_new "example above") change the page to one
-of the sub-pages. The sub-pages all provide a button labelled \b Status, which returns to the main Status page when clicked.
+of the sub-pages. The sub-pages all provide a <span class="button">Status</span>  button, which returns to the main Status page when clicked.
 The purpose of each Page Switch button is explained in the following table:
 
 \Note
-The Page switch buttons can now be   @ref RC_ODB_Experiment_Tree "customized"
-( <span class="new">since @ref ndf_dec_2009 </span>) , so not all the possible
-Page Switch buttons may be visible on the status page for a particular experiment.
+The Page switch buttons can now be  @ref RC_ODB_Experiment_Tree "customized" ( <span class="new">since @ref ndf_dec_2009 </span>), 
+so not all the possible Page Switch buttons may be visible on the status page for a particular experiment.
 
 
 
@@ -470,8 +491,8 @@ style="font-weight: bold;"> @ref RC_mhttpd_CNAF_page "CNAF"</span><br>
 </table>
 </td>
 <td  style="vertical-align: top;">
-<span  class="new">In versions since @ref ndf_dec_2009 the default is that this button has been replaced by the MSCB button.
-If the CNAF button is needed, it must be added to the list of  @ref RC_ODB_Experiment_Tree "menu buttons"</span>.
+<span  class="new">In versions since @ref ndf_dec_2009 the default is that this button has been replaced by the <span class="button">MSCB</span> button.
+If the  <span class="button">CNAF</span> button is needed, it must be added to the list of  @ref RC_ODB_Experiment_Tree "menu buttons"</span>.
 <br>This button switches to the @ref RC_mhttpd_CNAF_page . If one of the equipments is a CAMAC frontend, it is possible to
 issue CAMAC commands through this button.
 </td></tr>
@@ -598,7 +619,29 @@ style="font-weight: bold;">@ref RC_mhttpd_Config_page "Config"</span><br>
 
 </td></tr>
 
+
 <!-- Line 10 -->
+<tr>
+<td style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(153, 153, 153);">
+<table
+style="text-align: left; width: 20%; margin-left: auto; margin-right: auto;"
+border="1" cellpadding="2" cellspacing="2">
+<tr>
+<td
+style="vertical-align: top; background-color: rgb(204, 204, 204) ; text-align: center; ">
+\anchor  RC_mhttpd_Sequencer_button
+<span
+style="font-weight: bold;">@ref RC_mhttpd_Sequencer_page "Sequencer"</span><br>
+</td>
+</tr>
+</table>
+</td>
+<td  style="vertical-align: top;">
+ Gives access to the @ref RC_mhttpd_Sequencer_page (<span class="new">Added @ref  ndf_jun_2011</span>).
+
+</td></tr>
+
+<!-- Line 11 -->
 <tr>
 <td style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(153, 153, 153);">
 <table
@@ -613,7 +656,7 @@ style="font-weight: bold;">Help</span><br>
 </table>
 </td>
 <td  style="vertical-align: top;">
-Help button will link to the main MIDAS web documentation (i.e. this document).
+<span class="button">Help</span> button will link to the main MIDAS web documentation (i.e. this document).
 </td></tr>
 
 </table>
@@ -642,8 +685,8 @@ as shown  @ref RC_mhttpd_old_alias_buttons "here".
 <br><hr><br>  
 \anchor idx_mhttpd_buttons_script
 @subsection RC_mhttpd_status_script_buttons Optional Script buttons
-Script (or User) buttons that appear on the @ref  RC_mhpptd_optional_buttons "main status page" are used to execute user-defined scripts.
-These buttons are defined through the optional ODB <span class="odb">/script</span> tree.
+
+Script (or User) buttons that appear on the @ref  RC_mhpptd_optional_buttons "main status page" are used to <b>execute user-defined scripts</b>. Users may define Script Buttons through the optional ODB <span class="odb">/script</span> tree.
 
 
 
@@ -655,7 +698,9 @@ for details.
 <br><hr><br>
 \anchor idx_manual-trigger_button
 @subsection RC_mhttpd_status_Manual_Trigger_buttons Manual-Trigger Buttons
-See @ref FE_manual_trigger .
+
+If the user has defined an event with a manual trigger, a button will appear on the main status page to enable
+the user to trigger the event.  See @ref FE_manual_trigger .
 
 <br><hr><br>
 @subsection RC_mhttpd_status_Alias_buttons Alias-Buttons
@@ -680,9 +725,12 @@ give access to  @ref RC_mhttpd_Alias_page "Alias pages".
  The run status information on the @ref RC_mhttpd_main_status "main status page"  shows 
  - current run number
  - @ref RC_table_run_state "run state"
- - Alarm status
+ - Alarm system status
  - @ref F_Logger_Auto_Restart "Restart" (automatically restart run)
- - mlogger status
+ - @ref RC_Sequencer status (see @ref seq_status "below")
+ - mlogger status shows
+     -  either "Logger not running" 
+     -  or the saved data directory
  - run duration
  
 The appearance and contents of this information changes depending on the conditions. The images below demonstrate
@@ -700,16 +748,55 @@ how the appearance may change when the run is in transition.
 
 
 
+\anchor seq_status
+\NOTE
+The appearance of the "Restart" box has been changed  (<span class ="new">in @ref  ndf_jun_2011</span>) to show the
+ @ref RC_Sequencer  status.  
+
+The following images show the status line under various conditions:
+<ol>
+ <li>  <span class="image">Auto run restart is \b disabled; Sequencer is \b NOT running</span> 
+ * <br>
+ * \image html run_status_seq1.png
+ *<br>
+
+ <li>  <span class="image">Auto run restart is \b enabled; Sequencer is \b NOT running</span> 
+ * <br>
+ * \image html run_status_seq2.png
+ * <br>
+
+ <li>  <span class="image">Sequencer \b IS running; run is in progress, Sequencer will restart run</span> 
+ * <br>
+ * \image html run_status_seq3.png
+ * <br>
+
+ <li>  <span class="image">Sequencer \b IS running; run is stopped, Sequencer will restart run </span> 
+ * <br>  
+ * \image html run_status_seq4.png
+ * <br>
+
+</ol> 
+
+
 
 
 <br><hr><br>
-@section RC_Edit_RP Comment and Run Description
 
-Optionally, the user can define a "comment" and/or a "Run Description" that will appear on the mhttpd main status page.
+
+@section RC_Display_Run_Parameters Display of run parameters
+
+@subsection RC_Edit_RP Run Description and Comment
+
+Optionally, the user can define a "Run Description" and/or a "Comment" that will appear on the mhttpd main status page.
 This is done by creating keys
- \b "Comment" and/or \b "Run Description" in the  @ref  RC_Run_Parameters under  <span class="odb">/Experiment</span>.
-The contents of each key will then be displayed on an extra line on the <span class="utility">mhttpd</span> main status page. See  @ref  RC_ODB_Experiment_Tree
-for more information.
+ \b "Comment" and/or \b "Run Description" in the   <span class="odb">/Experiment/</span>@ref  RC_Run_Parameters .
+See  @ref  RC_ODB_Experiment_Tree for more information.
+
+The contents of each key will then be displayed on an extra line on the <span class="utility">mhttpd</span> main status page. 
+
+Typically, these keys would be displayed when a run is started (by setting them up as  
+@ref RC_Edit_On_Start "Edit on start parameters"), so the user may enter appropriate messages.
+
 
 \code
 [local:t2kgas:S]/>ls -lt "/Experiment/Run Parameters/"
@@ -720,6 +807,12 @@ Run Description                 STRING  1     32    19h  0   RWD  28.2keV resona
 \endcode
 
 
+\NOTE
+
+ - Since <span class="new"> @ref  ndf_feb_2011  </span> the keys that may be displayed on the main status page are no longer 
+restricted to "Run Description" and "Comment". See @ref RC_Status_Items for details.
+ - Since <span class ="new"> @ref  ndf_jun_2011</span> the "Run Description" parameter can also be set by the  @ref RC_Sequencer "Sequencer" command <span class="seq">\<RunDescription\></span>
+
  * <br>
  * <center>
  *  <span class="image">mhttpd main status page showing "Comment" and "Run Description" fields</span>
@@ -727,6 +820,30 @@ Run Description                 STRING  1     32    19h  0   RWD  28.2keV resona
  * </center>
 <br><hr><br>
 
+@subsection RC_Status_Items Display of Status Items 
+
+In addition to the  @ref RC_Edit_RP , additional items may  now (<span class="new">since  @ref  ndf_feb_2011  </span>)
+be displayed on the main status page as  <b>"status items"</b>.  In the following example, a number of items have been
+defined as  "status items", a  "run description" is defined, but a "comment" has not been defined.
+
+ * <center>
+ *  <span class="image">Main Status page showing <b>"Run Description" and "Status Items"</b> </span> 
+ * \image html status_items.jpg
+ * </center><br>
+
+To define "status items", the user creates the optional  subdirectory <span class="odb">/Experiment/Status Items </span>.
+The names and contents of any keys (or links to ODB keys) the user creates in this subdirectory
+will be displayed on the main status page (see @ref  RC_ODB_Experiment_Tree for more details).  
+The corresponding ODB keys that produced the "status items" in the example above are shown here: 
+
+ * <center>
+ *  <span class="image">Status Items defined in the ODB subdirectory "/Experiment/status items"  </span> 
+ * \image html status_items_odb.png
+ * </center><br>
+
+
+
+<br><hr><br>
 \anchor idx_mhttpd_page_status_equipment
 @section RC_mhttpd_status_Equipment_info Equipment information and Event rates
 The  <span class="utility">mhttpd</span> status page contains a table of  @ref FE_sw_equipment "Equipment"
@@ -828,7 +945,23 @@ The hyperlink \b "0" opens a @ref  RC_mhttpd_Logger_page showing the settings in
 multiple lines of Lazy information would be present. Clicking on the hyperlink \b "Dcache" 
  opens a @ref  RC_mhttpd_Logger_page showing the  @ref RC_mhttpd_Logger_lazylogger .
 
+\NOTE
+The \b disk \b level is now displayed on the main status page (<span class="new">since @ref ndf_aug_2011</span>)
+replacing the column "GB Total". The background colour changes according to how much room is left on the data disk:
+ - <span style="background-color:lime">green</span> if disk is less than 70% full 
+ -  <span style="background-color:yellow">yellow</span> if disk is between 70% and 90% full
+ -  <span style="background-color:red">red</span> if disk is over 90% full 
+
+ * <center> 
+ * <span class="image">Example of disk level display on mhttpd main status page</span>
+ * <br><br><br>
+ * \image html disk_level.png
+ * </center> 
+ * <br>
+
 <br><hr><br>
+
+
 \anchor idx_message_last
 @section RC_mhttpd_status_latest_msg Last system message
  * <center> 
@@ -841,7 +974,7 @@ multiple lines of Lazy information would be present. Clicking on the hyperlink \
 
 The last system message to be received at the time of the last display refresh is displayed  on the @ref RC_mhttpd_main_status "main status page" 
 (see  @ref F_Messaging). More messages can be viewed
-by pressing the   @ref RC_mhttpd_status_Page_buttons "Message button". This opens the  
+by pressing the   @ref RC_mhttpd_status_Page_buttons "Messages button". This opens the  
 @ref RC_mhttpd_Message_page "Message page".
 
 
@@ -893,7 +1026,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
  
 <br>
 
-To start a run, the \b Start button (@ref RC_mhttpd_status_menu_buttons "if present") is pressed, and the user will be prompted for 
+To start a run, the <span class="button">Start</span> button (@ref RC_mhttpd_status_menu_buttons "if present") is pressed, and the user will be prompted for 
 any defined experiment-specific parameters (i.e. @ref RC_Edit_On_Start "Edit on start" parameters)  before starting the run. The minimum set of parameters is
 the <b> run number </b>, it will be incremented by one relative to the last value from
 the status page.  The user may edit the run number  except @ref RC_Prevent_Edit_RN "where noted" before 
@@ -907,7 +1040,7 @@ continuing.
  * </center> 
  * <br><br><br>
 
-Once the \b Start \b button is pressed on the Start request page, the system will attempt to start the
+Once the<span class="button">Start</span>  button is pressed on the Start request page, the system will attempt to start the
 run. 
 
 <span class="new">
@@ -926,9 +1059,9 @@ that the helper program is started and sets a message <b>runinfo/transition in p
 
 If the user has defined  @ref RC_Edit_On_Start "Edit on Start parameters", when a run is started 
 <span class="note">all the parameters in the 
-ODB tree <b> /Experiment/Edit on Start </b> will be displayed  </span> for possible modification.
- - Pressing the \b Ok button will proceed to start of the run. 
- - Pressing the \b Cancel button will abort the start procedure, and return to the status page.
+ODB tree <span class="odb"> /Experiment/Edit on Start </span> will be displayed  </span> for possible modification.
+ - Pressing  <span class="button">OK</span>  will proceed to start of the run. 
+ - Pressing  <span class="button">Cancel</span>  will abort the start procedure, and return to the status page.
 
  * <br><br><br> 
  * <center>
@@ -1103,12 +1236,12 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 \anchor idx_edit_ODB_using-mhttpd
 <br>
 
-The ODB page is displayed by clicking on the "ODB"  @ref RC_mhttpd_status_Page_buttons "page switch button"
-(@ref RC_mhttpd_status_menu_buttons "if present") on the @ref RC_mhttpd_main_status "main status page".
+The ODB page is displayed by clicking on the  <span class="button">ODB</span>  @ref RC_mhttpd_status_Page_buttons "page switch button"
+(@ref RC_mhttpd_status_Page_buttons "if present") on the @ref RC_mhttpd_main_status "main status page".
 
  * <br><br><br>
  * <center>
- *  <span class="image">  Clicking on the "ODB" button will bring up a page showing the root tree of the ODB </span>
+ *  <span class="image">  Clicking on  <span class="button">ODB</span>  will bring up a page showing the root tree of the ODB </span>
  * <br><br><br> 
  *  \image html mhttpd_odb_page.gif
  * </center> 
@@ -1800,10 +1933,11 @@ pages("RC_mhttpd_sc_page",  "RunControl", "RC_mhttpd_Message_page", "RC_mhttpd_C
 
 
 <br>
-The CNAF page is accessed by clicking on the @ref RC_mhttpd_status_menu_buttons "CNAF button"  (@ref RC_mhttpd_status_menu_buttons "if present")
-on the Main Status page.
+The CNAF page is accessed by clicking on the @ref RC_mhttpd_status_Page_buttons "CNAF button"  (@ref RC_mhttpd_status_Page_buttons "if present")
+on the Main Status page.  <span  class="new">In versions since @ref ndf_dec_2009 the default is that this button has been replaced by the <span class="button">MSCB</span> button.
 <br>
-It will only be active if one of the active equipments is a CAMAC-based data collector, it will be possible to
+
+If one of the active equipments is a CAMAC-based data collector, it will be possible to
 remotely access CAMAC through this web-based CAMAC page,  in which case the frontend is acting as a
 RPC CAMAC server for the request.  
 <br>
@@ -1854,7 +1988,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 <br>
 
-This page (accessed by clicking the @ref RC_mhttpd_status_Page_buttons "Message button"  @ref RC_mhttpd_status_menu_buttons "if present"
+This page (accessed by clicking the @ref RC_mhttpd_status_Page_buttons "Message button"  @ref RC_mhttpd_status_Page_buttons "if present"
  on the @ref RC_mhttpd_main_status "main status page" )
 displays the contents of the MIDAS System log file in blocks of 100 lines
 starting with the most recent messages. The MIDAS log file resides in the directory
@@ -1906,7 +2040,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 \anchor Elog_200
 
 @section RC_mhttpd_Elog_intro Introduction
-The ELOG page  (accessed by clicking the @ref RC_mhttpd_status_Page_buttons "Elog button"  @ref RC_mhttpd_status_menu_buttons "if present"
+The ELOG page  (accessed by clicking the @ref RC_mhttpd_status_Page_buttons "Elog button"  @ref RC_mhttpd_status_Page_buttons "if present"
  on the @ref RC_mhttpd_main_status "main status page" ) provides access to an electronic logbook. 
 This tool can replace the 
 experimental logbook for daily entries. The main advantage of the Elog over a paper logbook  is the possiblity 
@@ -1960,7 +2094,7 @@ The format of the message log can be written in HTML format.
 - A feature of the Elog entry page is the optional <b>Shift Check</b> button, which permits the 
 experimenter on shift to go through a checklist and record his/her findings in the Elog
 system. The checklist is user-defined and can be found in the ODB under  the @ref F_ODB_Elog_Tree "/Elog tree".
-In the following example, a Shift Check button labelled <i>"Gas Handling"</i> has been created:
+In the following example, a Shift Check button <span class="button">Gas Handling</span> has been created:
 
  * <br><br><br>
  * <center>
@@ -1997,7 +2131,7 @@ String length [32]: 64
 
 @subsubsection RC_mhttpd_Internal_Elog_runlog Runlog Button
 
-- The \b runlog button display the content of the file \b runlog.txt which is
+- Clicking the  <span class="button">Runlog</span> button will display the content of the file \b runlog.txt which is
 expected to be in the data directory specified by the ODB key <b>/Logger/Data Dir</b>.
 Regardless of its content, it will be displayed in the web page.
 Its common use is to \b append \b lines after every run.
@@ -2187,13 +2321,14 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
  
 
 <br>
-The \b Programs page is displayed by clicking on the \b Programs \b Button ( @ref RC_mhttpd_status_menu_buttons "if present")
-on the  @ref RC_mhttpd_Main_Status_page .
+The \b Programs page is displayed by clicking on the  <span class="button">Programs</span> button on the  @ref RC_mhttpd_Main_Status_page
+( @ref RC_mhttpd_status_Page_buttons "if present").
+
 
 This page presents the current active list of the clients  attached to the given
 experiment. On the right hand side, a dedicated button allows the user to stop a particular client.
 This is equivalent to the @ref RC_odbedit_sh "ODBedit shutdown" command. For example, pressing
-the <b>"stop Speaker"</b> button  (see example below) would be equivalent to 
+the  <span class="button">stop Speaker</span> button  (see example below) would be equivalent to 
 @code
 odbedit> sh Speaker
 @endcode
@@ -2293,8 +2428,8 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
  
 
 <br>
-The \b History page is displayed by clicking on the \b History \b Button on the  @ref RC_mhttpd_Main_Status_page
-( @ref RC_mhttpd_status_menu_buttons "if present").
+The \b History page is displayed by clicking on the  <span class="button">History</span> Button on the  @ref RC_mhttpd_Main_Status_page
+( @ref RC_mhttpd_status_Page_buttons "if present").
 
 This page reflects the @ref F_History_logging "History System" settings.
 
@@ -2312,7 +2447,7 @@ The configuration options for a given panel consists in:
 - Zooming capability, run markers, logarithmic scale.
 - Data query in time.
 - Time scale in date format.
-- Web based page creation (button labelled "New") for up to 10 history channels per page.
+- Web based page creation ( <span class="button">New</span>button) for up to 10 history channels per page.
 
  * <br><br><br>
  * <center>
@@ -2365,7 +2500,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 <br>
 
-By clicking on the \b Alarms button (@ref  RC_mhttpd_status_menu_buttons "if present")  on the
+By clicking on the  <span class="button">Alarms</span> button (@ref  RC_mhttpd_status_Page_buttons "if present")  on the
 @ref  RC_mhttpd_Main_Status_page, the Alarms mhttpd page appears.
 This page presents information about the @ref  RC_Alarm_System  from the  @ref RC_ODB_Alarms_Tree . 
 By clicking on the hyperlinks on this Alarms page, you can navigate directly to the alarm class and
@@ -2473,7 +2608,7 @@ In order to create the MSCB page, the flag
 <br> must be present in the Makefile for mhttpd. This is now the default in the Makefile from SVN, but it can be taken out for experiments
 not using MSCB. If the flag is present, mhttpd is linked against <b>midas/mscb/mscb.c</b> and has direct access to all
 mscb ethernet submasters (USB access is currently disabled on purpose there).
-The presence of the  flag <b>-DHAVE_MSCB</b> will cause the MSCB button to appear on the main status page by default, unless
+The presence of the  flag <b>-DHAVE_MSCB</b> will cause the  <span class="button">MSCB</span> button to appear on the main status page by default, unless
 the  @ref RC_mhttpd_status_menu_buttons "menu buttons" have been customized, in which case the MSCB key must be listed
 in the ODB Key <span class="odb">/Experiment/Menu Buttons"</span><br>e.g.
 \code
@@ -2544,7 +2679,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 </script>
 \endhtmlonly
 
-This page is displayed by pressing the <b>Config Button</b>  ( @ref RC_mhttpd_status_menu_buttons "if present")
+This page is displayed by pressing the <b>Config Button</b>  ( @ref RC_mhttpd_status_Page_buttons "if present")
 on the  @ref RC_mhttpd_Main_Status_page . This allows the user to change the refresh period of the Status page.
 
  * <center> 
@@ -2555,7 +2690,7 @@ on the  @ref RC_mhttpd_Main_Status_page . This allows the user to change the ref
 
 \Note
 It is important to note that the \b refresh of the Status Page is not "event driven" but is controlled by a 
-timer whose rate is adjustable through the  @ref RC_mhttpd_Config_button "Config button".
+timer whose rate is adjustable through the  <span class="Config">ODB</span> @ref RC_mhttpd_Config_button "button".
 This means the information at any given time may reflect the experiment state of up to
 <i> n </i> seconds in the past, where <i> n </i> is the timer setting of the refresh parameter.
 
@@ -2574,7 +2709,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 <!-- ------------ A L I A S   P A G E  ------- -->
 
-/*! @page   RC_mhttpd_Alias_page mhttpd Alias page
+/*! @page   RC_mhttpd_Alias_page Alias page
 \anchor idx_mhttpd_page_alias
 \anchor idx_mhttpd_buttons_alias
 <br>
@@ -2661,7 +2796,7 @@ odbedit
 \Note
 The items preceded by \b *** are comments
 
-This would create two identical alias-buttons called "TPC Common". Clicking on the first alias-button "TPC Common"
+This would create two identical alias-buttons called "TPC Common". Clicking on the first alias-button <span class="button">TPC Common</span>
 would open the page in a \b new frame as shown  @ref mhttpd_alias_image "above"; clicking on the second would
 open it in the \b same frame. 
 (Two identical buttons have been created for demonstration purposes only. 
@@ -2675,7 +2810,7 @@ The following code demonstrates how to make a link to an external webpage:
 String length [32]:
 [local:t2kgas:S] set triumf "http://triumf.ca"
 \endcode
-Clicking on the alias-button "triumf" will show the contents of the link in a new page (see   @ref mhttpd_alias_image "above").
+Clicking on the alias-button <span class="button">triumf</span> will show the contents of the link in a new page (see   @ref mhttpd_alias_image "above").
 
 <br>
 \anchor end
@@ -2694,14 +2829,14 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 <!-- ------------ L O G G E R   P A G E  ------- -->
 
-/*! @page   RC_mhttpd_Logger_page mhttpd Logger page
+/*! @page   RC_mhttpd_Logger_page Logger page
 \anchor idx_mhttpd_page_logger
 <br>
  
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_Alias_page", "RunControl","RC_mhttpd_Custom_page",  "RC_mhttpd_Logger_page", "end" );
+pages( "RC_mhttpd_Alias_page", "RunControl","RC_mhttpd_Sequencer_page",  "RC_mhttpd_Logger_page", "end" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -2748,10 +2883,157 @@ is shown.  See @ref F_lazylogger_utility "lazylogger" for more information.
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_Alias_page", "RunControl","RC_mhttpd_Custom_page",  "RC_mhttpd_Logger_page", "" );
+pages( "RC_mhttpd_Alias_page", "RunControl","RC_mhttpd_Sequencer_page",  "RC_mhttpd_Logger_page", "" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
 \anchor end
 
+*/
+
+
+
+<!-- ------------ S E Q U E N C E R   P A G E  ------- -->
+
+/*! @page   RC_mhttpd_Sequencer_page Sequencer page
+\anchor idx_mhttpd_page_sequencer
+<br>
+ 
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_mhttpd_Logger_page", "RunControl","RC_mhttpd_Custom_page",  "RC_mhttpd_Sequencer_page", "end" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+
+
+<br>
+<span class="new">Support for the Sequencer was added in @ref ndf_jun_2011  ) </span>.
+\anchor idx_mhttpd_buttons_sequencer
+
+The @ref RC_Sequencer page is displayed by clicking on the  <span class="button">Sequencer</span> Button on the  @ref RC_mhttpd_Main_Status_page
+(  @ref RC_mhttpd_status_Page_buttons "if present").  The @ref RC_Sequencer takes its parameters from the  @ref RC_Seq_odb "ODB /Sequencer tree".
+
+The first time the  <span class="button">Sequencer</span> Button is pressed, the Sequencer Page will likely appear as follows, 
+where it has been unable to find the specified sequencer loadfile: 
+
+ * <center> 
+ * <span class="image">Example of MIDAS Sequencer page</span>
+ * <br><br><br>
+ * \image html seqscript9.png
+ * </center> 
+
+@section RC_Seq_getting_started Create and load a sequencer file
+<ol>
+<li> Create a simple sequencer file.  Either use the @ref RC_Seq_Example_1 "example file" <i>xmltest.xml</i> as a template
+or if preferred create a file in  @ref  RC_Sequencer " Midas Script Language (MSL)".
+
+This file should be created in (or copied to) the
+  directory on disk that you will be using. The sequencer file contains @ref  RC_Sequencer "sequencer statements".
+ Edit the file using your usual editor, substituting ODB paths that exist on your system.
+  Alternatively, you may edit it using the  <span class="button">Edit Script</span> button once the file is loaded.
+
+<li> Enter the appropriate  <span class="odb">path</span> and  <span class="odb">filename</span> for your system in the  @ref RC_Seq_odb "ODB /Sequencer" tree 
+<li> Click on the  <span class="button">Sequencer</span> Button on the  @ref RC_mhttpd_Main_Status_page 
+<li> If you have correctly entered the  <span class="odb">path</span> and  <span class="odb">filename</span> (see step 2 above) your file should 
+be loaded as in the next example.
+</ol>
+
+ * <center> 
+ * <span class="image">Example of MIDAS Sequencer page showing a loaded sequencer file</span>
+ * <br><br><br>
+ * \image html seq_orig_file.png
+ * </center> 
+
+@section RC_Seq_edit  Edit the sequencer file
+Click the  <span class="button">Edit</span> button to edit the loaded file.  Save the edited file with the  <span class="button">Save</span> button
+or the edits will be lost.
+
+
+@section RC_Seq_load  Load another sequencer file
+Click the  <span class="button">Load</span> button to load a different sequencer file. 
+A list of the available sequencer files will be shown as follows:
+ * <center> 
+ * <span class="image">Example of MIDAS Sequencer page after clicking the Load button</span>
+ * <br><br><br>
+ * \image html seqload.png
+ * </center> 
+
+After clicking on "xmltest.xml", the loaded file will be displayed, e.g.
+
+ * <center> 
+ * <span class="image">Example of MIDAS Sequencer page after clicking the Load button</span>
+ * <br><br><br>
+ * \image html seqfile.png
+ * </center> 
+
+
+@section RC_Seq_start  Start the sequencer
+Start the sequencer using the  <span class="button">Start Script</span> button.  If  @ref RC_Edit_On_Sequence_subdir "edit-on-sequence parameters" 
+are defined, these will be displayed for the user to review and/or edit.
+
+
+ * <center> 
+ * <span class="image">Example of Start Sequencer page showing edit-on-sequence parameters</span>
+ * <br><br><br>
+ * \image html seq_start_params.png
+ * </center>
+
+
+Start the script with the  <span class="button">Start Script</span> button. 
+
+<b>If there is an error in the script</b>, the display will change to indicate where the error has occurred, e.g.
+
+ * <center> 
+ * <span class="image">Example of Sequencer page showing an error in the sequencer load file</span>
+ * <br><br><br>
+ * \image html seq_error.png
+ * </center>
+
+These errors are reflected in the <span class="odb">/Sequencer</span> tree as shown @ref RC_seq_err "here".
+
+When there is an error in the loadfile, use the  <span class="button">Edit</span> button to correct the file.
+
+
+<b>If there is no error</b> detected,  the display will then change to show the sequencer script status page
+(see examples below). The colours change to indicate the progress of the sequencer.
+
+
+ * <center> 
+ * <span class="image">Example of Sequencer Status page showing a running sequence</span>
+ * <br><br><br>
+ * \image html seq_progress.png
+ * </center>
+
+When the sequencer is running, the buttons <span class="button">Stop after current run</span> and 
+ <span class="button">Stop immediately</span> appear. These buttons are self-explanatory. 
+There is also a  <span class="button">Status</span> button provided to return to the main Status page.
+
+
+The main status page also shows whether the sequencer is running, as indicated in the example below ( see also @ref seq_status "Restart box").
+
+In this example, the user has also programmed the  @ref RC_Status_Items_subdir "status items" to reflect the progress of the Sequencer. 
+The Sequencer code in the load file changes the values of the ODB keys <span class="odb">pulse width (ms)</span> and <span class="odb">seq counter</span>. 
+These have been defined as "status items" and also appeared as edit-on-sequence parameters @ref RC_Seq_start "above". 
+
+ * <center> 
+ * <span class="image">Example of Main Status Page showing when the sequencer is running
+ * <br><br><br>
+ * \image html main_status_seq.jpg
+ * </center>
+
+
+
+
+
+
+\htmlonly
+<script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_mhttpd_Logger_page", "RunControl","RC_mhttpd_Custom_page",  "RC_mhttpd_Sequencer_page", "" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script>
+\endhtmlonly
+\anchor end
 */
