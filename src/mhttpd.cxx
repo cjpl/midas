@@ -961,7 +961,7 @@ void show_help_page()
    rsprintf("</div>\n");
    rsprintf("<div id=\"helpFooter\" class=\"footerDiv\" style=\"font-size:10pt;height:50px;\">\n");
    rsprintf("<div id=\"contribList\" style=\"display:inline;\">\n");
-   rsprintf("Contributions: Pierre-Andre Amaudruz - Sergio Ballestrero - Suzannah Daviel - Peter Green - Qing Gu - Greg Hackman - Gertjan Hofman - Paul Knowles - Exaos Lee - Rudi Meier - Bill Mills - Glenn Moloney - Dave Morris - John M O'Donnell - Konstantin Olchanski - Chris Pearson - Renee Poutissou - Stefan Ritt - Tamsen Schurman - Andreas Suter - Jan M.Wouters - Piotr Adam Zolnierczuk\n");
+   rsprintf("Contributions: Pierre-Andre Amaudruz - Sergio Ballestrero - Suzannah Daviel - Peter Green - Qing Gu - Greg Hackman - Gertjan Hofman - Paul Knowles - Exaos Lee - Rudi Meier - Bill Mills - Glenn Moloney - Dave Morris - John M O'Donnell - Konstantin Olchanski - Chris Pearson - Renee Poutissou - Stefan Ritt - Ryu Sawada - Tamsen Schurman - Andreas Suter - Jan M.Wouters - Piotr Adam Zolnierczuk\n");
    rsprintf("</div></div>\n");
    
    rsprintf("</form>\n");
