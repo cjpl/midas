@@ -126,30 +126,30 @@ button, input[type=button], input[type=submit], input[type=reset]{
 	margin-bottom:1px;
 
    background: #f5f5f5; /* Old browsers */
-   background: -moz-linear-gradient(top,  #f5f5f5 0%, #c8c8c8 100%); /* FF3.6+ */
+   background: -moz-linear-gradient(top,  #f5f5f5 0%, #D8D8D8 100%); /* FF3.6+ */
    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#f5f5f5), color-stop(100%,#c8c8c8)); /* Chrome,Safari4+ */
-   background: -webkit-linear-gradient(top,  #f5f5f5 0%,#c8c8c8 100%); /* Chrome10+,Safari5.1+ */
-   background: -o-linear-gradient(top,  #f5f5f5 0%,#c8c8c8 100%); /* Opera 11.10+ */
-   background: -ms-linear-gradient(top,  #f5f5f5 0%,#c8c8c8 100%); /* IE10+ */
-   background: linear-gradient(to bottom,  #f5f5f5 0%,#c8c8c8 100%); /* W3C */
+   background: -webkit-linear-gradient(top,  #f5f5f5 0%,#D8D8D8 100%); /* Chrome10+,Safari5.1+ */
+   background: -o-linear-gradient(top,  #f5f5f5 0%,#D8D8D8 100%); /* Opera 11.10+ */
+   background: -ms-linear-gradient(top,  #f5f5f5 0%,#D8D8D8 100%); /* IE10+ */
+   background: linear-gradient(to bottom,  #f5f5f5 0%,#D8D8D8 100%); /* W3C */
    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f5f5f5', endColorstr='#c8c8c8',GradientType=0 ); /* IE6-9 */
 }
 
 button:hover, input[type=button]:hover, input[type=submit]:hover, input[type=reset]:hover{
 	background-color: #888888; /*#8e44ad;*/
 
-	background-image: linear-gradient(bottom, #FFFFFF 67%, #D8D8D8 0%);
-	background-image: -o-linear-gradient(bottom, #FFFFFF 67%, #D8D8D8 0%);
-	background: -moz-linear-gradient(top,  #FFFFFF,  #D8D8D8);
-	background-image: -webkit-linear-gradient(bottom, #FFFFFF 67%, #D8D8D8 0%);
-	background-image: -ms-linear-gradient(bottom, #FFFFFF 67%, #D8D8D8 0%);
+	background-image: linear-gradient(bottom, #FFFFFF 67%, #E8E8E8 0%);
+	background-image: -o-linear-gradient(bottom, #FFFFFF 67%, #E8E8E8 0%);
+	background: -moz-linear-gradient(top,  #FFFFFF,  #E8E8E8);
+	background-image: -webkit-linear-gradient(bottom, #FFFFFF 67%, #E8E8E8 0%);
+	background-image: -ms-linear-gradient(bottom, #FFFFFF 67%, #E8E8E8 0%);
 
 	background-image: -webkit-gradient(
 		linear,
 		left bottom,
 		left top,
 		color-stop(0.67, #FFFFFF),
-		color-stop(0, #D8D8D8)
+		color-stop(0, #E8E8E8)
 	);
 }
 
@@ -275,7 +275,7 @@ table.dialogTable td{
 
 #runButton{
 	padding:0.25em;
-	margin-top:0.5em;
+	margin-top:0.25em;
 }
 
 /*Equipment table*/
@@ -314,7 +314,8 @@ td.meterCell{
 }
 
 #runNumberCell{
-	font-size:150%;
+	font-size:120%;
+	line-height: 1.25em;
 	vertical-align: middle;
 	border-radius: 12px;
 	border:2px solid #EEEEEE;
