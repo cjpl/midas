@@ -504,6 +504,20 @@ void unsetparam(const char *param)
 
 /*------------------------------------------------------------------*/
 
+static char _dec_path[256];
+
+void set_dec_path(const char *path)
+{
+   strlcpy(_dec_path, path, sizeof(_dec_path));
+}
+
+char *get_dec_path()
+{
+   return _dec_path;
+}
+
+/*------------------------------------------------------------------*/
+
 int mhttpd_revision()
 {
    return atoi(mhttpd_svn_revision+6);
@@ -1123,7 +1137,7 @@ void exec_script(HNDLE hkey)
 void show_navigation_bar(const char *cur_page)
 {
    HNDLE hDB;
-   char str[256], *p;
+   char str[256], dec_path[256], path[256], *p;
    int size;
    
    cm_get_experiment_database(&hDB, NULL);
@@ -1141,8 +1155,16 @@ void show_navigation_bar(const char *cur_page)
    size = sizeof(str);
    db_get_value(hDB, 0, "/Experiment/Menu Buttons", str, &size, TID_STRING, TRUE);
    
-   p = strtok(str, ",");
+   /* add one "../" for each level */
+   strlcpy(dec_path, get_dec_path(), sizeof(dec_path));
+   path[0] = 0;
+   for (p = dec_path ; *p ; p++)
+      if (*p == '/')
+         strlcat(path, "../", sizeof(path));
+   if (path[strlen(path)-1] == '/')
+      path[strlen(path)-1] = 0;
    
+   p = strtok(str, ",");
    while (p) {
       
       while (*p == ' ')
@@ -1151,7 +1173,8 @@ void show_navigation_bar(const char *cur_page)
       while (str[strlen(str)-1] == ' ')
          str[strlen(str)-1] = 0;
       
-      rsprintf("<input type=submit name=cmd value=\"%s\" onclick=\"self.location=\'?cmd=%s\';\">\n", str, str);
+      rsprintf("<input type=submit name=cmd value=\"%s\" onclick=\"window.location.href=\'./%s?cmd=%s\';return false;\">\n",
+               str, path, str);
       
       p = strtok(NULL, ",");
    }
@@ -13600,19 +13623,19 @@ void send_alarm_sound()
 
 void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *cookie_cpwd, const char *path, int refresh)
 /********************************************************************\
-
-  Routine: interprete
-
-  Purpose: Interprete parametersand generate HTML output from odb.
-
-  Input:
-    char *cookie_pwd        Cookie containing encrypted password
-    char *path              ODB path "/dir/subdir/key"
-
-  <implicit>
-    _param/_value array accessible via getparam()
-
-\********************************************************************/
+ 
+ Routine: interprete
+ 
+ Purpose: Interprete parametersand generate HTML output from odb.
+ 
+ Input:
+ char *cookie_pwd        Cookie containing encrypted password
+ char *path              ODB path "/dir/subdir/key"
+ 
+ <implicit>
+ _param/_value array accessible via getparam()
+ 
+ \********************************************************************/
 {
    int i, j, n, status, size, run_state, index;
    WORD event_id;
@@ -13623,29 +13646,30 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
    char data[TEXT_SIZE];
    time_t now;
    struct tm *gmt;
-
-   if (strstr(path, "favicon.ico") != 0 || 
+   
+   if (strstr(path, "favicon.ico") != 0 ||
        strstr(path, "favicon.png")) {
       send_icon(path);
       return;
    }
-
+   
    if (strstr(path, "mhttpd.css")) {
       send_css();
       return;
    }
-
+   
    if (strstr(path, "mhttpd.js")) {
       send_js();
       return;
    }
-
+   
    /* encode path for further usage */
    strlcpy(dec_path, path, sizeof(dec_path));
    urlDecode(dec_path);
    urlDecode(dec_path); /* necessary for %2520 -> %20 -> ' ', used e.g. in deleting ODB entries with blanks in path */
    strlcpy(enc_path, dec_path, sizeof(enc_path));
    urlEncode(enc_path, sizeof(enc_path));
+   set_dec_path(dec_path);
 
    const char* experiment = getparam("exp");
    const char* password = getparam("pwd");
@@ -13654,28 +13678,28 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
    const char* value = getparam("value");
    const char* group = getparam("group");
    index = atoi(getparam("index"));
-
+   
    cm_get_experiment_database(&hDB, NULL);
-
+   
    if (history_mode) {
       if (strncmp(path, "HS/", 3) == 0) {
          if (equal_ustring(command, "config")) {
             return;
          }
-
+         
          show_hist_page(dec_path + 3, sizeof(dec_path) - 3, NULL, NULL, refresh);
          return;
       }
       
       return;
    }
-
+   
    /* check for password */
    db_find_key(hDB, 0, "/Experiment/Security/Password", &hkey);
    if (!password[0] && hkey) {
       size = sizeof(str);
       db_get_data(hDB, hkey, str, &size, TID_STRING);
-
+      
       /* check for excemption */
       db_find_key(hDB, 0, "/Experiment/Security/Allowed programs/mhttpd", &hkey);
       if (hkey == 0 && strcmp(cookie_pwd, str) != 0) {
@@ -13683,53 +13707,53 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
          return;
       }
    }
-
+   
    /* get run state */
    run_state = STATE_STOPPED;
    size = sizeof(run_state);
    db_get_value(hDB, 0, "/Runinfo/State", &run_state, &size, TID_INT, TRUE);
-
+   
    /*---- redirect with cookie if password given --------------------*/
-
+   
    if (password[0]) {
       rsprintf("HTTP/1.0 302 Found\r\n");
       rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
-
+      
       time(&now);
       now += 3600 * 24;
       gmt = gmtime(&now);
       strftime(str, sizeof(str), "%A, %d-%b-%Y %H:00:00 GMT", gmt);
-
+      
       rsprintf("Set-Cookie: midas_pwd=%s; path=/; expires=%s\r\n",
                ss_crypt(password, "mi"), str);
-
+      
       rsprintf("Location: ./\n\n<html>redir</html>\r\n");
       return;
    }
-
+   
    if (wpassword[0]) {
       /* check if password correct */
       if (!check_web_password(ss_crypt(wpassword, "mi"), getparam("redir"), experiment))
          return;
-
+      
       rsprintf("HTTP/1.0 302 Found\r\n");
       rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
-
+      
       time(&now);
       now += 3600 * 24;
       gmt = gmtime(&now);
       strftime(str, sizeof(str), "%A, %d-%b-%Y %H:%M:%S GMT", gmt);
-
+      
       rsprintf("Set-Cookie: midas_wpwd=%s; path=/; expires=%s\r\n",
                ss_crypt(wpassword, "mi"), str);
-
+      
       sprintf(str, "./%s", getparam("redir"));
       rsprintf("Location: %s\n\n<html>redir</html>\r\n", str);
       return;
    }
-
+   
    /*---- redirect if ODB command -----------------------------------*/
-
+   
    if (equal_ustring(command, "ODB")) {
       str[0] = 0;
       for (p=dec_path ; *p ; p++)
@@ -13739,14 +13763,14 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       redirect(str);
       return;
    }
-
+   
    /*---- send sound file -------------------------------------------*/
-
+   
    if (equal_ustring(dec_path, "alarm.mid")) {
       send_alarm_sound();
       return;
    }
-
+   
    /*---- java script commands --------------------------------------*/
    
    if (equal_ustring(command, "jset") ||
@@ -13764,14 +13788,14 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
    }
    
    /*---- redirect if SC command ------------------------------------*/
-
+   
    if (equal_ustring(command, "SC")) {
       redirect("SC/");
       return;
    }
-
+   
    /*---- redirect if status command --------------------------------*/
-
+   
    if (equal_ustring(command, "status")) {
       str[0] = 0;
       for (p=dec_path ; *p ; p++)
@@ -13780,65 +13804,65 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       redirect(str);
       return;
    }
-
+   
    /*---- script command --------------------------------------------*/
-
+   
    if (getparam("script") && *getparam("script")) {
       sprintf(str, "%s?script=%s", path, getparam("script"));
       if (!check_web_password(cookie_wpwd, str, experiment))
          return;
-
+      
       sprintf(str, "/Script/%s", getparam("script"));
-
+      
       db_find_key(hDB, 0, str, &hkey);
-
+      
       if (hkey) {
          /* for NT: close reply socket before starting subprocess */
          if (isparam("redir"))
-           redirect2(getparam("redir"));
+            redirect2(getparam("redir"));
          else
-           redirect2("");         
+            redirect2("");
          exec_script(hkey);
       } else {
          if (isparam("redir"))
-           redirect2(getparam("redir"));
+            redirect2(getparam("redir"));
          else
-           redirect2("");         
+            redirect2("");
       }
-
+      
       return;
    }
-
+   
    /*---- customscript command --------------------------------------*/
-
+   
    if (getparam("customscript") && *getparam("customscript")) {
       sprintf(str, "%s?customscript=%s", path, getparam("customscript"));
       if (!check_web_password(cookie_wpwd, str, experiment))
          return;
-
+      
       sprintf(str, "/CustomScript/%s", getparam("customscript"));
-
+      
       db_find_key(hDB, 0, str, &hkey);
-
+      
       if (hkey) {
          /* for NT: close reply socket before starting subprocess */
          if (isparam("redir"))
-           redirect2(getparam("redir"));
+            redirect2(getparam("redir"));
          else
-           redirect2("");         
+            redirect2("");
          exec_script(hkey);
       } else {
          if (isparam("redir"))
-           redirect(getparam("redir"));
+            redirect(getparam("redir"));
          else
-           redirect("");         
+            redirect("");
       }
-
+      
       return;
    }
-
+   
    /*---- alarms command --------------------------------------------*/
-
+   
    if (equal_ustring(command, "alarms")) {
       str[0] = 0;
       for (p=dec_path ; *p ; p++)
@@ -13852,18 +13876,18 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       show_alarm_page();
       return;
    }
-
+   
    /*---- alarms reset command --------------------------------------*/
-
+   
    if (equal_ustring(command, "alrst")) {
       if (*getparam("name"))
          al_reset_alarm(getparam("name"));
       redirect("");
       return;
    }
-
+   
    /*---- history command -------------------------------------------*/
-
+   
    if (equal_ustring(command, "history")) {
       str[0] = 0;
       for (p=dec_path ; *p ; p++)
@@ -13873,9 +13897,20 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       redirect(str);
       return;
    }
-
+   
+   if (strncmp(path, "HS/", 3) == 0) {
+      if (equal_ustring(command, "config")) {
+         sprintf(str, "%s?cmd=%s", path, command);
+         if (!check_web_password(cookie_wpwd, str, experiment))
+            return;
+      }
+      
+      show_hist_page(dec_path + 3, sizeof(dec_path) - 3, NULL, NULL, refresh);
+      return;
+   }
+   
    /*---- MSCB command ----------------------------------------------*/
-
+   
    if (equal_ustring(command, "MSCB")) {
       str[0] = 0;
       for (p=dec_path ; *p ; p++)
@@ -13885,14 +13920,14 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       redirect(str);
       return;
    }
-
+   
    if (strncmp(path, "MS/", 3) == 0) {
       if (equal_ustring(command, "set")) {
          sprintf(str, "%s?cmd=%s", path, command);
          if (!check_web_password(cookie_wpwd, str, experiment))
             return;
       }
-
+      
 #ifdef HAVE_MSCB
       show_mscb_page(dec_path + 3, refresh);
 #else
@@ -13900,18 +13935,25 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
 #endif
       return;
    }
-
+   
+   /*---- help command ----------------------------------------------*/
+   
+   if (equal_ustring(command, "help")) {
+      show_help_page();
+      return;
+   }
+   
    /*---- pause run -------------------------------------------*/
-
+   
    if (equal_ustring(command, "pause")) {
       if (run_state != STATE_RUNNING) {
          show_error("Run is not running");
          return;
       }
-
+      
       if (!check_web_password(cookie_wpwd, "?cmd=pause", experiment))
          return;
-
+      
       status = cm_transition(TR_PAUSE, 0, str, sizeof(str), MTHREAD | ASYNC, FALSE);
       if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
          show_error(str);
@@ -13919,25 +13961,25 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
          redirect(getparam("redir"));
       else
          redirect("");
-
+      
       requested_old_state = run_state;
       if (status == SUCCESS)
          requested_transition = TR_PAUSE;
-
+      
       return;
    }
-
+   
    /*---- resume run ------------------------------------------*/
-
+   
    if (equal_ustring(command, "resume")) {
       if (run_state != STATE_PAUSED) {
          show_error("Run is not paused");
          return;
       }
-
+      
       if (!check_web_password(cookie_wpwd, "?cmd=resume", experiment))
          return;
-
+      
       status = cm_transition(TR_RESUME, 0, str, sizeof(str), MTHREAD | ASYNC, FALSE);
       if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
          show_error(str);
@@ -13945,22 +13987,22 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
          redirect(getparam("redir"));
       else
          redirect("");
-
+      
       requested_old_state = run_state;
       if (status == SUCCESS)
          requested_transition = TR_RESUME;
-
+      
       return;
    }
-
+   
    /*---- start dialog --------------------------------------------*/
-
+   
    if (equal_ustring(command, "start")) {
       if (run_state == STATE_RUNNING) {
          show_error("Run is already started");
          return;
       }
-
+      
       if (value[0] == 0) {
          if (!check_web_password(cookie_wpwd, "?cmd=start", experiment))
             return;
@@ -13971,12 +14013,12 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
          if (hkey) {
             for (i = 0, n = 0;; i++) {
                db_enum_key(hDB, hkey, i, &hsubkey);
-
+               
                if (!hsubkey)
                   break;
-
+               
                db_get_key(hDB, hsubkey, &key);
-
+               
                for (j = 0; j < key.num_values; j++) {
                   size = key.item_size;
                   sprintf(str, "x%d", n++);
@@ -13985,7 +14027,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
                }
             }
          }
-
+         
          i = atoi(value);
          if (i <= 0) {
             cm_msg(MERROR, "interprete", "Start run: invalid run number %d", i);
@@ -13993,15 +14035,15 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
             show_error(str);
             return;
          }
-
+         
          status = cm_transition(TR_START, i, str, sizeof(str), MTHREAD | ASYNC, FALSE);
          if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION) {
             show_error(str);
          } else {
-
+            
             requested_old_state = run_state;
             requested_transition = TR_START;
-
+            
             if (isparam("redir"))
                redirect(getparam("redir"));
             else
@@ -14010,18 +14052,18 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       }
       return;
    }
-
+   
    /*---- stop run --------------------------------------------*/
-
+   
    if (equal_ustring(command, "stop")) {
       if (run_state != STATE_RUNNING && run_state != STATE_PAUSED) {
          show_error("Run is not running");
          return;
       }
-
+      
       if (!check_web_password(cookie_wpwd, "?cmd=stop", experiment))
          return;
-
+      
       status = cm_transition(TR_STOP, 0, str, sizeof(str), MTHREAD | ASYNC, FALSE);
       if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
          show_error(str);
@@ -14029,36 +14071,36 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
          redirect(getparam("redir"));
       else
          redirect("");
-
+      
       requested_old_state = run_state;
       if (status == CM_SUCCESS)
          requested_transition = TR_STOP;
-
+      
       return;
    }
-
+   
    /*---- trigger equipment readout ---------------------------*/
-
+   
    if (strncmp(command, "Trigger", 7) == 0) {
       sprintf(str, "?cmd=%s", command);
       if (!check_web_password(cookie_wpwd, str, experiment))
          return;
-
+      
       /* extract equipment name */
       strlcpy(eq_name, command + 8, sizeof(eq_name));
       if (strchr(eq_name, ' '))
          *strchr(eq_name, ' ') = 0;
-
+      
       /* get frontend name */
       sprintf(str, "/Equipment/%s/Common/Frontend name", eq_name);
       size = NAME_LENGTH;
       db_get_value(hDB, 0, str, fe_name, &size, TID_STRING, TRUE);
-
+      
       /* and ID */
       sprintf(str, "/Equipment/%s/Common/Event ID", eq_name);
       size = sizeof(event_id);
       db_get_value(hDB, 0, str, &event_id, &size, TID_WORD, TRUE);
-
+      
       if (cm_exist(fe_name, FALSE) != CM_SUCCESS) {
          sprintf(str, "Frontend \"%s\" not running!", fe_name);
          show_error(str);
@@ -14073,27 +14115,27 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
                show_error("Error triggering event");
             else
                redirect("");
-
+            
             cm_disconnect_client(hconn, FALSE);
          }
       }
-
+      
       return;
    }
-
+   
    /*---- switch to next subrun -------------------------------------*/
-
+   
    if (strncmp(command, "Next Subrun", 11) == 0) {
       i = TRUE;
       db_set_value(hDB, 0, "/Logger/Next subrun", &i, sizeof(i), 1, TID_BOOL);
       redirect("");
       return;
    }
-
+   
    /*---- cancel command --------------------------------------------*/
-
+   
    if (equal_ustring(command, "cancel")) {
-
+      
       if (group[0]) {
          /* extract equipment name */
          eq_name[0] = 0;
@@ -14102,7 +14144,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
             if (strchr(eq_name, '/'))
                *strchr(eq_name, '/') = 0;
          }
-
+         
          /* back to SC display */
          sprintf(str, "SC/%s/%s", eq_name, group);
          redirect(str);
@@ -14112,15 +14154,15 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
          else
             redirect("./");
       }
-
+      
       return;
    }
-
+   
    /*---- set command -----------------------------------------------*/
-
+   
    if (equal_ustring(command, "set") && strncmp(path, "SC/", 3) != 0
        && strncmp(path, "CS/", 3) != 0) {
-
+      
       if (strchr(enc_path, '/'))
          strlcpy(str, strrchr(enc_path, '/') + 1, sizeof(str));
       else
@@ -14128,66 +14170,66 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       strlcat(str, "?cmd=set", sizeof(str));
       if (!check_web_password(cookie_wpwd, str, experiment))
          return;
-
+      
       show_set_page(enc_path, sizeof(enc_path), dec_path, group, index, value);
       return;
    }
-
+   
    /*---- find command ----------------------------------------------*/
-
+   
    if (equal_ustring(command, "find")) {
       show_find_page(enc_path, value);
       return;
    }
-
+   
    /*---- create command --------------------------------------------*/
-
+   
    if (equal_ustring(command, "create")) {
       sprintf(str, "%s?cmd=create", enc_path);
       if (!check_web_password(cookie_wpwd, str, experiment))
          return;
-
+      
       show_create_page(enc_path, dec_path, value, index, atoi(getparam("type")));
       return;
    }
-
+   
    /*---- CAMAC CNAF command ----------------------------------------*/
-
+   
    if (equal_ustring(command, "CNAF") || strncmp(path, "CNAF", 4) == 0) {
       if (!check_web_password(cookie_wpwd, "?cmd=CNAF", experiment))
          return;
-
+      
       show_cnaf_page();
       return;
    }
-
+   
    /*---- alarms command --------------------------------------------*/
-
+   
    if (equal_ustring(command, "reset all alarms")) {
       if (!check_web_password(cookie_wpwd, "?cmd=reset%20all%20alarms", experiment))
          return;
-
+      
       al_reset_alarm(NULL);
       redirect("./?cmd=alarms");
       return;
    }
-
+   
    if (equal_ustring(command, "reset")) {
       if (!check_web_password(cookie_wpwd, "?cmd=reset%20all%20alarms", experiment))
          return;
-
+      
       al_reset_alarm(dec_path);
       redirect("./?cmd=alarms");
       return;
    }
-
+   
    if (equal_ustring(command, "Alarms on/off")) {
       redirect("Alarms/Alarm system active?cmd=set");
       return;
    }
-
+   
    /*---- programs command ------------------------------------------*/
-
+   
    if (equal_ustring(command, "programs")) {
       str[0] = 0;
       for (p=dec_path ; *p ; p++)
@@ -14198,35 +14240,35 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
          redirect(str);
          return;
       }
-
+      
       str[0] = 0;
       if (*getparam("Start"))
          sprintf(str, "?cmd=programs&Start=%s", getparam("Start"));
       if (*getparam("Stop"))
          sprintf(str, "?cmd=programs&Stop=%s", getparam("Stop"));
-
+      
       if (str[0])
          if (!check_web_password(cookie_wpwd, str, experiment))
             return;
-
+      
       show_programs_page();
       return;
    }
-
+   
    /*---- config command --------------------------------------------*/
-
+   
    if (equal_ustring(command, "config")) {
       show_config_page(refresh);
       return;
    }
-
+   
    /*---- Messages command ------------------------------------------*/
-
+   
    if (equal_ustring(command, "messages")) {
       show_messages_page(refresh, 20);
       return;
    }
-
+   
    if (strncmp(command, "More", 4) == 0 && strncmp(path, "EL/", 3) != 0) {
       i = atoi(command + 4);
       if (i == 0)
@@ -14234,15 +14276,15 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       show_messages_page(0, i);
       return;
    }
-
-  /*---- ELog command ----------------------------------------------*/
-
+   
+   /*---- ELog command ----------------------------------------------*/
+   
    if (equal_ustring(command, "elog")) {
       get_elog_url(str, sizeof(str));
       redirect(str);
       return;
    }
-
+   
    if (strncmp(path, "EL/", 3) == 0) {
       if (equal_ustring(command, "new") || equal_ustring(command, "edit")
           || equal_ustring(command, "reply")) {
@@ -14250,58 +14292,64 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
          if (!check_web_password(cookie_wpwd, str, experiment))
             return;
       }
-
+      
       show_elog_page(dec_path + 3, sizeof(dec_path) - 3);
       return;
    }
-
+   
    if (equal_ustring(command, "Create ELog from this page")) {
       show_elog_page(dec_path, sizeof(dec_path));
       return;
    }
-
+   
    /*---- accept command --------------------------------------------*/
-
+   
    if (equal_ustring(command, "accept")) {
       refresh = atoi(getparam("refr"));
-
+      
       /* redirect with cookie */
       rsprintf("HTTP/1.0 302 Found\r\n");
       rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
       rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n");
-
+      
       time(&now);
       now += 3600 * 24 * 365;
       gmt = gmtime(&now);
       strftime(str, sizeof(str), "%A, %d-%b-%Y %H:00:00 GMT", gmt);
-
+      
       rsprintf("Set-Cookie: midas_refr=%d; path=/; expires=%s\r\n", refresh, str);
-
+      
       rsprintf("Location: ./\r\n\r\n<html>redir</html>\r\n");
-
+      
       return;
    }
-
+   
    /*---- delete command --------------------------------------------*/
-
+   
    if (equal_ustring(command, "delete")) {
       sprintf(str, "%s?cmd=delete", enc_path);
       if (!check_web_password(cookie_wpwd, str, experiment))
          return;
-
+      
       show_delete_page(enc_path, dec_path, value, index);
       return;
    }
    
-   /*---- help command ----------------------------------------------*/
+   /*---- slow control display --------------------------------------*/
    
-   if (equal_ustring(command, "help")) {
-      show_help_page();
+   if (strncmp(path, "SC/", 3) == 0) {
+      if (equal_ustring(command, "edit")) {
+         sprintf(str, "%s?cmd=Edit&index=%d", path, index);
+         if (!check_web_password(cookie_wpwd, str, experiment))
+            return;
+      }
+      
+      show_sc_page(dec_path + 3, refresh);
       return;
    }
    
    /*---- sequencer page --------------------------------------------*/
-
+   
    if (equal_ustring(command, "sequencer")) {
       str[0] = 0;
       for (p=dec_path ; *p ; p++)
@@ -14311,7 +14359,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       redirect(str);
       return;
    }
-
+   
    if (strncmp(path, "SEQ/", 4) == 0) {
       show_seq_page();
       return;
@@ -14325,63 +14373,36 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
          if (!check_web_password(cookie_wpwd, str, experiment))
             return;
       }
-
+      
       show_custom_page(dec_path + 3, cookie_cpwd);
       return;
    }
-
+   
    if (db_find_key(hDB, 0, "/Custom/Status", &hkey) == DB_SUCCESS && path[0] == 0) {
       if (equal_ustring(command, "edit")) {
          sprintf(str, "%s?cmd=Edit&index=%d", path, index);
          if (!check_web_password(cookie_wpwd, str, experiment))
             return;
       }
-
+      
       show_custom_page("Status", cookie_cpwd);
       return;
    }
-
-   /*---- slow control page -----------------------------------------*/
    
-   if (strncmp(path, "SC/", 3) == 0) {
-      if (equal_ustring(command, "edit")) {
-         sprintf(str, "%s?cmd=Edit&index=%d", path, index);
-         if (!check_web_password(cookie_wpwd, str, experiment))
-            return;
-      }
-      
-      show_sc_page(dec_path + 3, refresh);
-      return;
-   }
-   
-   /*---- history page ----------------------------------------------*/
-   
-   if (strncmp(path, "HS/", 3) == 0) {
-      if (equal_ustring(command, "config")) {
-         sprintf(str, "%s?cmd=%s", path, command);
-         if (!check_web_password(cookie_wpwd, str, experiment))
-            return;
-      }
-      
-      show_hist_page(dec_path + 3, sizeof(dec_path) - 3, NULL, NULL, refresh);
-      return;
-   }
-   
-
    /*---- show status -----------------------------------------------*/
-
+   
    if (path[0] == 0) {
       if (elog_mode) {
          redirect("EL/");
          return;
       }
-
+      
       show_status_page(refresh, cookie_wpwd);
       return;
    }
-
+   
    /*---- show ODB --------------------------------------------------*/
-
+   
    if (path[0]) {
       show_odb_page(enc_path, sizeof(enc_path), dec_path);
       return;
