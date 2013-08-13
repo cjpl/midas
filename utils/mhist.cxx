@@ -265,8 +265,8 @@ void display_single_hist(MidasHistoryInterface* mh, const char* event_name, time
                          time_t interval, const char *var_name, int index)
 /* read back history */
 {
-   time_t *tbuffer;
-   double *buffer;
+   time_t *tbuffer = NULL;
+   double *buffer = NULL;
    int n;
    int status = 0;
    int hs_status = 0;
@@ -287,13 +287,19 @@ void display_single_hist(MidasHistoryInterface* mh, const char* event_name, time
       printf("No data for event \"%s\" variable \"%s\" found in specified time range\n", event_name, var_name);
 
    for (int i = 0; i < n; i++) {
-      char str[1024];
+      char str[256];
 
       if (binary_time)
-         printf(str, "%d %f\n", tbuffer[i], buffer[i]);
+         sprintf(str, "%d %.16g", (int)tbuffer[i], buffer[i]);
       else {
-         printf(str, "%s %f\n", ctime(&tbuffer[i]) + 4, buffer[i]);
+         sprintf(str, "%s %.16g", ctime(&tbuffer[i]) + 4, buffer[i]);
       }
+
+      char* s = strchr(str, '\n');
+      if (s)
+         *s = ' ';
+
+      printf("%s\n", str);
    }
 
    free(tbuffer);
@@ -361,7 +367,7 @@ void display_range_hist(MidasHistoryInterface* mh, const char* event_name, time_
 
       for (int j = 0, idx = index1; idx < index2 + 1; idx++, j++) {
          strcat(str, "\t");
-         sprintf(&str[strlen(str)], "%f", buffer[j][i]);
+         sprintf(&str[strlen(str)], "%.16g", buffer[j][i]);
       }
 
       strcat(str, "\n");
@@ -476,6 +482,7 @@ void display_all_hist(MidasHistoryInterface* mh, const char* event_name, time_t 
       }
       printf("\t");
    }
+   printf("\n");
 
    for (int i = 0; i < nread; i++) {
       if (binary_time)
@@ -488,7 +495,7 @@ void display_all_hist(MidasHistoryInterface* mh, const char* event_name, time_t 
 
       for (int j=0; j<nvars; j++) {
          strcat(str, "\t");
-         sprintf(&str[strlen(str)], "%f", buffer[j][i]);
+         sprintf(&str[strlen(str)], "%.16g", buffer[j][i]);
       }
 
       strcat(str, "\n");
@@ -567,6 +574,7 @@ int main(int argc, char *argv[])
    char *column;
    BOOL do_hst_file = false;
    std::string event_name;
+   int debug = 0;
 
    /* turn off system message */
    cm_set_msg_print(0, MT_ALL, puts);
@@ -593,7 +601,7 @@ int main(int argc, char *argv[])
       status = cm_get_experiment_database(&hDB, NULL);
       assert(status == CM_SUCCESS);
 
-      status = hs_get_history(hDB, 0, HS_GET_DEFAULT|HS_GET_READER|HS_GET_INACTIVE, &mh);
+      status = hs_get_history(hDB, 0, HS_GET_DEFAULT|HS_GET_READER|HS_GET_INACTIVE, debug, &mh);
       assert(status == HS_SUCCESS);
 
       status = query_params(mh, &event_name, &start_time, &end_time, &interval, var_name, &var_type, &var_n_data, &index1);
@@ -650,12 +658,10 @@ int main(int argc, char *argv[])
                strcpy(path1_name, argv[++i]);
          } else {
           usage:
-            printf("\nusage: mhist -e Event ID -v Variable Name\n");
+            printf("\nusage: mhist [-e Event ID] [-v Variable Name]\n");
             printf("         [-i Index] index of variables which are arrays\n");
-            printf
-                ("         [-i Index1:Index2] index range of variables which are arrays (max 50)\n");
-            printf
-                ("         [-t Interval] minimum interval in sec. between two displayed records\n");
+            printf("         [-i Index1:Index2] index range of variables which are arrays (max 50)\n");
+            printf("         [-t Interval] minimum interval in sec. between two displayed records\n");
             printf("         [-h Hours] display between some hours ago and now\n");
             printf("         [-d Days] display between some days ago and now\n");
             printf("         [-f File] specify history file explicitly\n");
@@ -663,8 +669,7 @@ int main(int argc, char *argv[])
             printf("         [-p End date] specify end date YYMMDD[.HHMM[SS]]\n");
             printf("         [-l] list available events and variables\n");
             printf("         [-b] display time stamp in decimal format\n");
-            printf
-                ("         [-z path] path to the location of the history files (def:cwd)\n");
+            printf("         [-z path] path to the location of the history files (def:cwd)\n");
             return 1;
          }
       }
@@ -716,7 +721,7 @@ int main(int argc, char *argv[])
       status = cm_get_experiment_database(&hDB, NULL);
       assert(status == CM_SUCCESS);
 
-      status = hs_get_history(hDB, 0, HS_GET_DEFAULT|HS_GET_READER|HS_GET_INACTIVE, &mh);
+      status = hs_get_history(hDB, 0, HS_GET_DEFAULT|HS_GET_READER|HS_GET_INACTIVE, debug, &mh);
       if (status != HS_SUCCESS) {
          printf("hs_connect() error %d\n", status);
          return 1;
@@ -737,6 +742,8 @@ int main(int argc, char *argv[])
       display_single_hist(mh, event_name.c_str(), start_time, end_time, interval, var_name, index1);
    else
       display_range_hist(mh, event_name.c_str(), start_time, end_time, interval, var_name, index1, index2);
+
+   cm_disconnect_experiment();
 
    return 0;
 }
