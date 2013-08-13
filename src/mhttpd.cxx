@@ -1813,7 +1813,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
                if (equipment.status[0] == 0)
                   rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center class=\"greenLight\">%s@%s", ref, key.name, equipment.frontend_name, equipment.frontend_host);
                else
-                  rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center class=\"%s\">%s", ref, key.name, ( !strcasecmp(equipment.status_color, "#00FF00") )? "greenLight" : ( (!strcasecmp(equipment.status_color, "#FF0000")? "redLight" : ( (!strcasecmp(equipment.status_color, "#FFFFFF"))?"whiteLight":"yellowLight") ) ), equipment.status);
+                  rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center class=\"%s\">%s", ref, key.name, ( !strcasecmp(equipment.status_color, "#00FF00") )? "greenLight" : ( (!strcasecmp(equipment.status_color, "#FF0000")? "redLight" : ( (!strcasecmp(equipment.status_color, "#FFFFFF"))?"":"yellowLight") ) ), equipment.status);
             } else
                rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center class=\"yellowLight\">(disabled)", ref, key.name);
          }
