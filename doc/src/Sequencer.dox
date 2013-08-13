@@ -1,0 +1,701 @@
+/*! @page    RC_Sequencer Sequencer
+\anchor idx_sequencer
+\anchor idx_run_sequencer
+
+<!-- ------------ S E Q U E N C E R  ------- -->
+<br>
+
+\htmlonly <script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_mhttpd_custom_status", "RunControl", "RC_Monitor","RC_Sequencer",  "end" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script> \endhtmlonly
+
+<br>
+\anchor idx_MSL
+\anchor idx_Midas_Script_Language
+A  \b new \b sequencer for starting and stopping runs was implemented in <span class ="new"> @ref  ndf_jun_2011</span>. 
+Since then development has continued, with more commands being added, and the option of using a Midas Script Language (MSL) for
+commands, in addition to the XML language.
+
+The sequencer runs inside @ref RC_mhttpd "mhttpd", and creates a new ODB subdirectory <span class="odb">/Sequencer</span>. 
+Pressing the  <span class="button">Sequencer</span> button (@ref RC_mhttpd_status_Page_buttons "if shown") on the <span class="utility">mhttpd</span> 
+@ref RC_mhttpd_main_status "main status page"  will display the @ref RC_mhttpd_Sequencer_page.
+The sequencer runs scripts in \b XML or \b MSL (Midas Script Language) format, which reside 
+on the server (where @ref RC_mhttpd_utility "mhttpd is running"). 
+
+<span class="note">The sequencer is \b stateless, meaning that even if <span class="utility">mhttpd</span> is 
+stopped and restarted, it resumes operation from where it has been stopped. </span>
+
+\anchor idx_Sequencer_commands
+@section RC_Sequencer_commands  Sequencer Commands 
+The following commands are implemented in the MIDAS sequencer. The upper syntax is 
+for the XML file, the lower for the MSL (Midas Script Language). 
+- Variable names are indicated in <i>italic</i>
+- Options are enclosed in <b>[</b>brackets<b>]</b>. 
+
+<table
+ style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="0">
+  <caption>Above: List of Sequencer Statements
+  </caption>
+<tr> <!--   header    1     -->
+
+ <td colspan=2 style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Sequencer Statement
+</td>
+ <td rowspan=2 style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Meaning
+</td>
+</tr>
+<tr>  <!--   header    2     -->
+ <td  style="vertical-align: top; background-color: whitesmoke; font-weight: bold; text-align: center;">
+File format: XML
+</td>
+ <td  style="vertical-align: top; background-color:aliceblue ; font-weight: bold; text-align: center;">
+File format: MSL
+</td></tr>
+
+<tr> <!--   line    1     -->
+<td class="xml">
+\< !DOCTYPE RunSequence[ <br> 
+   \< !ENTITY <i>name</i> SYSTEM <i>"name.xml"</i> \>  <br>
+]\>  <br>
+\&name; <br>
+</td>
+
+<td class="msl">
+<span class="msl" style="color:lavenderblush">Thisistomakethecolomnabitwider</span><br>
+INCLUDE  <i>name</i>
+</td>
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+     Include another XML file  
+</td></tr>
+
+<tr> <!--   line    2   CALL  -->
+<td class="xml">
+\<Call name="<i>name</i>"\> <i>a,b,c...</i>\</Call\>
+</td>
+
+<td class="msl">
+    CALL  <i>name, a, b, c, ...</i>
+</td>
+
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+
+Call a subroutine. Optional parameters  <i>a,b,c...</i> are passed to the subroutine, 
+where they can be referenced via $1, $2, $3, etc. The subroutine can either 
+reside in the current file, or in a library file which is included. 
+</td></tr>
+
+<tr> <!--   line    3    CAT   -->
+<td class="xml">
+\<Cat name="<i>name</i>"\> <i>a,b,c...</i> \</Set\> 
+</td>
+<td class="msl">
+CAT  <i>name, a, b, c, ...</i>
+
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+concatenates the strings a,b,c,... into a single variable <i>name</i> . Can be 
+referenced with  <i>$name</i>. If a string must contain a comma, it can be enclosed 
+in quotes such as in  
+<br>
+<span class="xml">
+\<Cat name="title"\>Run $run, ",", $n events\</Cat\> <br>
+\<ODBSet path="/Experiment/Run parameters/Title"\>$title\</ODBSet\>
+</span>
+</td></tr>
+
+
+<tr> <!--   line    4    COMMENT   -->
+<td class="xml">
+ \<Comment\> <i>comment</i> \</Comment\>
+
+
+<td class="msl">
+  COMMENT  <i>comment</i>
+
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+a comment for this XML file, for information only. This comment is shown 
+when one clicks on the XML file in the browser inside the web page and can 
+be used to show some information about an XML file. This can be helpful if 
+one has many XML files and the file name only is not enough to supply 
+enough information. 
+
+</td></tr>
+
+<tr> <!--   line    5    GOTO   -->
+<td class="xml">
+ \<Goto line="n" / \> 
+</td>
+
+<td class="msl">
+   GOTO n 
+</td>
+
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+
+Jump to line <i>n</i> in script
+</td></tr>
+
+ 
+<tr> <!--   line    6    IF   -->
+<td class="xml">
+ \<If condition=<i>"con"</i> \>...\</if\> 
+
+
+<td class="msl">
+ IF <i>con</i> <br>
+...  <br>
+ENDIF 
+</td>
+
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+Statements between \<if\> and \</if\> are only executed if condition <i>con</i> is true. 
+The condition can use variables via <i>$name</i> and/or constants together with 
+operators "<", "<=", ">", ">=", "==", "!=", "&" (bitwise AND).
+
+
+</td></tr>   
+ 
+<tr> <!--   line  7 LIBRARY     -->
+<td class="xml">
+ \<Library name=<i>"name"</i> \>...\</Library\> 
+</td>
+
+<td class="msl">
+ LIBRARY <i>name</i>
+</td>
+
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+ Indicates that the current file is a library (which can be included by other 
+  files). A library usually consists of a set of subroutines. 
+ 
+</td></tr>
+
+
+<tr> <!--   line  8 LOOP     -->
+<td class="xml">
+  \<Loop [n=<i>"n"</i>] [var=<i>"name"</i> values=<i>"a,b,c,..."</i>]\> ... \</Loop\> 
+</td>
+
+<td class="msl">
+ LOOP <i>n | a, b, c, ...</i> <br>
+  ...  <br>
+  ENDLOOP 
+</td>
+
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+ to execute a loop n times. For infinite loops, "infinite" can be specified as  <i>n</i>. 
+  Alternatively, a list of values can be specified. In this case, the loop is 
+  executed once for each value, which is stored into the variable <i>name</i> so it 
+  can be accessed inside the loop via <i>$name</i>. 
+</td></tr>
+
+
+<tr> <!--   line   9 MESSAGE    -->
+<td class="xml">
+ \<Message [wait="1"]\><i>message</i> \</Message\>
+</td>
+
+<td class="msl">
+ MESSAGE <i>message</i> [,1] 
+</td>
+
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+  Opens a message box in the browser containing the text <i>message</i>. If 
+  <b>wait="1"</b>, then the sequencer waits until the box is closed by the user before 
+  continuing. 
+</td></tr>
+
+<tr> <!--   line  10   ODBInc   -->
+<td class="xml">
+ \<ODBInc path=<i>"path"</i> \> <i>delta</i> \</ODBInc\>
+</td>
+
+<td class="msl"> 
+ ODBINC <i>path, delta</i> 
+</td>
+
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+ to increment a value in the ODB. 
+</td></tr>
+
+<tr> <!--   line 11 ODBSet      -->
+<td class="xml">
+ \<ODBSet [notify="0|1"] path=<i>"path"</i> \> <i>value</i> \</ODBSet\>
+</td>
+
+<td class="msl">
+ ODBSET <i>path, value </i>[, 0|1] 
+</td>
+
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+ to set a value in the ODB. The notify flag specifies if possible hot-links to this 
+  ODB value are notified. This can be useful if a front-end program has many 
+  parameters, which must be set for a specific run. The front-end usually has a 
+  hot-link to its parameters, so on each modification a callback function in the 
+  front-end is called which usually modifies some hardware. If there are many 
+  ODBSet statements for all parameters, the callback would be executed on 
+  each ODBSet, so the hardware would be reconfigured many times slowing 
+  down the startup of a run. In order to prevent this, notify="0" can be 
+  specified for all ODBSet statements except the last one which contains 
+  notify="1", so the callback function is called only once at the end.
+</td></tr>
+
+
+<tr> <!--   line  12 ODBSubdir     -->
+<td class="xml">
+ \<ODBSubdir [notify="0/1"] path=<i>"path"</i> \>...\</ODBSubdir\>
+</td>
+
+<td class="msl">
+ ODBSUBDIR <i>path</i> [,1]<br>
+ ...<br>
+ ENDODBSUBDIR
+</td>
+
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+ If one wants to se several ODB values in the same directory, the ODBSet 
+  commands can be rather long if the<i>path</i>  is long. Using this command, the 
+  subdir can be specified for all commands between the opening and ending 
+  tags. So instead of writing 
+<br>
+<span class="xml">
+  \<ODBSet path="/Very/long/path/into/the/odb/value1"\>1\</ODBSet\> <br>
+  \<ODBSet path="/Very/long/path/into/the/odb/value2"\>1\</ODBSet\> <br>
+  \<ODBSet path="/Very/long/path/into/the/odb/value3"\>1\</ODBSet\>  <br>
+  \<ODBSet path="/Very/long/path/into/the/odb/value4"\>1\</ODBSet\>  <br>
+</span>
+  one can write <br> 
+<span class="xml">
+ \<ODBSubdir path="/Very/long/path/into/the/odb"\>  <br>
+    \<ODBSet path="value1"\>1</ODBSet\>  <br>
+    \<ODBSet path="value2"\>1</ODBSet\>  <br>
+    \<ODBSet path="value3"\>1</ODBSet\>  <br>
+    \<ODBSet path="value4"\>1</ODBSet\>  <br>
+  \</ODBSubdir\> 
+</span>
+</td></tr>
+
+<tr> <!--   line   13  PARAM    -->
+<td class="xml">
+\<Param name=<i>"name"</i> [comment=<i>"comment"</i>] <br>
+[options=<i>"a,b,c,..."</i>] [type=<i>"bool"</i>] / \> 
+</td>
+
+<td class="msl">
+ PARAM <i>name, comment, [a,b,c | bool] </i>
+</td>
+
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+ When starting a script, a start page is shown where one can enter additional 
+  parameters for the script. Parameters can be defined either centrally for all 
+  scripts in the ODB under <span class="odb">/Experiment/Edit on sequence</span>. This subdirectory in 
+  the ODB can contain links to ODB values, which are queried at the start page. 
+  In addition, each script can define additional parameters appended to this 
+  list. They will be stored under  <span class="odb">/Sequencer/Variables</span> and can be referenced 
+  inside the script via \b <i>$name</i>, where name can be any variable name specified 
+  in the parameter statement. The optional "comment" is shown on the start 
+  page below the parameter name. If only certain options are possible for the 
+  parameter, they can be defined via the options list. The web page will then 
+  contain a drop-down list showing the options. In case of <b>type="bool"</b>, a 
+  checkbox will be shown.
+</td></tr>
+   
+<tr> <!--   line  14 RunDesc     -->
+<td class="xml">
+ \<RunDescription\> <i>Description</i> \</RunDescription\>
+</td>
+
+<td class="msl"> 
+RUNDESCRIPTION <i>description</i>
+</td>
+
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+ a run description which is stored under <span class="odb">/Experiment/Run Parameters/Run 
+  Description</span> .
+</td></tr>
+  
+<tr> <!--   line 15 SCRIPT      -->
+<td class="xml">
+\<Script [params=<i>"a,b,c,..."</i>]\> <i>Script</i> \</Script\>
+</td>
+
+<td class="msl"> 
+SCRIPT <i>script [, a, b, c, ...]</i>
+</td>
+
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+ to call a script on the server side. Optionally, pass parameters to the script.
+</td></tr>
+
+
+<tr> <!--   line  16 SET     -->
+<td class="xml">
+\<Set name=<i>"name"</i>\> <i>value</i> \</Set\>
+</td>
+
+<td class="msl">
+ SET name, value
+</td>
+
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+ sets the variable <i>name</i> to <i>value</i>. Can be referenced with <i>$name</i>. 
+</td></tr> 
+
+<tr> <!--   line 17 SUBROUTINE      -->
+<td class="xml">
+\<Subroutine name=<i>"name"</i>\>...\</Subroutine\> 
+</td>
+
+<td class="msl"> 
+ SUBROUTINE <i>name</i> <br>
+  ...  <br>
+  ENDSUBROUTINE 
+</td>
+
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+ Declares a subroutine which can be called via \<Call\>.
+</td></tr>
+
+<tr> <!--   line  18   TRANSITION   -->
+<td class="xml">
+\<Transition\>Start | Stop\</Transition\>
+</td>
+
+<td class="msl">
+ TRANSITION  start | stop | pause | resume
+</td>
+
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+ to start, stop, pause or resume a run
+</td></tr>
+
+<tr> <!--   line 19 WAIT      -->
+<td class="xml">
+\<Wait for="events | ODBvalue  |  seconds" [path=<i>"ODB  path"</i>] <br>
+     [op=">=/>/<=/</==/!="]\> <i>value</i> \</Wait\> 
+</td>
+
+<td class="msl">
+WAIT events | ODBvalue | seconds, <i>[ODB path], [op], [value] </i>
+</td>
+
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+wait until a number of events is acquired (testing 
+<span class="odb">/Equipment/Trigger/Statistics/Events sent</span>), or until a value in the ODB 
+exceeds <i>value</i>, or wait for <i>value</i> seconds. If the operand <b>op</b> is given, the ODB 
+value is compared with <i>value</i> using this operand. So one could wait until an 
+ODB value is equal to <i>value</i> or becomes smaller than <i>value</i>. Here is an 
+example of such a statement which waits until some high voltage is below 
+100 V.
+<br> 
+<span class="msl">
+ WAIT ODBvalue, /Equipment/HV/Variables/Measured[3], \<, 100 
+</span>
+</td></tr>
+             
+              
+
+</table>
+
+
+ 
+              
+\anchor idx_Sequencer_MSL_loadfile
+@section RC_Seq_Example_1  MSL Example 
+           
+The following example is a simple script, which asks for a number of runs, then executes 
+the runs, each lasting ten seconds. 
+\code
+comment "This is the MSL test file"
+param runs
+LOOP $runs
+     TRANSITION START
+     WAIT 10
+     TRANSITION STOP
+ENDLOOP
+\endcode 
+ 
+
+\anchor idx_Sequencer_XML_loadfile
+@section RC_Seq_Example_2  XML Example
+Attached is a simple script which can be used as a starting point.
+
+
+\code
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<RunSequence xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="">
+<Comment>This is the XML test file</Comment>
+
+<ODBSet path="/Experiment/Run Parameters/Comment">Test comment</ODBSet>
+<RunDescription>Test Run</RunDescription>
+
+<!-- do 10 runs -->
+<Loop n="10">
+   <!-- increment high voltage and wait for some time to settle -->
+   <ODBInc path="/Equipment/HV/Variables/Demand[0]">10</ODBInc>
+   <Wait for="seconds">10</Wait>
+
+   <!-- start a run, acquire 3000 events -->
+   <Transition>Start</Transition>
+   <Wait for="events">3000</Wait>
+   <Transition>Stop</Transition> -->
+</Loop>
+</RunSequence>
+\endcode
+
+<br>
+<b>For examples of loading and running the sequencer</b>, see the mhttpd @ref  RC_mhttpd_Sequencer_page.
+
+<br>
+\anchor idx_ODB_tree_Sequencer
+@section RC_Seq_odb  The ODB /Sequencer tree
+
+The ODB <span class="odb">/Sequencer</span> tree is created automatically when the MIDAS web browser <span class="utility">mhttpd</span>
+is started. It will be filled with default values.
+
+An example of the  <span class="odb">/Sequencer</span> tree where the sequencer is running is shown below. 
+
+ * <center> 
+ * <span class="image">Example of MIDAS /Sequencer tree
+ * <br><br><br>
+ * \image html seq_running_odb.png
+ * </center> 
+
+
+\anchor RC_seq_err
+An example of the /Sequencer tree when an error has occurred is shown below. The equivalent display on the Sequencer Page is shown 
+@section RC_Seq_start "here".
+
+ * <center> 
+ * <span class="image">Example of MIDAS /Sequencer tree with error in load file
+ * <br><br><br>
+ * \image html seq_error_odb.png
+ * </center>
+
+
+<br>
+@subsection RC_Sequencer_tree_keys Explanation of the keys in the ODB /Sequencer tree 
+
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2" cellspacing="2">
+<caption>Above: Explanation of keys in /Sequencer ODB tree</caption>
+<tr align="center">
+<td colspan="4" rowspan="1"
+style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; font-size: 125% ;">
+Keys in /Sequencer ODB tree<br>
+</td>
+</tr>
+
+<tr>
+<td colspan="1"
+style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(204, 204, 255);">Key<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(204, 204, 255);">Type<br>
+</td>
+<td
+style="vertical-align: top; font-weight: bold; text-align: center; background-color: rgb(204, 204, 255);">Explanation<br>
+</td>
+</tr>
+<!-- line 1 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Path<br>
+</td>
+<td style="vertical-align: top;">STRING<br>
+</td>
+<td style="vertical-align: top;">Directory path of the sequencer loadfile(s)</td>
+</tr>
+<!-- line 2 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Filename<br>
+</td>
+<td style="vertical-align: top;">STRING<br>
+</td>
+<td style="vertical-align: top;">Filename of the current sequencer loadfile</td>
+</tr>
+
+<!-- line 3 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Error<br>
+</td>
+<td style="vertical-align: top;">STRING<br>
+</td>
+<td style="vertical-align: top;">Filled with error message when an error is detected (see @ref  RC_seq_err "above")
+or blank if no error</td>
+</tr>
+<!-- line 4 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Error line<br>
+</td>
+<td style="vertical-align: top;">INT<br>
+</td>
+<td style="vertical-align: top;">Filled with loadfile line number of error or zero if no error.</td>
+</tr>
+
+
+<!-- line 5 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Running<br>
+</td>
+<td style="vertical-align: top;">BOOL<br>
+</td>
+<td style="vertical-align: top;">"y" if sequencer is running, otherwise "n"</td>
+</tr>
+
+<!-- line 6 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Finished<br>
+</td>
+<td style="vertical-align: top;">BOOL<br>
+</td>
+<td style="vertical-align: top;">"y" if sequencer is finished, otherwise "n"</td>
+</tr>
+
+<!-- line 7 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Current line number<br>
+</td>
+<td style="vertical-align: top;">INT<br>
+</td>
+<td style="vertical-align: top;">Line number in loadfile that sequencer is currently executing</td>
+</tr>
+
+<!-- line 8 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Stop after run<br>
+</td>
+<td style="vertical-align: top;">BOOL<br>
+</td>
+<td style="vertical-align: top;">"y" if user has pressed "Stop after current run" button. Otherwise "n".</td>
+</tr>
+
+<!-- line 9 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Loop start line<br>
+</td>
+<td style="vertical-align: top;">INT (array)<br>
+</td>
+<td style="vertical-align: top;">Line number where loop(s) start</td>
+</tr>
+
+<!-- line 10 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Loop end line<br>
+</td>
+<td style="vertical-align: top;">INT (array)<br>
+</td>
+<td style="vertical-align: top;">Line number where loop(s) end</td>
+</tr>
+
+<!-- line 11 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Loop counter<br>
+</td>
+<td style="vertical-align: top;">INT (array)<br>
+</td>
+<td style="vertical-align: top;">Loop counter(s) for loop(s)</td>
+</tr>
+
+<!-- line 12 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Subdir<br>
+</td>
+<td style="vertical-align: top;">STRING<br>
+</td>
+<td style="vertical-align: top;">no information available</td>
+</tr>
+
+<!-- line 13 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Subdir end line<br>
+</td>
+<td style="vertical-align: top;">INT<br>
+</td>
+<td style="vertical-align: top;">no information available</td>
+</tr>
+
+<!-- line 14 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Subdir not notify<br>
+</td>
+<td style="vertical-align: top;">INT<br>
+</td>
+<td style="vertical-align: top;">no information available</td>
+</tr>
+
+<!-- line 15 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Wait counter<br>
+</td>
+<td style="vertical-align: top;">INT<br>
+</td>
+<td style="vertical-align: top;">no information available</td>
+</tr>
+
+<!-- line 15 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Wait n<br>
+</td>
+<td style="vertical-align: top;">INT<br>
+</td>
+<td style="vertical-align: top;">no information available</td>
+</tr>
+
+<!-- line 16 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Start Time<br>
+</td>
+<td style="vertical-align: top;">DWORD<br>
+</td>
+<td style="vertical-align: top;">Time when sequencer last started</td>
+</tr>
+
+<!-- line 16 -->
+<tr>
+<td
+style="vertical-align: top; font-weight: bold; background-color: lightyellow;">Last Msg<br>
+</td>
+<td style="vertical-align: top;">DWORD<br>
+</td>
+<td style="vertical-align: top;">Last message</td>
+</tr>
+
+</table>
+
+
+
+
+
+
+
+
+\anchor end
+
+\htmlonly <script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_mhttpd_custom_status", "RunControl", "RC_Monitor","RC_Sequencer",  "" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script> \endhtmlonly
+<br>
+
+
+*/

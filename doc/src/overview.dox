@@ -32,6 +32,7 @@ these elements interract to form the MIDAS system.
 - @ref F_History_System_overview  Event history storage and retrival.
 - @ref F_Alarm_System_overview  Overall system and user alarm.
 - @ref F_Electronic_Logbook_overview  Online User Logbook.
+- @ref F_Sequencer_overview  Run sequencer
 
 \anchor idx_buffer_manager
 \anchor idx_shared_memory
@@ -229,14 +230,13 @@ Support for languages such as C, C++ is available.
 
 As mentioned earlier, the Online Database (ODB) contains all the pertinent
 information regarding an experiment. For that reason a run control program requires
-only to access the ODB. A basic program supplied in the package called ODBEdit
-provides a simple and safe mean for interacting with ODB.
-Through ODBEdit essentially all the MIDAS capability are available to the
-user's fingertips. 
+only to access the ODB. A basic program supplied in the package called @ref RC_odbedit_utility "ODBEdit"
+provides a simple and safe means of interacting with the ODB.  However, to access all the MIDAS
+capabilities, @ref RC_mhttpd should be used. 
 
 Three "Run States" define the state of the MIDAS data acquisition system: \em Stopped, \em Paused, and \em Running.
 In order to change from one state to another, MIDAS provides four basic
-"Transition" functions: \em Tr_Start, \em Tr_pause, \em Tr_resume, and \em Tr_Stop.
+"Transition" functions: \em TR_START, \em TR_PAUSE, \em TR_RESUME, and \em TR_STOP.
 During these transition periods, any MIDAS client registered to
 receive notification of such a transition will be able to perform dedicated tasks in either
 synchronized or asynchronized mode, within the overall run control of the experiment. 
@@ -291,8 +291,8 @@ The activation of a recording is not controlled by the history function, but by 
 actual equipment (see @ref  F_History_System).
 This permits a higher flexibility of the history system such as dynamic modification
 of the event structure without restarting the MIDAS logger.
-At any given time, data-over-time relations can be displayed through the web with the MIDAS  @ref RC_mhttpd_utility "mhttpd"
-utility or queried from the disk file through the MIDAS  @ref F_mhist_utility "mhist" utility,
+At any given time, data-over-time relations can be displayed through the web with  @ref RC_mhttpd
+or queried from the disk file through the MIDAS  @ref F_mhist_utility "mhist" utility,
 
 The history data extraction from the disk file is done using low level file functions
 giving similar results as a standard database mechanism but with faster access time.
@@ -326,9 +326,15 @@ way of logging his/her own information related to the current experiment. This
 electronic logbook may supplement or complement the standard paper logbook and
 in the mean time allow "web publishing" of this information. Indeed the electronic
 logbook information is accessible from any web browser as long as  the MIDAS web server
-( @ref RC_mhttpd_utility "mhttpd") is running in the background of the system.
+( @ref RC_mhttpd "mhttpd") is running in the background of the system.
 For more information see @ref F_Elog "Electronic Logbook" and @ref RC_mhttpd_Elog_page "mhttpd Elog  page".
 
+
+@section F_Sequencer_overview Run Sequencer 
+
+A @ref RC_Sequencer  for starting and stopping runs is available (<span class ="new"> @ref  ndf_jun_2011</span>). This allows the user
+to program a set of runs to be performed automatically. Conditions may be changed between runs, and each run may be stopped after a
+time or when a certain condition is reached.  
 
 \htmlonly
 <script type="text/javascript">

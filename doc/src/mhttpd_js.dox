@@ -13,7 +13,8 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 \endhtmlonly
 <br>
 
-The following code is the Javascript Built-in library \b mhttpd.js  (version 4505)
+The following code is the Javascript Built-in library \b mhttpd.js  (version 5075)
+
 
 \code
 

@@ -185,59 +185,7 @@ the user code for further consistency check.
 <!--
 NOTE :
 This section comes from odbstruct.dox and may be more up-to-date than the next section.
-
 -->
-\todo Event Builder tree - there are two versions that need combining !!
-
-The Event Builder tree is created by @ref FE_mevb_utility and is placed in the  
-Equipment list.
-
-@code
-Key name                        Type    #Val  Size  Last Opn Mode Value
----------------------------------------------------------------------------
-EBuilder                        DIR
-    Settings                    DIR
-        Event ID                WORD    1     2     65h  0   RWD  1
-        Trigger mask            WORD    1     2     65h  0   RWD  1
-        Buffer                  STRING  1     32    65h  0   RWD  SYSTEM
-        Format                  STRING  1     32    65h  0   RWD  MIDAS
-        Event mask              DWORD   1     4     65h  0   RWD  3
-        hostname                STRING  1     64    3h   0   RWD  myhost
-    Statistics                  DIR
-        Events sent             DOUBLE  1     8     3h   0   RWD  653423
-        Events per sec.         DOUBLE  1     8     3h   0   RWD  1779.17
-        kBytes per sec.         DOUBLE  1     8     3h   0   RWD  0
-    Channels                    DIR
-        Frag1                   DIR
-            Settings            DIR
-                Event ID        WORD    1     2     65h  0   RWD  1
-                Trigger mask    WORD    1     2     65h  0   RWD  65535
-                Buffer          STRING  1     32    65h  0   RWD  BUF1
-                Format          STRING  1     32    65h  0   RWD  MIDAS
-                Event mask      DWORD   1     4     65h  0   RWD  1
-            Statistics          DIR
-                Events sent     DOUBLE  1     8     3h   0   RWD  653423
-                Events per sec. DOUBLE  1     8     3h   0   RWD  1779.17
-                kBytes per sec. DOUBLE  1     8     3h   0   RWD  0
-        Frag2                   DIR
-            Settings            DIR
-                Event ID        WORD    1     2     65h  0   RWD  5
-                Trigger mask    WORD    1     2     65h  0   RWD  65535
-                Buffer          STRING  1     32    65h  0   RWD  BUF2
-                Format          STRING  1     32    65h  0   RWD  MIDAS
-                Event mask      DWORD   1     4     65h  0   RWD  2
-            Statistics          DIR
-                Events sent     DOUBLE  1     8     3h   0   RWD  653423
-                Events per sec. DOUBLE  1     8     3h   0   RWD  1779.17
-                kBytes per sec. DOUBLE  1     8     3h   0   RWD  0
-@endcode 
-
-
-
-
-@section FE_eb_tree_2 Event builder ODB Tree (version 2)
-
-\todo Is the tree /EB or /EBuilder as above ??
 
 The Event builder tree will be created under the Equipment list and will
 appear as a standard equipment. The sub tree \em /Common will contains the
@@ -288,16 +236,18 @@ cwd : midas/examples/eventbuilder  -> referred to as eb>
 
 - Build the mevb task:
 @code
-eb> setenv MIDASSYS /home/midas/midas-1.9.5
 eb> make
-cc  -g -I/usr/local/include -I../../drivers -DOS_LINUX -Dextname -c ebuser.c
-cc  -g -I/usr/local/include -I../../drivers -DOS_LINUX -Dextname -o mevb mevb.c \
-          ebuser.o /usr/local/lib/libmidas.a  -lm -lz -lutil -lnsl
-cc  -g -I/usr/local/include -I../../drivers -DOS_LINUX -Dextname \
-          -c ../../drivers/bus/camacnul.c
-cc  -g -I/usr/local/include -I../../drivers -DOS_LINUX -Dextname -o ebfe \
-        ebfe.c camacnul.o /usr/local/lib/mfe.o /usr/local/lib/libmidas.a \
-        -lm -lz -lutil -lnsl
+cc  -g -I/home/midas/packages/midas/include -I/home/midas/packages/midas/drivers -DOS_LINUX -Dextname -c ebuser.c
+cc  -g -I/home/midas/packages/midas/include -I/home/midas/packages/midas/drivers -DOS_LINUX -Dextname \
+        -o mdsupport.o -c /home/midas/packages/midas/src/mdsupport.c
+cc  -g -I/home/midas/packages/midas/include -I/home/midas/packages/midas/drivers -DOS_LINUX -Dextname \
+        -o mevb mevb.c ebuser.o mdsupport.o /home/midas/packages/midas/linux/lib/libmidas.a \
+        -lm -lz -lutil -lnsl -lpthread -lrt
+cc  -g -I/home/midas/packages/midas/include -I/home/midas/packages/midas/drivers -DOS_LINUX -Dextname \
+        -c /home/midas/packages/midas/drivers/camac/camacnul.c
+cc  -g -I/home/midas/packages/midas/include -I/home/midas/packages/midas/drivers -DOS_LINUX -Dextname \
+        -o ebfe ebfe.c camacnul.o /home/midas/packages/midas/linux/lib/mfe.o \
+        /home/midas/packages/midas/linux/lib/libmidas.a  -lm -lz -lutil -lnsl -lpthread -lrt
 eb>
 @endcode
 - Start the following 4 applications in 4 differents windows connecting to

@@ -74,7 +74,7 @@ sections("","","Intro"); // last section; top of this section; next section
    or register for Email notifications.
 
    - The \b MIDAS  <span class="emphasis">source code</span> is subject to the <a href="http://www.gnu.org/copyleft/gpl.html">GPL</a> and can be
-   accessed from the <b><a href="http://savannah.psi.ch/viewcvs/trunk/?root=midas">SVN</a></b>   
+   accessed from the <b><a href="https://savannah.psi.ch/viewvc/meg_midas/trunk/">SVN</a></b>   
    repository site in Switzerland either for inspection or download (see  @ref Quickstart "Quickstart").  A 
 <b> tarball </b> is available either from the <a href="http://midas.psi.ch/download/">Swiss</a>
      or <a href="http://ladd00.triumf.ca/~daqweb/ftp/"> Canadian</a> sites.
@@ -92,8 +92,8 @@ The MIDAS DAQ provides:
      -  <span class="emphasis">Event-by-event analysis</span> through PAW or Root based application. Please refer to: 
 <ul>
       <li> <b><a href="http://midas.psi.ch/rome">ROME</a></b> analyzer framework.
-      <li> <b><a href="http://ladd00.triumf.ca/%7Eolchansk/rootana/">Rootana</a></b> Root analyser
-      <li><b><a href="http://ladd00.triumf.ca/~daqweb/doc/roody/html/">Roody</a></b> GUI histogram visualizer
+      <li> <b><a href="https://www.triumf.info/wiki/DAQwiki/index.php/ROOTANA">Rootana</a></b> Root analyser
+      <li><b><a href="https://www.triumf.info/wiki/DAQwiki/index.php/ROODY">Roody</a></b> GUI histogram visualizer
    application. 
 </ul>
 

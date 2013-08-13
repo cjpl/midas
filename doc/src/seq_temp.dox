@@ -1,0 +1,44 @@
+The following commands are implemented in the MIDAS sequencer. The upper syntax is 
+for the XML file, the lower for the MSL (Midas Script Language). Variable names are 
+indicated in italic, options are enclosed in [brackets]. 
+
+<table
+ style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="0">
+  <caption>Above: List of Sequencer Statements
+  </caption>
+<tr> <!--   header    1     -->
+
+ <td colspan=2 style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Sequencer Statement
+</td>
+ <td rowspan=2 style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Meaning
+</td>
+</tr>
+<tr>  <!--   header    2     -->
+ <td  style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+XML
+</td>
+ <td  style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+MSL
+</td></tr>
+
+<tr> <!--   line    1     -->
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+     <span class="seq">
+\code
+  <!DOCTYPE RunSequence[  
+  <!ENTITY name SYSTEM "name.xml"> 
+]> 
+&name;
+\endcode
+
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+<span class="seq"> INCLUDE name  </span>
+
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+     Include another XML file  
+</td></tr>
+
+</table>

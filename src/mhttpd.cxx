@@ -249,6 +249,7 @@ int vaxis(gdImagePtr im, gdFont * font, int col, int gcol, int x1, int y1, int w
 void haxis(gdImagePtr im, gdFont * font, int col, int gcol, int x1, int y1, int width,
            int minor, int major, int text, int label, int grid, double xmin, double xmax);
 void get_elog_url(char *url, int len);
+void get_resource_dir(char *str, int size);
 
 /* functions from sequencer.cxx */
 extern void show_seq_page();
@@ -873,8 +874,8 @@ void page_footer()  //wraps up body wrapper and inserts page footer
    str[0] = 0;
    cm_get_experiment_database(&hDB, NULL);
    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
-   rsprintf("<div style=\"display:inline; float:left;\">MIDAS Experiment %s</div>", str);
-   rsprintf("<div style=\"display:inline;\">MIDAS 2013 - <a href=\"https://midas.triumf.ca/MidasWiki/index.php/Main_Page\" > Documentation</a> - <a href=\"https://bitbucket.org/tmidas/midas\">Code</a></div>");
+   rsprintf("<div style=\"display:inline; float:left;\">Experiment %s</div>", str);
+   rsprintf("<div style=\"display:inline;\"><a href=\"?cmd=Help\">Help</a></div>");
    time(&now);
    rsprintf("<div style=\"display:inline; float:right;\">%s</div>", ctime(&now));
    rsprintf("</div>\n");
@@ -887,33 +888,94 @@ void page_footer()  //wraps up body wrapper and inserts page footer
 
 void show_help_page()
 {
+   char str[256];
+
    /* header */
    rsprintf("HTTP/1.0 200 Document follows\r\n");
    rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
    rsprintf("<html><head>\n");
-   rsprintf("<title>MIDAS WWW Gateway Help</title>\n");
+   rsprintf("<title>MIDAS Help</title>\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
    rsprintf("</head>\n\n");
 
    rsprintf("<body>\n");
-   rsprintf("<h1>Using the MIDAS WWW Gateway</h1>\n");
-   rsprintf("With the MIDAS WWW Gateway basic experiment control can be achieved.\n");
-   rsprintf("The status page displays the current run status including front-end\n");
-   rsprintf("and logger statistics. The Start and Stop buttons can start and stop\n");
-   rsprintf("a run. The ODB button switches into the Online Database mode, where\n");
-   rsprintf
-       ("the contents of the experiment database can be displayed and modified.<P>\n\n");
 
-   rsprintf("For more information, refer to the\n");
-   rsprintf("<A HREF=\"http://midas.psi.ch/htmldoc/index.html\">PSI MIDAS manual</A>,\n");
-   rsprintf
-       ("<A HREF=\"http://ladd00.triumf.ca/~daqweb/doc/midas/html/\">Triumf MIDAS manual</A>.<P>\n\n");
+   rsprintf("<form method=\"GET\" style=\"height:auto;\" action=\".\">\n");
 
-   rsprintf("<hr>\n");
-   rsprintf("<address>\n");
-   rsprintf("<a href=\"http://pibeta.psi.ch/~stefan\">S. Ritt</a>, 26 Sep 2000");
-   rsprintf("</address>");
+   rsprintf("<div id=\"helpWrapper\" class=\"wrapper\" style=\"margin: 0 auto -50px;\">\n");
+   rsprintf("<table class=\"headerTable\">\n");
+   rsprintf("<tr><td colspan=7><input type=submit name=cmd value=Status></td></tr>\n");
+   rsprintf("</table>\n");
+   
+   rsprintf("<table class=\"subStatusTable\">\n");
+   rsprintf("  <tr>\n");
+   rsprintf("    <td class=\"subStatusTitle\">MIDAS Help Page</td>\n");
+   rsprintf("  </tr>\n");
+   rsprintf("  <tr>\n");
+   rsprintf("    <td>\n");
+   rsprintf("      <table>\n");
+
+   rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\">Experiment:</td>\n");
+   cm_get_experiment_name(str, sizeof(str));
+   rsprintf("          <td style=\"text-align:left;\">%s</td>\n", str);
+   rsprintf("        </tr>\n");
+   
+   rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\">Resource directory:</td>\n");
+   get_resource_dir(str, sizeof(str));
+   rsprintf("          <td style=\"text-align:left;\">%s</td>\n", str);
+   rsprintf("        </tr>\n");
+
+   rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\">Documentation:</td>\n");
+   rsprintf("          <td style=\"text-align:left;\"><a href=\"http://midas.triumf.ca\">http://midas.triumf.ca</a></td>\n");
+   rsprintf("        </tr>\n");
+   rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\">Discussion Forum:</td>\n");
+   rsprintf("          <td style=\"text-align:left;\"><a href=\"https://midas.triumf.ca/elog/Midas/\">https://midas.triumf.ca/elog/Midas/</a></td>\n");
+   rsprintf("        </tr>\n");
+   rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\">Code:</td>\n");
+   rsprintf("          <td style=\"text-align:left;\"><a href=\"http://bitbucket.org/tmidas/midas/\">http://bitbucket.org/tmidas/midas/</a></td>\n");
+   rsprintf("        </tr>\n");
+   rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\">Version:</td>\n");
+   rsprintf("          <td style=\"text-align:left;\">%s</td>\n", cm_get_version());
+   rsprintf("        </tr>\n");
+   rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\">Revision:</td>\n");
+   strlcpy(str, "https://bitbucket.org/tmidas/midas/commits/all?search=", sizeof(str));
+   if (strrchr(cm_get_revision(), '-'))
+      strlcat(str, strrchr(cm_get_revision(), '-')+2, sizeof(str));
+   rsprintf("          <td style=\"text-align:left;\"><a href=\"%s\">%s</a></td>\n", str, cm_get_revision());
+   rsprintf("        </tr>\n");
+   rsprintf("      </table>\n");
+   rsprintf("    </td>\n");
+   rsprintf("  </tr>\n");
+   rsprintf("</table>\n");
+   
+   rsprintf("<div id=\"helpPush\" class=\"push\" style=\"height:50px;\"></div>\n");
+   rsprintf("</div>\n");
+   rsprintf("<div id=\"helpFooter\" class=\"footerDiv\" style=\"font-size:10pt;height:50px;\">\n");
+   rsprintf("<div id=\"contribList\" style=\"display:inline;\">\n");
+   rsprintf("Contributions: Pierre-Andre Amaudruz - Sergio Ballestrero - Suzannah Daviel - Peter Green - Qing Gu - Greg Hackman - Gertjan Hofman - Paul Knowles - Exaos Lee - Rudi Meier - Bill Mills - Glenn Moloney - Dave Morris - John M O'Donnell - Konstantin Olchanski - Chris Pearson - Renee Poutissou - Stefan Ritt - Ryu Sawada - Tamsen Schurman - Andreas Suter - Jan M.Wouters - Piotr Adam Zolnierczuk\n");
+   rsprintf("</div></div>\n");
+   
+   rsprintf("</form>\n");
+
+   rsprintf("<script type=\"text/javascript\">\n");
+   rsprintf("window.onresize = function(){");
+   rsprintf("var footerHeight = parseInt(document.getElementById(\"contribList\").offsetHeight,10)+25;");
+   rsprintf("console.log(footerHeight);");
+   rsprintf("document.getElementById(\"helpPush\").style.height = footerHeight+\"px\";");
+   rsprintf("document.getElementById(\"helpFooter\").style.height=footerHeight+\"px\";");
+   rsprintf("document.getElementById(\"helpWrapper\").style.margin= \"0 auto -\"+parseFloat(footerHeight)+\"px\";");
+   rsprintf("};");
+   rsprintf("window.onresize();");
+   rsprintf("</script>");
 
    rsprintf("</body></html>\r\n");
 }
@@ -957,9 +1019,8 @@ void show_header(HNDLE hDB, const char *title, const char *method, const char *p
       rsprintf
           ("<body><form name=\"form1\" method=\"POST\" action=\"%s\" enctype=\"multipart/form-data\">\n\n",
            str);
-   else
-      rsprintf("<body><form name=\"form1\" method=\"%s\" action=\"%s\">\n\n", method,
-               str);
+   else if (equal_ustring(method, "GET"))
+      rsprintf("<body><form name=\"form1\" method=\"GET\" action=\"%s\">\n\n", str);
 
    /* title row */
 
@@ -1258,11 +1319,11 @@ void show_status_page(int refresh, const char *cookie_wpwd)
 
       if (stricmp(str, "Start") == 0) {
          if (runinfo.state == STATE_STOPPED)
-            rsprintf("<input type=submit name=cmd %s value=Start>\n", runinfo.transition_in_progress?"disabled":"");
+            rsprintf("<input id=\"runButton\" type=submit name=cmd %s value=Start>\n", runinfo.transition_in_progress?"disabled":"");
          else {
             rsprintf("<noscript>\n");
             if (runinfo.state == STATE_PAUSED || runinfo.state == STATE_RUNNING)
-               rsprintf("<input type=submit name=cmd %s value=Stop>\n", runinfo.transition_in_progress?"disabled":"");
+               rsprintf("<input id=\"runButton\" type=submit name=cmd %s value=Stop>\n", runinfo.transition_in_progress?"disabled":"");
             rsprintf("</noscript>\n");
             rsprintf("<script type=\"text/javascript\">\n");
             rsprintf("<!--\n");
@@ -1273,7 +1334,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             rsprintf("      window.location.href = '?cmd=Stop';\n");
             rsprintf("}\n");
             if (runinfo.state == STATE_PAUSED || runinfo.state == STATE_RUNNING)
-               rsprintf("document.write('<input type=button %s value=Stop onClick=\"stop();\">\\n');\n", runinfo.transition_in_progress?"disabled":"");
+               rsprintf("document.write('<input id=\"runButton\" type=button %s value=Stop onClick=\"stop();\">\\n');\n", runinfo.transition_in_progress?"disabled":"");
             rsprintf("//-->\n");
             rsprintf("</script>\n");
          }
@@ -1281,7 +1342,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
          if (runinfo.state != STATE_STOPPED) {
             rsprintf("<noscript>\n");
             if (runinfo.state == STATE_RUNNING)
-               rsprintf("<input type=submit name=cmd %s value=Pause>\n", runinfo.transition_in_progress?"disabled":"");
+               rsprintf("<input id=\"pauseResumeButton\" type=submit name=cmd %s value=Pause>\n", runinfo.transition_in_progress?"disabled":"");
             rsprintf("</noscript>\n");
             rsprintf("<script type=\"text/javascript\">\n");
             rsprintf("<!--\n");
@@ -1292,14 +1353,14 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             rsprintf("      window.location.href = '?cmd=Pause';\n");
             rsprintf("}\n");
             if (runinfo.state == STATE_RUNNING)
-               rsprintf("document.write('<input type=button %s value=Pause onClick=\"pause();\"\\n>');\n", runinfo.transition_in_progress?"disabled":"");
+               rsprintf("document.write('<input id=\"pauseResumeButton\" type=button %s value=Pause onClick=\"pause();\"\\n>');\n", runinfo.transition_in_progress?"disabled":"");
             rsprintf("//-->\n");
             rsprintf("</script>\n");
             if (runinfo.state == STATE_PAUSED)
-               rsprintf("<input type=submit name=cmd %s value=Resume>\n", runinfo.transition_in_progress?"disabled":"");
+               rsprintf("<input id=\"pauseResumeButton\" type=submit name=cmd %s value=Resume>\n", runinfo.transition_in_progress?"disabled":"");
          }
       } else
-         rsprintf("<input type=submit name=cmd value=\"%s\">\n", str);
+         rsprintf("<input id=\"runButton\" type=submit name=cmd value=\"%s\">\n", str);
 
       p = strtok(NULL, ",");
    }
@@ -1506,13 +1567,20 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    rsprintf("<tr><th colspan=6 class=\"subStatusTitle\">Run Status</th></tr>\n");
 
    if (runinfo.state == STATE_STOPPED)
-      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"redLight\">Run<br>%d<br>Stopped", runinfo.run_number);
+      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"redLight\">Run<br>%d<br>Stopped<div id=\"foot\"></div>", runinfo.run_number);
    else if (runinfo.state == STATE_PAUSED)
-      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"yellowLight\">Run<br>%d<br>Paused", runinfo.run_number);
+      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"yellowLight\">Run<br>%d<br>Paused<div id=\"foot\"></div>", runinfo.run_number);
    else if (runinfo.state == STATE_RUNNING)
-      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"greenLight\">Run<br>%d<br>Running", runinfo.run_number);
+      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"greenLight\">Run<br>%d<br>Running<div id=\"foot\"></div>", runinfo.run_number);
    else
-      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"yellowLight\">Run<br>%d<br>Run State Unknown", runinfo.run_number);
+      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"yellowLight\">Run<br>%d<br>Run State Unknown<div id=\"foot\"></div>", runinfo.run_number);
+
+   //move the run transition button into runNumberCell
+   rsprintf("<script type=\"text/javascript\">\n");
+   rsprintf("document.getElementById(\"runNumberCell\").insertBefore(document.getElementById(\"runButton\"), document.getElementById(\"foot\").nextSibling);");
+   rsprintf("if(document.getElementById(\"pauseResumeButton\"))\n");
+   rsprintf("document.getElementById(\"runNumberCell\").insertBefore(document.getElementById(\"pauseResumeButton\"), document.getElementById(\"foot\").nextSibling)");
+   rsprintf("</script>");
 
    /*---- time ----*/
    rsprintf("<td colspan=2>Start: %s", runinfo.start_time);
@@ -1610,12 +1678,12 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    size = sizeof(str); 
    if (db_get_value(hDB, 0, "/Experiment/Run parameters/Comment", str, 
                     &size, TID_STRING, FALSE) == DB_SUCCESS) 
-      rsprintf("<tr align=center class=\"titleRow\"><td colspan=5><b>%s</b></td></tr>\n", 
+      rsprintf("<tr class=\"titleRow\"><td style=\"text-align:left;\" colspan=5><b>%s</b></td></tr>\n", 
                str); 
    size = sizeof(str); 
    if (db_get_value(hDB, 0, "/Experiment/Run parameters/Run Description", str, 
                     &size, TID_STRING, FALSE) == DB_SUCCESS) 
-      rsprintf("<tr align=center class=\"titleRow\"><td colspan=5><b>%s</b></td></tr>\n", 
+      rsprintf("<tr class=\"titleRow\"><td style=\"text-align:left;\" colspan=5><b>%s</b></td></tr>\n", 
                str); 
  
    /*---- Status items ----*/
@@ -1631,7 +1699,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             rsprintf("<tr><td colspan=6><table class=\"genericStripe\" width=100%%>\n");
 
          db_get_key(hDB, hsubkey, &key);
-         rsprintf("<tr><td align=right width=30%% class=\"titleCell\">%s:</td>", key.name);
+         rsprintf("<tr><td style=\"text-align:left;\" width=30%% class=\"titleCell\">%s:</td>", key.name);
          
          db_enum_key(hDB, hkey, i, &hsubkey);
          db_get_key(hDB, hsubkey, &key);
@@ -1665,6 +1733,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
 
    /* count hidden equipments */
    n_hidden = 0;
+#ifdef USE_HIDDEN_EQ
    if (db_find_key(hDB, 0, "/equipment", &hkey) == DB_SUCCESS) {
       for (i = 0 ;; i++) {
          db_enum_key(hDB, hkey, i, &hsubkey);
@@ -1681,6 +1750,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
          }
       }
    }
+#endif
    
    rsprintf("<tr><td colspan=6><table class=\"subStatusTable\" id=\"stripeList\" width=100%%>\n");
    rsprintf("<tr><th colspan=6 class=\"subStatusTitle\">Equipment</th><tr>\n");
@@ -1715,8 +1785,10 @@ void show_status_page(int refresh, const char *cookie_wpwd)
                db_get_record(hDB, hkeytmp, &equipment, &size, 0);
             
             /* skip hidden equipments */
+#ifdef USE_HIDDEN_EQ
             if (equipment.hidden && !expand_equipment)
                continue;
+#endif
          }
 
          db_find_key(hDB, hsubkey, "Statistics", &hkeytmp);
@@ -1740,7 +1812,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
                if (equipment.status[0] == 0)
                   rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center class=\"greenLight\">%s@%s", ref, key.name, equipment.frontend_name, equipment.frontend_host);
                else
-                  rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center class=\"%s\">%s", ref, key.name, ( !strcasecmp(equipment.status_color, "#00FF00") )? "greenLight" : ( (!strcasecmp(equipment.status_color, "#FF0000")? "redLight" : "yellowLight" ) ), equipment.status);
+                  rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center class=\"%s\">%s", ref, key.name, ( !strcasecmp(equipment.status_color, "#00FF00") )? "greenLight" : ( (!strcasecmp(equipment.status_color, "#FF0000")? "redLight" : ( (!strcasecmp(equipment.status_color, "#FFFFFF"))?"":"yellowLight") ) ), equipment.status);
             } else
                rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center class=\"yellowLight\">(disabled)", ref, key.name);
          }
@@ -1768,7 +1840,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    /*---- Logging channels ----*/
 
    rsprintf
-       ("<tr class=\"titleRow\"><th colspan=2>Channel<th>Events<th>MB written<th>Compression<th width=\"150px\">Disk level</tr>\n");
+       ("<tr class=\"titleRow\"><th colspan=2>Channel<th>Events<th>MB written<th>Compr.<th>Disk level</tr>\n");
 
    if (db_find_key(hDB, 0, "/Logger/Channels", &hkey) == DB_SUCCESS) {
       for (i = 0;; i++) {
@@ -1829,7 +1901,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
          else
             rsprintf("<tr><td colspan=2 class=\"yellowLight\">");
 
-         rsprintf("<B><a href=\"%s\">#%s:</a></B>&nbsp;&nbsp;%s", ref, key.name, str);
+         rsprintf("<B><a href=\"%s\">#%s:</a></B> %s", ref, key.name, str);
 
          /* statistics */
 
@@ -1859,8 +1931,8 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             strcpy(col, "#00E600");
          
          rsprintf("<td class=\"meterCell\">\n");
-         rsprintf("<div style=\"background-color:%s;width:%dpx;height:23px;\">\n", col, (int)(chn_stats.disk_level*150));
-         rsprintf("<div style=\"position:relative;top:2px;left:15px\">%1.1lf&nbsp;%%</div>\n", chn_stats.disk_level*100);
+         rsprintf("<div style=\"display:block; width:90%%; height:100%%; position:relative; border:1px solid black;\">");  //wrapper to fill table cell
+         rsprintf("<div style=\"background-color:%s;width:%d%%;height:100%%; position:relative; display:inline-block; padding-top:2px;\">&nbsp;%1.1lf&nbsp;%%</div>\n", col, (int)(chn_stats.disk_level*100), chn_stats.disk_level*100);
          rsprintf("</td></tr>\n");
       }
    }
@@ -1899,10 +1971,10 @@ void show_status_page(int refresh, const char *cookie_wpwd)
                   if (k == 0) {
                      if (ftp_mode)
                         rsprintf
-                            ("<tr><th colspan=2>Lazy Destination<th>Progress<th>File Name<th>Speed [MB/s]<th>Total</tr>\n");
+                            ("<tr style=\"font-weight:bold;\" class=\"titleRow\"><th colspan=2>Lazy Destination<th>Progress<th>File Name<th>Speed [MB/s]<th>Total</tr>\n");
                      else
                         rsprintf
-                            ("<tr><th colspan=2>Lazy Label<th>Progress<th>File Name<th># Files<th>Total</tr>\n");
+                            ("<tr style=\"font-weight:bold;\" class=\"titleRow\"><th colspan=2>Lazy Label<th>Progress<th>File Name<th># Files<th>Total</tr>\n");
                   }
                   previous_mode = ftp_mode;
                   if (ftp_mode) {
@@ -1965,7 +2037,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    if (db_find_key(hDB, 0, "/System/Clients", &hkey) == DB_SUCCESS) {
 
       /*---- Client Table ----*/
-      rsprintf("<tr><td colspan=6><table class=\"subStatusTable\" width=100%%>\n");
+      rsprintf("<tr><td colspan=6><table class=\"subStatusTable\" id=\"clientsTable\" width=100%%>\n");
       rsprintf("<tr><th colspan=6 class=\"subStatusTitle\">Clients</th><tr>\n");
 
       for (i = 0;; i++) {
@@ -4523,7 +4595,7 @@ void show_sc_page(char *path, int refresh)
    char group_name[MAX_GROUPS][32], data[256], back_path[256], *p;
    HNDLE hDB, hkey, hkeyeq, hkeyset, hkeynames, hkeyvar, hkeyroot;
    KEY eqkey, key, varkey;
-   char data_str[256], hex_str[256];
+   char data_str[256], hex_str[256], odb_path[256];
 
    cm_get_experiment_database(&hDB, NULL);
 
@@ -4579,8 +4651,9 @@ void show_sc_page(char *path, int refresh)
    }
 
    sprintf(str, "%s", group);
-   show_header(hDB, "MIDAS slow control", "GET", str, 8, i_edit == -1 ? refresh : 0);
-
+   show_header(hDB, "MIDAS slow control", "", str, 8, i_edit == -1 ? refresh : 0);
+   rsprintf("<script type=\"text/javascript\" src=\"mhttpd.js\"></script>\n");
+   
    /*---- menu buttons ----*/
 
    rsprintf("<tr><td colspan=15>\n");
@@ -4588,11 +4661,15 @@ void show_sc_page(char *path, int refresh)
    if (equal_ustring(getparam("cmd"), "Edit"))
       rsprintf("<input type=submit name=cmd value=Set>\n");
    else {
-      rsprintf("<input type=submit name=cmd value=ODB>\n");
-      rsprintf("<input type=submit name=cmd value=Status>\n");
-      rsprintf("<input type=submit name=cmd value=Help>\n");
+      rsprintf("<input type=button value=Alarms onclick=\"self.location=\'?cmd=Alarms\';\">\n");
+      rsprintf("<input type=button value=Programs onclick=\"self.location=\'?cmd=Programs\';\">\n");
+      rsprintf("<input type=button value=Status onclick=\"self.location=\'?cmd=Status\';\">\n");
+      rsprintf("<input type=button value=Help onclick=\"self.location=\'?cmd=Help\';\">\n");
    }
    rsprintf("</tr>\n\n");
+   rsprintf("</table>");  //end header table
+
+   rsprintf("<table class=\"genericStripe\">");  //body table
 
    /*---- enumerate SC equipment ----*/
 
@@ -4792,16 +4869,17 @@ void show_sc_page(char *path, int refresh)
                   return;
                }
                if (n_var == i_edit) {
-                  rsprintf
-                      ("<td align=center><input type=text size=10 maxlenth=80 name=value value=\"%s\">\n",
-                       str);
+                  rsprintf("<td align=center>");
+                  rsprintf("<input type=text size=10 maxlenth=80 name=value value=\"%s\">\n", str);
                   rsprintf("<input type=submit size=20 name=cmd value=Set>\n");
                   rsprintf("<input type=hidden name=index value=%d>\n", i_edit);
                   n_var++;
                } else {
                   sprintf(ref, "%s/%s?cmd=Edit&index=%d", eq_name, group, n_var);
+                  sprintf(odb_path, "Equipment/%s/Variables/%s[%d]", eq_name, varkey.name, i);
 
-                  rsprintf("<td align=center><a href=\"%s%s\">%s</a>", back_path, ref, str);
+                  rsprintf("<td align=center>");
+                  rsprintf("<a href=\"%s%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" >%s</a>", back_path, ref, odb_path, str);
                   n_var++;
                }
             } else
@@ -4985,7 +5063,8 @@ void show_sc_page(char *path, int refresh)
       }
    }
 
-   rsprintf("</table></form>\r\n");
+   rsprintf("</table>\n");
+   page_footer();
 }
 
 /*------------------------------------------------------------------*/
@@ -8105,7 +8184,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    int i, j, keyPresent, scan, size, status;
    char str[256], tmp_path[256], url_path[256], data_str[TEXT_SIZE], 
       hex_str[256], ref[256], keyname[32], link_name[256], link_ref[256],
-      full_path[256], root_path[256];
+      full_path[256], root_path[256], odb_path[256];
    char *p, *pd;
    char data[TEXT_SIZE];
    HNDLE hDB, hkey, hkeyroot;
@@ -8121,8 +8200,18 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    strlcpy(str, dec_path, sizeof(str));
    if (strrchr(str, '/'))
       strlcpy(str, strrchr(str, '/')+1, sizeof(str));
-   show_header(hDB, "MIDAS online database", "GET", str, 1, 0);
+   show_header(hDB, "MIDAS online database", "", str, 1, 0);
 
+   /* add one "../" for each level */
+   tmp_path[0] = 0;
+   for (p = dec_path ; *p ; p++)
+      if (*p == '/')
+         strlcat(tmp_path, "../", sizeof(tmp_path));
+   strlcat(tmp_path, "../mhttpd.js", sizeof(tmp_path));
+
+   /* use mhttpd.js file */
+   rsprintf("<script type=\"text/javascript\" src=\"%s\"></script>\n", tmp_path);
+   
    /* find key via path */
    status = db_find_key(hDB, 0, dec_path, &hkeyroot);
    if (status != DB_SUCCESS) {
@@ -8153,19 +8242,19 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    }
 
    /*---- menu buttons ----*/
-
    rsprintf("<tr><td colspan=2>\n");
    if (elog_mode) {
-      rsprintf("<input type=submit name=cmd value=ELog>\n");
+      rsprintf("<input type=button value=ELog onclick=\"self.location=\'?cmd=Alarms\';\">\n");
       rsprintf("</tr>\n");
    } else {
-      rsprintf("<input type=submit name=cmd value=Alarms>\n");
-      rsprintf("<input type=submit name=cmd value=Programs>\n");
-      rsprintf("<input type=submit name=cmd value=Status>\n");
-      rsprintf("<input type=submit name=cmd value=Help>\n");
+      rsprintf("<input type=button value=Alarms onclick=\"self.location=\'?cmd=Alarms\';\">\n");
+      rsprintf("<input type=button value=Programs onclick=\"self.location=\'?cmd=Programs\';\">\n");
+      rsprintf("<input type=button value=Status onclick=\"self.location=\'?cmd=Status\';\">\n");
+      rsprintf("<input type=button value=Help onclick=\"self.location=\'?cmd=Help\';\">\n");
       rsprintf("</tr>\n");
 
    }
+
    /*---- end page header ----*/
    rsprintf("</table>\n");
 
@@ -8175,10 +8264,10 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    //buttons:
    if(!elog_mode){
       rsprintf("<tr><td colspan=2>\n");
-      rsprintf("<input type=submit name=cmd value=Find>\n");
-      rsprintf("<input type=submit name=cmd value=Create>\n");
-      rsprintf("<input type=submit name=cmd value=Delete>\n");
-      rsprintf("<input type=submit name=cmd value=\"Create Elog from this page\"></td></tr>\n");
+      rsprintf("<input type=button value=Find onclick=\"self.location=\'?cmd=Find\';\">\n");
+      rsprintf("<input type=button value=Create onclick=\"self.location=\'?cmd=Create\';\">\n");
+      rsprintf("<input type=button value=Delete onclick=\"self.location=\'?cmd=Delete\';\">\n");
+      rsprintf("<input type=button value=\"Create Elog from this page\" onclick=\"self.location=\'?cmd=Create Elog from this page\';\"></td></tr>\n");
    }
 
    /*---- ODB display -----------------------------------------------*/
@@ -8238,6 +8327,10 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
          strlcpy(full_path, str, sizeof(full_path));
          urlEncode(full_path, sizeof(full_path));
          strlcpy(keyname, key.name, sizeof(keyname));
+         strlcpy(odb_path, dec_path, sizeof(odb_path));
+         if (odb_path[0] && odb_path[strlen(odb_path) - 1] != '/')
+            strlcat(odb_path, "/", sizeof(odb_path));
+         strlcat(odb_path, key.name, sizeof(odb_path));
 
          /* resolve links */
          link_name[0] = 0;
@@ -8263,11 +8356,11 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
             rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td><b><font color=\"red\">&lt;cannot resolve link&gt;</font><b></tr>\n",
                  keyname, link_ref, link_name);
          } else {
-            if (key.type == TID_KEY && scan==0) {
+            if (key.type == TID_KEY && scan == 0) {
                /* for keys, don't display data value */
                rsprintf("<tr><td colspan=2 class=\"ODBdirectory\"><a href=\"%s\">&#x25B6 %s</a><br></tr>\n",
                        full_path, keyname);
-            } else if(key.type != TID_KEY && scan==1) {
+            } else if(key.type != TID_KEY && scan == 1) {
                /* display single value */
                if (key.num_values == 1) {
                   size = sizeof(data);
@@ -8286,13 +8379,17 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
 
                   if (strcmp(data_str, hex_str) != 0 && hex_str[0]) {
                      if (link_name[0]) {
-                        rsprintf("<tr><td class=\"ODBkey\">");
-                        rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\"><a href=\"%s\">%s (%s)</a><br></tr>\n",
-                             keyname, link_ref, link_name, ref, data_str, hex_str);
+                        rsprintf("<tr><td class=\"ODBkey\">\n");
+                        rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\">\n", keyname, link_ref, link_name);
+                        rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, odb_path);
+                        rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">%s (%s)</a></tr>\n",
+                             odb_path, data_str, hex_str);
                      } else {
-                        rsprintf("<tr><td class=\"ODBkey\">");
-                        rsprintf("%s<td class=\"ODBvalue\"><a href=\"%s\">%s (%s)</a><br></tr>\n",
-                                 keyname, ref, data_str, hex_str);
+                        rsprintf("<tr><td class=\"ODBkey\">\n");
+                        rsprintf("%s<td class=\"ODBvalue\">", keyname);
+                        rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, odb_path);
+                        rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">%s (%s)</a></tr>\n",
+                                 odb_path, data_str, hex_str);
                      }
                   } else {
                      if (strchr(data_str, '\n')) {
@@ -8310,14 +8407,17 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
                         rsprintf("<a href=\"%s\">Edit</a></tr>\n", ref);
                      } else {
                         if (link_name[0]) {
-                           rsprintf("<tr><td class=\"ODBkey\">");
-                           rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\"><a href=\"%s\">",
-                                keyname, link_ref, link_name, ref);
-                        } else
-                           rsprintf("<tr><td class=\"ODBkey\">%s<td class=\"ODBvalue\"><a href=\"%s\">", keyname,
-                                    ref);
+                           rsprintf("<tr><td class=\"ODBkey\">\n");
+                           rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\">", keyname, link_ref, link_name);
+                           rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, odb_path);
+                           rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">", odb_path);
+                        } else {
+                           rsprintf("<tr><td class=\"ODBkey\">%s<td class=\"ODBvalue\">", keyname);
+                           rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, odb_path);
+                           rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">", odb_path);
+                        }
                         strencode(data_str);
-                        rsprintf("</a><br></tr>\n");
+                        rsprintf("</a></tr>\n");
                      }
                   }
                } else {
@@ -8346,16 +8446,19 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
                         }
 
                         sprintf(ref, "%s?cmd=Set&index=%d", full_path, j);
-
+                        sprintf(str, "%s[%d]", odb_path, j);
+                        
                         if (j > 0)
                            rsprintf("<tr>");
 
+                        rsprintf("<td class=\"ODBvalue\">[%d]&nbsp;", j);
+                        rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, str);
+                        rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">", str);
+
                         if (strcmp(data_str, hex_str) != 0 && hex_str[0])
-                           rsprintf("<td class=\"ODBvalue\"><a href=\"%s\">[%d] %s (%s)</a><br></tr>\n", ref, j,
-                                    data_str, hex_str);
+                           rsprintf("%s (%s)</a></tr>\n", data_str, hex_str);
                         else
-                           rsprintf("<td class=\"ODBvalue\"><a href=\"%s\">[%d] %s</a><br></tr>\n", ref, j,
-                                    data_str);
+                           rsprintf("%s</a></tr>\n", data_str);
                      }
                   }
                }
@@ -13124,6 +13227,28 @@ void send_icon(const char *icon)
 
 /*------------------------------------------------------------------*/
 
+void get_resource_dir(char *str, int size)
+{
+   HNDLE hDB;
+   
+   cm_get_experiment_database(&hDB, NULL);
+   if (db_get_value(hDB, 0, "/Experiment/Resources", str, &size, TID_STRING, FALSE) == DB_SUCCESS) {
+      if (str[strlen(str)-1] != DIR_SEPARATOR)
+         strlcat(str, DIR_SEPARATOR_STR, size);
+      return;
+   }
+   
+   if (getenv("MIDASSYS")) {
+      strlcpy(str, getenv("MIDASSYS"), size);
+      if (str[strlen(str)-1] != DIR_SEPARATOR)
+         strlcat(str, DIR_SEPARATOR_STR, size);
+      strlcat(str, "resources/", size);
+      return;
+   }
+   
+   cm_msg(MERROR, "get_resource_dir", "/Experiment/Resources and MIDASSYS not defined. Cannot obtain paht to resources");
+}
+
 /* internal minimal CSS for better readable fonts */
 
 char mhttpd_css[] = "body {\
@@ -13144,7 +13269,7 @@ a:focus { color:#0000FF; text-decoration:underline }\
 
 void send_css()
 {
-   int length, fh, size;
+   int length, fh;
    char str[256], format[256], filename[256];
    time_t now;
    struct tm *gmt;
@@ -13166,24 +13291,10 @@ void send_css()
 
    /* look for external CSS file */
    cm_get_experiment_database(&hDB, NULL);
-   size = sizeof(filename);
    fh = 0;
-   str[0] = 0;
-   if (db_get_value(hDB, 0, "/Custom/Path", str, &size, TID_STRING, FALSE) == DB_SUCCESS) {
-      strlcpy(filename, str, sizeof(filename));
-      if (filename[strlen(filename)-1] != DIR_SEPARATOR)
-         strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
-      strlcat(filename, "mhttpd.css", sizeof(filename));
-      fh = open(filename, O_RDONLY | O_BINARY);
-   }
-
-   if (fh <= 0 && getenv("MIDASSYS")) {
-      strlcpy(filename, getenv("MIDASSYS"), sizeof(filename));
-      if (filename[strlen(filename)-1] != DIR_SEPARATOR)
-         strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
-      strlcat(filename, "resources/mhttpd.css", sizeof(filename));
-      fh = open(filename, O_RDONLY | O_BINARY);
-   }
+   get_resource_dir(filename, sizeof(filename));
+   strlcat(filename, "mhttpd.css", sizeof(filename));
+   fh = open(filename, O_RDONLY | O_BINARY);
    
    if (fh <= 0 && getenv("MIDAS_DIR")) {
       strlcpy(filename, getenv("MIDAS_DIR"), sizeof(filename));
@@ -13546,7 +13657,7 @@ const char *mhttpd_js =
 
 void send_js()
 {
-   int length, size, fh;
+   int length, fh;
    char str[256], format[256], filename[256];
    time_t now;
    struct tm *gmt;
@@ -13566,35 +13677,29 @@ void send_js()
    rsprintf("Expires: %s\r\n", str);
    rsprintf("Content-Type: text/javascript\r\n");
 
-   /* look for external CSS file */
+   /* look for external JS file */
    cm_get_experiment_database(&hDB, NULL);
-   size = sizeof(filename);
    fh = 0;
-   str[0] = 0;
-   if (db_get_value(hDB, 0, "/Custom/Path", str, &size, TID_STRING, FALSE) == DB_SUCCESS) {
-      strlcpy(filename, str, sizeof(filename));
-      if (filename[strlen(filename)-1] != DIR_SEPARATOR)
-         strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
-      strlcat(filename, "mhttpd.js", sizeof(filename));
-      fh = open(filename, O_RDONLY | O_BINARY);
-      if (fh > 0) {
-         fstat(fh, &stat_buf);
-         length = stat_buf.st_size;
-         rsprintf("Content-Length: %d\r\n\r\n", length);
-         
-         return_length = strlen(return_buffer) + length;
-         read(fh, return_buffer + strlen(return_buffer), length);
-         close(fh);
-      }
-   }
-   
-   if (fh <= 0)  {
-      length = strlen(mhttpd_js);
+   get_resource_dir(filename, sizeof(filename));
+   strlcat(filename, "mhttpd.js", sizeof(filename));
+   fh = open(filename, O_RDONLY | O_BINARY);
+      
+   if (fh > 0) {
+      fstat(fh, &stat_buf);
+      length = stat_buf.st_size;
       rsprintf("Content-Length: %d\r\n\r\n", length);
       
       return_length = strlen(return_buffer) + length;
-      memcpy(return_buffer + strlen(return_buffer), mhttpd_js, length);
+      read(fh, return_buffer + strlen(return_buffer), length);
+      close(fh);
+      return;
    }
+   
+   length = strlen(mhttpd_js);
+   rsprintf("Content-Length: %d\r\n\r\n", length);
+   
+   return_length = strlen(return_buffer) + length;
+   memcpy(return_buffer + strlen(return_buffer), mhttpd_js, length);
 }
 
 /*------------------------------------------------------------------*/

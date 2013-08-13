@@ -1,5 +1,5 @@
 <!-- ------------ O D B     A C C E S S  ------- -->
-       
+  
 /*! \page    RC_mhttpd_custom_ODB_access Access to the ODB from a Custom page
 <br>
 
@@ -97,9 +97,9 @@ Run Number: <odb src="/runinfo/run number" edit=1>
 @endcode
 
 \anchor odb_tag_ex1
-\b Examples
-<ol> 
- <li> The following image shows the status of the ODB key <span class="odb">/logger/write data</span>:<br>
+\b Example
+ 
+The following image shows the status of the ODB key <span class="odb">/logger/write data</span>:<br>
  * <center>
  *  <span class="image">ODB access using <span class="odbtag">\<odb..\></span> tag</span>
  * <br>
@@ -117,27 +117,11 @@ Logging data</td>
 </td></tr</table>
 \endcode
 
-
- <li> @ref  RC_mhttpd_js_example1
-</ol>
-<br><hr><br>
-
-
-
-
-@section RC_mhttpd_custom_odb_js ODB Access using mhttpd JavaScript built-in functions
-
-
-The following @ref RC_mhttpd_custom_js_lib  "mhttpd JS built-in functions" are defined for ODB access:
-- @ref RC_mhttpd_custom_odbget "ODBGet"
-- @ref RC_mhttpd_custom_odbedit "ODBEdit"
-- @ref RC_mhttpd_custom_odbset "ODBSet"
-- @ref RC_mhttpd_custom_odbkey "ODBKey"
-
-\b Examples:
-<ol>
-<li>As in the HTML example @ref odb_tag_ex1 "above", the status of the ODB key <span class="odb">/logger/write data</span> is displayed in the following image,
-but in this case the background colour is changed (using Javascript) depending on the value of the key:
+<br>
+The HTML code can be enhanced by using JavaScript.  As an illustration, 
+the status of the ODB key <span class="odb">/logger/write data</span> is again displayed in the following image,
+but in this case the background colour is changed (using Javascript) depending on the value of the key. The 
+<span class = "htmltag">\<odb...\></span> tag has been replaced by the equivalent @ref RC_mhttpd_custom_odb_js "Javascript built-in function" <span class="js">ODBGet</span>.
 
  * <center>
  *  <span class="image">ODB access using  <span class="js">ODBGet</span> showing colour change depending on state of ODB variable</span>
@@ -165,13 +149,59 @@ else
 </td></tr></table>
 \endcode
 
- <li> @ref  RC_mhttpd_js_example1
- <li> @ref  RC_mhttpd_js_example2
-</ol>
-
 \note
 The built-in library must be  @ref RC_mhttpd_include_js_library "included" 
-in your custom page when using any of the JS built-in functions.
+in the custom page when using any of the JS built-in functions.
+
+See also @ref  RC_mhttpd_js_example1
+
+<br><br>
+
+Because Javascript functions are so easy to use and many have no equivalent HTML ODB code tag, most new custom pages
+use only the Javascript functions.
+
+
+
+
+
+<br><hr><br>
+
+
+
+
+@section RC_mhttpd_custom_odb_js ODB Access using mhttpd JavaScript built-in functions
+
+
+The following @ref RC_mhttpd_custom_js_lib  "mhttpd JS built-in functions" are defined for ODB access:
+<center>
+<table
+ style="text-align: left; width: 50%;" border="0" cellpadding="2"
+cellspacing="0">
+<tr><td>
+@ref RC_mhttpd_custom_odbget "ODBGet" </td>
+<td> <span class ="new">Modified  @ref  ndf_jun_2011</span>  </td></tr>
+<tr><td>
+@ref RC_mhttpd_custom_odbedit "ODBEdit" </td>
+<td><br></td></tr>
+<tr><td>
+@ref RC_mhttpd_custom_odbset "ODBSet" </td>
+<td><br></td></tr>
+<tr><td>
+@ref RC_mhttpd_custom_odbkey "ODBKey" </td>
+<td><br></td></tr>
+<tr><td>
+@ref RC_mhttpd_custom_odbgetrecord "ODBGetRecord"  </td>
+<td>  <span class ="new">New since  @ref  ndf_jun_2011 </span> </td></tr>
+<tr><td>
+@ref RC_mhttpd_custom_odbextractrecord "ODBExtractRecord"   </td>
+<td>  <span class ="new">New since @ref ndf_jun_2011 </span> </td></tr>
+<tr><td>
+@ref RC_mhttpd_custom_odbmget "ODBMGet"  </td>
+<td>   <span class ="new">New since  @ref  ndf_jun_2011</span> </td></tr>
+</table>
+</center>
+
+ - Full @ref  RC_mhttpd_js_library_features .
 
 
 <br><hr><br>
@@ -180,9 +210,9 @@ in your custom page when using any of the JS built-in functions.
 @subsection RC_mhttpd_custom_odbget ODBGet JavaScript function
 
 <table
- style="text-align: left; width: 80%;" border="1" cellpadding="2"
+ style="text-align: left; width: 100%;" border="1" cellpadding="2"
 cellspacing="0">
-  <caption>Above: Access to ODB from JavaScript
+  <caption>Above: JavaScript function ODBGet 
   </caption>  
 <!--  table 1  title     -->  
 <tr>  
@@ -199,7 +229,7 @@ Parameters
 <tr>
 <td style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">
  <span class="js">
-ODBGet(path, format, defval, len, type)
+ODBGet(path [, format, defval, len, type] )
 </span>
 </td>
 <td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
@@ -215,7 +245,7 @@ cellspacing="0">
  <!--  table 2  Line 1 -->
 <tr>
 <td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">path</td>
-<td colspan="1" style="vertical-align: top;  font-weight: normal; text-align: left;">ODB path
+<td colspan="1" style="vertical-align: top;  font-weight: normal; text-align: left;">ODB path or  @ref RC_mhttpd_odbget_subdir "subdirectory"
 </td>
 </tr>
  <!-- table 2  Line 2 -->
@@ -250,7 +280,7 @@ Type to use if creating the key. One of the MIDAS Type definitions (see @ref F_M
 </tr>
 </table> <!--  table 1 -->
 
-\b Usage:
+\b Usage:<br>
 <span class="js">ODBGet</span> works in a similar way to db_set_value() .   If the path does not exist, 
 it will be created and set to the supplied value (providing the last 3 parameters are supplied).
 <br>
@@ -272,12 +302,34 @@ The function then returns a JavaScript array which can be used like
     alert(a[i]);
 @endcode
 
-If no <<i>format</i>> parameter is supplied, a default format is used. The following shows the
-use of a format parameter:
+If no <<i>format</i>> parameter is supplied, a default format is used. The following JavaScript 
+fragment shows the use of a format parameter:
 \code
 path='/runinfo/run number';
 rn = ODBGet(path,"%4.4d\n");
 @endcode
+
+\anchor RC_mhttpd_odbget_subdir
+<span class="js">ODBGet</span> also works now where the path is a \b subdirectory  in the ODB
+ ( <span class ="new">since  @ref  ndf_jun_2011</span> ).
+<br>
+
+\endcode
+The following Javascript example shows the contents of the subdirectory  <span class ="odb">/Runinfo</span>
+\code
+var string = ODBGet("/Runinfo");
+document.write('<br>Runinfo subdirectory: "'+string+'"');
+\endcode
+
+The output for the above example is:
+\code
+Runinfo subdirectory: "1 1 1024 0 0 0 Mon Jun 20 09:40:14 2011 1308588014 Mon Jun 20 09:40:46 2011 1308588046"
+\endcode
+
+\Note While <span class="js"> ODBGet </span> can be used for subdirectories, an \b easier \b way is to use
+ <span class="js">ODBGetRecord </span> and  <span class="js">ODBExtractRecord </span> as shown 
+@ref RC_mhttpd_custom_example0 "below".
+
 
 \b Example
  - @ref  RC_mhttpd_js_example1
@@ -292,7 +344,7 @@ rn = ODBGet(path,"%4.4d\n");
 <table
  style="text-align: left; width: 100%;" border="1" cellpadding="2"
 cellspacing="0">
-  <caption>Above: Access to ODB from JavaScript
+  <caption>Above: JavaScript function ODBEdit
   </caption>
 <tr>
 <td colspan="1" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">JavaScript Function</td>
@@ -354,7 +406,7 @@ document.writeln('</a>');
 <table
  style="text-align: left; width: 100%;" border="1" cellpadding="2"
 cellspacing="0">
-  <caption>Above: Access to ODB from JavaScript
+  <caption>Above: JavaScript function ODBSet
   </caption>
 <tr>
 <td colspan="1" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">JavaScript Function</td>
@@ -370,7 +422,7 @@ Parameters
 <tr>
 <td style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">
  <span class="js">
-ODBSet(path, value, pwdname)
+ODBSet(path, value [, pwdname] )
 </span>
 </td>
 <td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
@@ -408,20 +460,30 @@ cellspacing="0">
 @anchor RC_mhttpd_array_note
 <span class="new">Writing arrays with ODBSet has been available since @ref  ndf_may_2010 .</span>
 <br>
-\b Usage:
-Individual ODB values can be set in the background with
-<span class="js">ODBSet(<i>\<path\>,\<value\></i></span>
-or
-<span class="js">ODBSet(<i>\<path\>,\<value\>,\<password_name\></i>)</span>
+<b>Usage:</b><br>
+Individual ODB values can be set in the background e.g.
+\code
+ODBSet("/runinfo/run number", 5);
+\endcode
+or an array of values can be set e.g.
+\code
+var path = equipment_path + 'GasCalc/Variables/';
+var cal_array = gascalc_path + 'Calculated[*]';
+var CAL = [35,20,30,5];
+ODBSet(cal_array, CAL);
+\endcode
 
 If using a password, the \<<i>password_name</i>\> must be defined as an ODB entry (see  @ref RC_mhttpd_custom_pw_protection)
 
 
 \b Example
- - @ref  RC_mhttpd_js_example1 
+ - @ref  RC_mhttpd_js_example2 
  - @ref  RC_mhttpd_js_example3
 
-<br><hr><br>
+
+
+<br><br><hr><br>
+
 
 \anchor idx_ODBKey-JavaScript-function
 @subsection RC_mhttpd_custom_odbkey ODBKey   JavaScript function
@@ -429,7 +491,7 @@ If using a password, the \<<i>password_name</i>\> must be defined as an ODB entr
 <table
  style="text-align: left; width: 100%;" border="1" cellpadding="2"
 cellspacing="0">
-  <caption>Above: Access to ODB from JavaScript
+  <caption>Above: JavaScript function ODBKey
   </caption>
 <tr>
 <td colspan="1" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">JavaScript Function</td>
@@ -450,11 +512,11 @@ ODBKey(path)
 </span>
 </td>
 <td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
-  Get the structure of an ODB key. Returns the key name,type,number of values and size. 
+  Get the structure of an ODB key. Returns the key name, type, number of values, and size. 
 </td>
 <td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
 <table
- style="text-align: left; width: 50%;" border="0" cellpadding="2"
+ style="text-align: left; width: 100%;" border="0" cellpadding="2"
 cellspacing="0">
 
  <!--  table 2 Line 1 -->
@@ -478,8 +540,278 @@ document.write('key array : '+key+'<br>');
  - @ref RC_mhttpd_js_example2 
  - @ref RC_mhttpd_custom_ODB_access_examples
 
+
+<br><hr><br>
+
+
+\anchor idx_ODBGetRecord-JavaScript-function
+@subsection RC_mhttpd_custom_odbgetrecord ODBGetRecord JavaScript function
+
+<table
+ style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="0">
+  <caption>Above: JavaScript function ODBGetRecord
+  </caption>
+<tr>
+<td colspan="1" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">JavaScript Function</td>
+</td>
+ <td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Purpose
+</td>
+ <td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Parameters
+</td>
+</tr> 
+
+<!--   table 1  line    1    -->
+<tr>
+<td style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">
+ <span class="js">
+ODBGetRecord(path)
+</span>
+</td>
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+  Get the record of an ODB subdirectory.<br> This can be used as input for
+@ref RC_mhttpd_custom_odbextractrecord "ODBExtractRecord"
+</td>
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+<table
+ style="text-align: left; width: 100%;" border="0" cellpadding="2"
+cellspacing="0">
+
+ <!--  table 2 Line 1 -->
+<tr>
+<td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">path</td>
+<td colspan="1" style="vertical-align: top; font-weight: normal; text-align: left; ">ODB subdirectory path
+</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+
+\b Usage:
+\code
+ODBGetRecord('/Runinfo');
+@endcode
+
+\b Example:
+\code
+var result = ODBGetRecord('/Runinfo');
+document.write('<br>ODBGetRecord: <br>result='+result+'<br>);
+var array =[];
+array = result.split ('\n');
+for (var i=0; i<array.length; i++)
+   document.write('<br>'+array[i]);
+\endcode
+
+See also @ref RC_mhttpd_custom_odbextractrecord "ODBExtractRecord"
+
+\b Output from example above
+\code
+ODBGetRecord: 
+result=State:1 Online Mode:1 Run number:1 Transition in progress:0 Start abort:0 Requested transition:0 Start time:Wed Jun 15 16:46:07 2011 Start time binary:1308181567 Stop time:Wed Jun 15 16:46:15 2011 Stop time binary:1308181575
+
+State:1
+Online Mode:1
+Run number:1
+Transition in progress:0
+Start abort:0
+Requested transition:0
+Start time:Wed Jun 15 16:46:07 2011
+Start time binary:1308181567
+Stop time:Wed Jun 15 16:46:15 2011
+Stop time binary:1308181575
+\endcode
+
+
+<br><hr><br>
+
+
+\anchor idx_ODBExtractRecord-JavaScript-function
+@subsection RC_mhttpd_custom_odbextractrecord ODBExtractRecord   JavaScript function
+
+<table
+ style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="0">
+  <caption>Above: JavaScript function ODBExtractRecord
+  </caption>
+<tr>
+<td colspan="1" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">JavaScript Function</td>
+</td>
+ <td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Purpose
+</td>
+ <td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Parameters
+</td>
+</tr> 
+
+<!--   table 1  line    1    -->
+<tr>
+<td style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">
+ <span class="js">
+ODBExtractRecord(record, key)
+</span>
+</td>
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+Extracts the value of a key from the record of an ODB subdirectory. 
+</td>
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+<table
+ style="text-align: left; width: 100%;" border="0" cellpadding="2"
+cellspacing="0">
+
+ <!--  table 2 Line 1 -->
+<tr>
+<td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">record</td>
+<td colspan="1" style="vertical-align: top; font-weight: normal; text-align: left; ">ODB record supplied by a call to  @ref RC_mhttpd_custom_odbgetrecord "ODBGetRecord"
+</td>
+</tr>
+<tr> <!--  table 2 Line 2 -->
+<td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">key</td>
+<td colspan="1" style="vertical-align: top; font-weight: normal; text-align: left; ">ODB key whose value is to be extracted from record
+</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+
+\b Usage:
+\code
+run_number = ODBExtractRecord(result, "Run number");
+@endcode
+
+\anchor RC_mhttpd_custom_example0
+\b Example:
+\code
+var result = ODBGetRecord('/Runinfo');
+run_number = ODBExtractRecord(result, 'Run number');
+start_time = ODBExtractRecord(result, 'Start time')
+document.write('<br>ODBExtractRecord: <br>Run number= '+run_number+'<br>Start time= '+start_time);
+\endcode
+
+\b Output from above example:
+\code
+ODBExtractRecord:
+Run number= 1
+Start time= Wed Jun 15 16:46:07 2011
+\endcode
+
+
+<br><hr><br>
+
+\anchor idx_ODBMGet-JavaScript-function
+@subsection RC_mhttpd_custom_odbmget ODBMGet JavaScript function
+
+This function ("Multi-Get") can be used to obtain ODB values from different paths in one call. This is particularly useful where the time taken
+for multiple accesses of the ODB is causing a long delay in updating a custom page (e.g. ODB is located on a remote machine halfway around the world).
 <br>
-\anchor end
+
+ The ODB paths have to be supplied in an array, the result is again an array. An optional callback routine can be supplied for asynchronous 
+operation. Optional formats may be supplied if the resulting number should be formatted in a specific way.
+
+<table
+ style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="0">
+  <caption>Above: JavaScript function ODBMGet 
+  </caption>  
+<!--  table 1  title     -->  
+<tr>  
+<td colspan="1" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">JavaScript Function</td>
+</td>
+ <td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Purpose
+</td>
+ <td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Parameters
+</td>
+</tr> 
+<!--  table 1  line    1     -->
+<tr>
+<td style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">
+ <span class="js">
+ODBMGet(paths [, callback, formats] )
+</span>
+</td>
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+Retrieves individual or array values from the ODB in a single call
+</td>
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+
+<!--  table 2  -->
+<table
+ style="text-align: left; width: 100%;" border="0" cellpadding="2"
+cellspacing="0">
+
+ <!--  table 2  Line 1 -->
+<tr>
+<td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">paths</td>
+<td colspan="1" style="vertical-align: top;  font-weight: normal; text-align: left;">Array of ODB paths
+</td>
+</tr>
+ <!--  table 2 Line 2 -->
+<tr>
+<td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">
+callback</td>
+<td colspan="1" style="vertical-align: top; font-weight: normal; text-align: left;">optional callback routine
+</td>
+</tr>
+ <!-- table 2  Line 3 -->
+<tr>
+<td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">formats</td>
+<td colspan="1" style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">optional array of formats for output data
+</td>
+</tr>
+
+</table> <!--  table 2 -->
+</td>
+</tr>
+</table> <!--  table 1 -->
+
+\b Usage:<br>
+ODBMGet(paths_array)
+
+\b Example \b 1:
+\code
+var req = new Array();
+req[0]= "/Runinfo/Run number"
+req[1]= "/Equipment/Trigger/Statistics/Events sent"
+var result = ODBMGet(req);
+var run_number = result[0];
+var events_sent =  result[1];
+document.write('<br>run number = '+run_number+' events sent= '+events_sent);
+\endcode
+\b Output from above example
+\code
+run number= 1 events sent= 41
+\endcode
+<br><br>
+
+
+\b Example \b 2: using a callback
+\code
+
+function callback(result)
+{
+   run_number = result[0];
+   events_sent = result[1];
+   
+   alert('callback: run number= '+ run_number+' events sent= '+ events_sent);
+}
+
+// ....
+
+var req = new Array();
+req[0]= "/Runinfo/Run number"
+req[1]= "/Equipment/Trigger/Statistics/Events sent"
+var result = ODBMGet(req, callback);
+document.write('<br>done');
+\endcode
+<br><br>
+
+
 
 \htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
@@ -489,7 +821,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 <br>
 <!-- End of page    RC_mhttpd_custom_ODB_access  -->
-
+\anchor end
 */
 
 
@@ -504,8 +836,14 @@ pages( "RC_mhttpd_custom_ODB_access", "RunControl", "RC_mhttpd_custom_ODB_access
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script> \endhtmlonly
 
+
+ - @ref  RC_mhttpd_js_example1
+ - @ref  RC_mhttpd_js_example2
+ - @ref  RC_mhttpd_js_example3
+ - @ref  RC_mhttpd_RPC_example
+
 <br>
-@section RC_mhttpd_js_example1 Example of ODB access with HTML and JavaScript equivalent
+@section RC_mhttpd_js_example1 Example of ODB access with HTML and JavaScript equivalent (ODBEdit, ODBGet)
 
 The following simple HTML code shows ODB access using JavaScript (<span class="js">ODBGet, ODBEdit</span>) and
 using the HTML <span class="odbtag"> \<odb\></span> tag . The output produced by this code is shown below.
@@ -575,7 +913,7 @@ Figure 2 shows entering a value using the \b HTML tags. The two different styles
 * </span></center> 
 
 
-@section RC_mhttpd_js_example2  Example of ODB access with JavaScript functions ODBSet and ODBKey
+@section RC_mhttpd_js_example2  Example of ODB access with JavaScript functions  ODBGet, ODBSet, ODBKey and ODBGetMsg
 
 
 
@@ -918,7 +1256,7 @@ The ODB would have two passwords defined, i.e.<br>
 /Custom/Pwd/ShiftPwd</span><br>
 
 The password is of course not
-secure in the sense that it's placed in plain text into the ODB, but its purpose is to
+secure in the sense that it is placed in plain text into the ODB, but its purpose is to
 prevent accidental modification, rather than malicious interference.
 
 <br>
@@ -954,7 +1292,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 \htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_custom_ODB_access_features", "RunControl", "RC_mhttpd_Image_access","RC_mhttpd_custom_RPC_access",  "end" );
+pages( "RC_mhttpd_custom_ODB_access_features", "RunControl", "RC_mhttpd_RPC_example","RC_mhttpd_custom_RPC_access",  "end" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script> \endhtmlonly
 
@@ -963,83 +1301,307 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 
 <span class="new"> RPC access has been available from custom webpages since  @ref  ndf_jan_2009 . </span>
 
-The @ref RC_mhttpd_custom_js_lib  "JavaScript library function" \b ODBRpc is defined for RPC access
-(the library must be @ref RC_mhttpd_include_js_library "included") :
+The @ref RC_mhttpd_custom_js_lib  "JavaScript library functions" \b ODBRpc_rev0 and \b ODBRpc_rev1
+( <span class ="new">the latter available since  @ref ndf_feb_2011 </span> )
+ are defined for RPC access.
+
 This permits buttons on MIDAS "custom" web pages to
-invoke RPC calls directly into user frontend programs, for example to turn
-hardware modules on or off.
+invoke RPC calls directly into user frontend programs, for example to turn hardware modules on or off.
  
-\todo Documentation and examples needed  - ODBRpc
+(Note that the JS library must be @ref RC_mhttpd_include_js_library "included" to use any of the built-in JS functions) :
+
 
 <br>
 <table
- style="text-align: left; width: 60%;" border="1" cellpadding="2"
+ style="text-align: left; width: 100%;" border="1" cellpadding="2"
 cellspacing="0">
-  <caption>Above: ODB RPC access from JavaScript
+  <caption>Above: JavaScript functions for RPC access
   </caption>
 <tr>
-<td colspan="1" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">JavaScript Function</td>
+<td colspan="1" rowspan="2" style="vertical-align: center; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">JavaScript Function</td>
 </td>
- <td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+ <td  colspan="1"  rowspan="2" style="vertical-align: center; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
 Purpose
 </td>
- <td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+ <td  colspan="2"  rowspan="1" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
 Parameters
 </td>
 </tr> 
-<!--   line    1     -->
-<tr>
-<td style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">
-\code
- ODBRpc_rev0(name, rpc, args)
-@endcode
+<tr>  <!--   line    1     -->
+ <td  colspan="1"  rowspan="1" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Name
 </td>
-<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
-to be filled
+ <td  colspan="1"  rowspan="1" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Explanation
+</td></tr>
+<tr> <!--   line    2    -->
+<td rowspan=3 style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">
+ <span class ="js">ODBRpc_rev0(name, rpc, args)</span>
 </td>
-<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
-<table
- style="text-align: left; width: 100%;" border="0" cellpadding="2"
-cellspacing="0">
-
- <!-- Line 1 -->
-<tr>
-<td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">name</td>
-<td colspan="1" style="vertical-align: top;  font-weight: normal; text-align: left;"><br>
+<td  rowspan=3 style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+Invoke RPC call from webpage
+</td>
+<td style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">name</td>
+<td style="vertical-align: top;  font-weight: normal; text-align: left;">Name of frontend containing rpc callback function
 </td>
 </tr>
- <!-- Line 2 -->
-<tr>
+<tr>  <!--   Line 3 -->
 <td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">rpc</td>
-<td colspan="1" style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;"><br>
+<td colspan="1" style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">RPC ID associated with rpc callback function
 </td>
-</tr> <!-- Line 3 -->
-<tr>
+</tr>
+<tr>  <!--   Line 4 -->
 <td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">args</td>
-<td colspan="1" style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;"><br>
+<td colspan="1" style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">user dependent arguments?
+</td>
+</tr>
+
+
+<!--   Line    5     -->
+<tr>
+<td rowspan=4 style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">
+ <span class ="js">ODBRpc_rev1(name, rpc, max_reply_length, args)</span>
+ 
+</td>
+<td rowspan=4 style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+Invoke RPC call, returns data to the webpage
+</td>
+<td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">name</td>
+<td colspan="1" style="vertical-align: top;  font-weight: normal; text-align: left;">Name of frontend containing rpc callback function
+</td>
+</tr>
+<tr> <!-- Line   6 -->
+<td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">rpc</td>
+<td colspan="1" style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">RPC ID associated with rpc callback function
+</td>
+</tr>
+<tr> <!-- Line   7 -->
+<td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">max reply length</td>
+<td colspan="1" style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">maximum length of reply
+</td>
+</tr>
+<tr> <!--  Line 8  -->
+<td colspan="1" style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">args</td>
+<td colspan="1" style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">user dependent arguments?
 </td>
 </tr>
 </table>
-</td>
-</tr>
-</table>
+
+The rpc callback function must be associated with the RPC ID  in the frontend with a call to \b cm_register_function (see 
+@ref RC_mhttpd_ODB_example "example"). 
 
 
 
+ - \subpage  RC_mhttpd_RPC_example
 
 
-
+ 
 \htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages(  "RC_mhttpd_custom_ODB_access_features", "RunControl", "RC_mhttpd_Image_access","RC_mhttpd_custom_RPC_access",  "end" );
+pages( "RC_mhttpd_custom_ODB_access_features", "RunControl", "RC_mhttpd_RPC_example","RC_mhttpd_custom_RPC_access",  "" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script> \endhtmlonly
 
 
 <br>
 \anchor end
-<!-- end of page RC_custom_mhttpd_RPC_access -->
+<!-- end of page RC_mhttpd_custom_RPC_access -->
 */
 
+
+/*!@page  RC_mhttpd_RPC_example ODB access example including  ODBGet, ODBSet,  ODBGetMsg, ODBGenerateMsg, ODBRpc JavaScript functions
+
+\htmlonly <script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_mhttpd_custom_RPC_access" , "RunControl", "RC_mhttpd_Image_access", "RC_mhttpd_ODB_example" ,  "end" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script> \endhtmlonly
+
+A MIDAS example for using most mhttpd html and javascript functions including ODBRpc() is available in the 
+directory .../midas/examples/javascript1/ in the MIDAS package. To run the example, follow instructions in the README file.
+
+The html code from this directory ( \b example1.html ) is shown below for illustration.
+and the output is shown @ref RC_mhttpd_RPC_output "here".
+
+\code
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <title>Example MIDAS Javascript functions</title>
+
+    <script src='mhttpd.js'></script>
+  </head>
+
+  <body>
+    <h1>Example MIDAS Javascript functions</h1>
+
+    <p id="LastUpdated">Last updated: never</p>
+
+    <h2>Example of mhttpd &lt;odb&gt; tag</h2>
+
+    <p>
+      <i>This data is updated by web page reload - press your web browser "reload" button</i>
+    </p>
+    <p>
+      Settings/Example_int: <odb src="/Equipment/RpcExample/Settings/Example_int"></odb>
+    </p>
+    <p>
+      Variables/SLOW[2]: <odb src="/Equipment/RpcExample/Variables/SLOW[2]" format="%.3f"></odb>
+    </p>
+    
+    <h2>Example javascript update function</h2>
+
+    <input type=button value='Update once' onClick='updatePeriod=0; update();'></input>
+    <input type=button value='Update every 1 sec' onClick='updatePeriod=1000; update();'></input>
+    <input type=button value='Update every 10 sec' onClick='updatePeriod=10000; update();'></input>
+      
+    <h2>Example of ODBGet() javascript function</h2>
+
+    <p>
+      <i>This data is updated by the javascript update() function - press the "update" button</i>
+    </p>
+    <p>
+      Settings/Example_int: <tt id="example_int">not loaded yet</tt>
+    </p>
+    <p>
+      Variables/SLOW[2]: <tt id="slow_2">not loaded yet</tt>
+    </p>
+
+    
+    <h2>Example of ODBSet() javascript function</h2>
+      
+    <p>
+      <i>Press these buttons to write new values to ODB. ODB variables of appropriate type have to be created before calling ODBSet(). Observe updated values in the section above.</i>
+    </p>
+    <p>
+      Set Settings/Example_int to:
+      <input type=button value='value 1' onClick='clearTimeout(updateTimerId); ODBSet("/Equipment/RpcExample/Settings/Example_int", "1"); update();'></input>
+      <input type=button value='value 2' onClick='clearTimeout(updateTimerId); ODBSet("/Equipment/RpcExample/Settings/Example_int", "2"); update();'></input>
+      <input type=button value='value 3' onClick='clearTimeout(updateTimerId); ODBSet("/Equipment/RpcExample/Settings/Example_int", "3"); update();'></input>
+    </p>
+
+    <p>
+      Set Settings/Example_int to any value:
+      <input type=input size=5 value='200' onKeyPress='if (event.keyCode==13) { clearTimeout(updateTimerId); ODBSet("/Equipment/RpcExample/Settings/Example_int", this.value); update(); }'></input>
+      (type in any value and press Enter)
+    </p>
+
+    <h2>Example of ODBRpc_rev0() javascript function</h2>
+      
+    <p>
+      Call the rpc_callback function in our frontend program: 
+      <input type=button value='Push me' onClick='clearTimeout(updateTimerId); ODBRpc_rev0("fejrpc*", 101, "123", "arg2", "arg3"); update();'></input>
+    </p>
+    <p>
+      <i>Observe the output of our rpc handler in midas messages</i>
+    </p>
+
+    <h2>Example of ODBRpc_rev1() javascript function</h2>
+      
+    <p>
+      Call the rpc_callback function in fejrpc.cxx: 
+      <input type=button value='Push me' onClick='clearTimeout(updateTimerId); var ret = ODBRpc_rev1("fejrpc*", 102, 0, "123", "arg2", "arg3"); process(ret); update();'></input>
+    </p>
+
+    <p>
+      Data returned by the RPC call: <pre id="rpc_result"></pre>
+    </p>
+    <p>
+      <i>Observe the output of our rpc handler in midas messages</i>
+    </p>
+
+    <h2>Example of ODBGetMsg() javascript function</h2>
+      
+    <p>
+      <input type=button value='Get MIDAS messages' onClick='var data = ODBGetMsg(10); document.getElementById("getmsg_target").innerHTML = data.join("\n");'></input>
+    </p>
+    <pre id='getmsg_target'>
+(empty)
+    </pre>
+
+    <h2>Example of ODBGenerateMsg() javascript function</h2>
+      
+    <p>
+      <i>Type in a message and press Enter. To see the new message, press "Get MIDAS messages" above</i>
+    </p>
+    <p>
+      <input type=input size=40 value='' onKeyPress='if (event.keyCode==13) { ODBGenerateMsg(this.value); }'></input>
+    </p>
+
+    <script type="text/javascript">
+
+      var updatePeriod = 0; // 10000; // in msec
+      var updateTimerId = 0;
+
+      var parser;
+
+      function load()
+      {
+      document.getElementById('LastUpdated').innerHTML = "Updating..." + new Date;
+      
+      document.getElementById('example_int').innerHTML = ODBGet('/Equipment/RpcExample/Settings/Example_int');
+      document.getElementById('slow_2').innerHTML = ODBGet('/Equipment/RpcExample/Variables/SLOW[2]', '%.6f');
+      
+      document.getElementById('LastUpdated').innerHTML = "Last updated: " + new Date;
+      }
+
+      function process(ret)
+      {
+      var rv = ret.slice(ret.indexOf(" || ") + 4);
+      document.getElementById("rpc_result").innerHTML = "[" + rv + "]";
+      }
+      
+      function update()
+      {
+      clearTimeout(updateTimerId);
+      load();
+      if (updatePeriod > 0)
+      updateTimerId = setTimeout('update()', updatePeriod);
+      }
+      
+      function main()
+      {
+      clearTimeout(updateTimerId);
+      }
+
+      main();
+      if (updatePeriod > 0)
+      update();
+
+    </script>
+
+    <hr>
+    <address><a href="mailto:xxx@xxx">MIDAS Example</a></address>
+<!-- Created: Tue Sep 21 15:44:39 PDT 2010 -->
+<!-- hhmts start -->
+Last modified: Mon Feb 28 08:21:38 PST 2011
+<!-- hhmts end -->
+  </body>
+</html>
+
+\endcode
+
+
+<br>
+
+\anchor RC_mhttpd_RPC_output
+ * <center>
+ *  <span class="image">The example html file produced by this example is shown below</span>
+ * <br>
+ * \image html rpcex.gif
+ * </center>
+@anchor end
+
+\htmlonly <script type="text/javascript">
+// pages parameters: back index next {top bottom}
+pages( "RC_mhttpd_custom_RPC_access" , "RunControl", "RC_mhttpd_Image_access", "RC_mhttpd_RPC_example" ,  "" );
+sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
+</script> \endhtmlonly
+
+
+<br>
+
+<!-- end of page RC_mhttpd_RPC_example -->
+*/
 
 

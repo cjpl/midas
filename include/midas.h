@@ -259,6 +259,8 @@ Timeouts [ms] */
 
 #define DEFAULT_WATCHDOG_TIMEOUT 10000    /**< Watchdog */
 
+#define USE_HIDDEN_EQ                     /**< Use hidden equipment in status page */
+
 /*------------------------------------------------------------------*/
 
 /* Enumeration definitions */
