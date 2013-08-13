@@ -8264,9 +8264,9 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    //buttons:
    if(!elog_mode){
       rsprintf("<tr><td colspan=2>\n");
-      rsprintf("<input type=button value=Find onclick=\"self.location=\'?cmd=Alarms\';\">\n");
-      rsprintf("<input type=button value=Create onclick=\"self.location=\'?cmd=Alarms\';\">\n");
-      rsprintf("<input type=button value=Delete onclick=\"self.location=\'?cmd=Alarms\';\">\n");
+      rsprintf("<input type=button value=Find onclick=\"self.location=\'?cmd=Find\';\">\n");
+      rsprintf("<input type=button value=Create onclick=\"self.location=\'?cmd=Create\';\">\n");
+      rsprintf("<input type=button value=Delete onclick=\"self.location=\'?cmd=Delete\';\">\n");
       rsprintf("<input type=button value=\"Create Elog from this page\" onclick=\"self.location=\'?cmd=Create Elog from this page\';\"></td></tr>\n");
    }
 
