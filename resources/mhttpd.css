@@ -398,6 +398,10 @@ td.meterCell{
 	border: 1px solid #000000 !important;
 }
 
+.whiteLight{
+	background-color: #EEEEEE;
+}
+
 .msgService{
 	background-color: #999999;
 	border-radius: 12px;
