@@ -6,7 +6,7 @@
  
 \htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_custom_RPC_access", "RunControl", "RC_mhttpd_custom_demo","RC_mhttpd_Image_access",  "end" );
+pages( "RC_mhttpd_custom_RPC_example", "RunControl", "RC_mhttpd_custom_demo","RC_mhttpd_Image_access",  "end" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -17,7 +17,7 @@ sections("Features", "RunControl","FrontendOperation"); // last section; top of 
 @section RC_mhttpd_custom_history Inserting a history image in a custom page
 
 In the special case where the image to be inserted is a \b History image, it can be inserted into a custom page using
-an HTML   <span class = "htmltag"><\<img...\></span> tag of the following form:
+an HTML   <span class = "htmltag">\<img...\></span> tag of the following form:
 \code
 <img src="http://hostname.domain:port/HS/Meterdis.gif&scale=12h&width=300">
 @endcode
@@ -30,14 +30,17 @@ See  @ref RC_mhttpd_custom_demo and \ref example_image_all "image" created by th
 \anchor idx_mhttpd_page_custom_image_insert-image
 @section RC_mhttpd_custom_image Image insertion into a Custom page
 \anchor idx_mhttpd_page_custom_image_history-image
- - An image may be inserted into a custom webpage by using an HTML   <span class = "htmltag">\<img...\></span> tag.
-The image file can be in any format supported by the browser (e.g. &nbsp; \b gif,&nbsp; \b png,&nbsp; \b jpg etc.).
 
- - Alternatively, by defining the image in the subdirectory "images" in the <span class="odb">/Custom ODB tree </span>
-features such as labels, bars and fills can be superimposed on the image.
+\note 
+&nbsp; <span class="note">The image file must be in <span class="warn"> gif</span> format.</span> 
+
+To make an image <i>"myexpt.gif"</i> visible in a Custom Page  myexpt.html, follow these steps:
+<ol>
+
+<li>The path and filename of the image file must be defined in the subdirectory  <span class="odb">Images</span> in the <span class="odb">/Custom ODB tree </span>.
 <br>
-To make an image <i>"myexpt.gif"</i> available in a Custom Page, follow these steps:
 
+To do this, 
 <ol>
 <li>the subdirectory <span class="odb">Images</span> must be created in the ODB  <span class="odb">/Custom</span> directory, e.g.
 using @ref RC_odbedit_utility "odbedit" :
@@ -62,19 +65,49 @@ the image you are going to use (in this example, \b myexpt.gif), i.e.
 String length [32]: 256
 @endcode
 
-<li>Set the key  <span class="odb"> Background</span> to contain the name of the image-file.
+<li>Set the key  <span class="odb"> Background</span> to contain the path and name of the image-file.
 \code
-[local:Default:Stopped]myexpt.gif>set Background \midas\examples\custom\myexpt.gif
+[local:Default:Stopped]myexpt.gif>set Background /midas/examples/custom/myexpt.gif
 @endcode
 </ol>
 
-This image must be referenced in a custom HTML file, such as  myexpt.html . This file also includes other features
-such as <b>active clickable areas, labels, bars and fills</b> superimposed on the image. These are explained in the
-sections  @ref RC_mhttpd_custom_Labels_Bars_Fills "below". 
+<br><br>
+<li> The image must also be referenced in a custom HTML file, such as  myexpt.html using an HTML   <span class = "htmltag">\<img...\></span> tag,
+e.g.
+\code
+<img src="myexpt.gif">
+\endcode
 
-Before it can be accessed from mhttpd,  this file (myexpt.html) must be 
-@ref  RC_mhttpd_Activate "activated" by being defined in the ODB under  <span class="odb">/Custom</span>. This
-is demonstrated in the custom demo  @ref RC_mhttpd_custom_demo "example" and the @ref example_image_all "image" created by the demo.
+Note that if additional features such as 
+ @ref RC_mhttpd_custom_imagemap "active clickable areas" and  @ref  RC_mhttpd_custom_Labels_Bars_Fills "labels, bars and fills" superimposed on the image are also required,  HTML mapping
+  must also be activated with the   <span class = "htmltag">\<map...\></span> tag
+\code
+<map name="myexpt.map">
+<img src="myexpt.gif" usemap="#myexpt.map">
+</map>
+\endcode
+
+<Br><br>
+ 
+<li> Before it can be accessed from mhttpd,  the custom page file myexpt.html must be 
+@ref  RC_mhttpd_Activate "activated" by being defined in the ODB under  <span class="odb">/Custom</span>. 
+
+\code
+ls /custom
+demo  /midas/examples/custom/myexpt.html
+\endcode
+
+</ol>
+
+Insertion of an image into a custom page is demonstrated by the custom demo  @ref RC_mhttpd_custom_demo "example" and the @ref example_image_all "image" created by the demo.
+
+
+
+
+<br><hr><br>
+
+
+
 
 \anchor idx_ODB_tree_custom_images
 @subsection RC_mhttpd_custom_images_tree_keys Explanation of the keys in the ODB /Custom/images  subtree 
@@ -206,6 +239,8 @@ Optional subdirectory to be used for superimposing fills on top of the image. (S
 
 </table>
 
+
+<br><hr><br>
 
 \anchor idx_mhttpd_page_custom_image_mapping
 \anchor idx_mhttpd_page_custom_image_clickable-area
@@ -346,7 +381,7 @@ locations in respect to the reference image are shown in the status bar (Figure 
  * <br><br><br>  
 
 \note
-To make this work under Firefox, the user has to explicitly allow for status bar changes. To do so,
+&nbsp; To make this work under Firefox, the user has to explicitly allow for status bar changes. To do so,
 enter about:config in the address bar. In the filter bar, enter status. Then locate 
 dom.disable_window_status_change and set it to false.
 
@@ -363,7 +398,7 @@ You can enhance your custom page by superimposing multiple features based on ODB
 onto your image, such as 
 
 -  @ref RC_mhttpd_custom_labels "labels": "live" ODB values positioned in a particular location of the page
--  @ref  RC_mhttpd_custom_bars "bars" : "bar level" showing graphically levels or rate etc.
+-  @ref  RC_mhttpd_custom_bars "bars" : "bar level" showing graphically ODB values such as levels or rate etc.
 -  @ref  RC_mhttpd_custom_fills "fills" : "color level" where colour is used as the level indicator.
 -  @ref RC_mhttpd_custom_edit_boxes "edit boxes" : editable ODB values superimposed on the image
 
@@ -1100,7 +1135,7 @@ function promptpwd(path)
  
 \htmlonly <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_custom_RPC_access", "RunControl", "RC_mhttpd_custom_demo","RC_mhttpd_Image_access",  "" );
+pages( "RC_mhttpd_custom_RPC_example", "RunControl", "RC_mhttpd_custom_demo","RC_mhttpd_Image_access",  "" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script> \endhtmlonly
  

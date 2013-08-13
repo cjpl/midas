@@ -4,7 +4,7 @@
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_Internal", "RunControl", "RC_Monitor", "RC_mhttpd_custom_status",  "end" );
+pages( "RC_mhttpd_Internal", "RunControl", "RC_Sequencer", "RC_mhttpd_custom_status",  "end" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -32,7 +32,7 @@ See @ref RC_mhttpd_status_toggle "example" of the above defined buttons.
 
 In the following example,  the main Status page can be toggled between the Custom version  and the default MIDAS status page. 
  
-The Custom status page contains a button \b ToggleStatusPage that will toggle between the two cases.
+The Custom status page contains a button  <span class="button">ToggleStatusPage</span> that will toggle between the two cases.
 A custom-link has been provided on the Default status page in order to access the custom status page 
 when using the Default status page.
 
@@ -206,7 +206,7 @@ exit;
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_Internal", "RunControl", "RC_Monitor", "RC_mhttpd_custom_status",  "end" );
+pages( "RC_mhttpd_Internal", "RunControl", "RC_Sequencer", "RC_mhttpd_custom_status",  "" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly

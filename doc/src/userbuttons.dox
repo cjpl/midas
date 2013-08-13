@@ -30,7 +30,7 @@ script-button of that name on the default mhttpd main status page. Each sub-tree
    
 @section RC_odb_script_example1 Example 1: creation of a Script-button; parameters passed to the associated script 
 The <b> example </b> below shows the ODB  <span class="odb">/script/dac</span> subdirectory.
-   The script-button \b "dac" associated with this subdirectory is shown on the example mhttpd status page below.
+   The script-button <span class="button">DAC</span> associated with this subdirectory is shown on the example status page below.
 
    The first key in the  <span class="odb">dac</span> subdirectory is the string key <span class="odb">cmd</span> which contains the name and path of
 the script to be executed (in this case, a perl script). This script is located on the local host computer 
@@ -47,14 +47,14 @@ mode file tag                   none
 [local:pol:R]/>  
 @endcode
 
-This will cause a script-button labelled \b "DAC" to appear on the mhttpd main status page :
+This will cause a script-button labelled <span class="button">DAC</span> to appear on the mhttpd main status page :
  * <br>
  * <center> 
- * <span class="image">Script button "DAC" on the mhttpd main status page</span>
+ * <span class="image">Script button  <span class="button">DAC</span> on the mhttpd main status page</span>
  * \image html dac_button.jpg
  * </center><br>
 
-When the \b "DAC" script-button is pressed, the script \b "change_mode.pl"
+When the <span class="button">DAC</span>  script-button is pressed, the script \b "change_mode.pl"
  will be executed with the following key contents as parameters, equivalent to the
 command:
 @code

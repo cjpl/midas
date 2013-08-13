@@ -22,7 +22,7 @@
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_Alarm_page", "RC_section_index", "RC_mhttpd_Activate","RC_mhttpd_Custom_page",  "end" );
+pages( "RC_mhttpd_Sequencer_page", "RC_section_index", "RC_mhttpd_Activate","RC_mhttpd_Custom_page",  "end" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly
@@ -87,7 +87,7 @@ An example of an \b internal page is shown  @ref RC_mhttpd_Internal "here".
 \htmlonly
 <script type="text/javascript">
 // pages parameters: back index next {top bottom}
-pages( "RC_mhttpd_Alarm_page", "RC_section_index"," RC_mhttpd_Activate","RC_mhttpd_Custom_page",  "" );
+pages( "RC_mhttpd_Sequencer_page", "RC_section_index"," RC_mhttpd_Activate","RC_mhttpd_Custom_page",  "" );
 sections("Features", "RunControl","FrontendOperation"); // last section; top of this section; next section
 </script>
 \endhtmlonly

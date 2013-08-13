@@ -31,7 +31,7 @@ many new features were not available until the release of the next version.
 
 <br>
 The package release system has been discontinued. The latest version of the MIDAS package is now
-available from the  <a href="http://savannah.psi.ch/viewcvs/trunk/?root=midas" > online SVN 
+available from the  <a href="https://savannah.psi.ch/viewvc/meg_midas/trunk/" > online SVN 
 </a> repository. As a changes are made to the files in the MIDAS package, a common version number is incremented. Each file has an
 individual version number, but updates of a particular file in svn will not necessarily have consecutive version numbers.
 For example, the next version of mhttpd.c after 4708 is 4722. The missing version numbers have been used to update different
@@ -44,6 +44,25 @@ Features will be considered to be "new" for a year or so, then will become stand
 
 
 \section ndf_New_Features New Documented Features
+
+\subsection ndf_aug_2011 Aug 2011
+ - Display disk level on status page (mhttpd.c 5120)
+
+
+\subsection ndf_jun_2011 Jun 2011
+ - Midas Sequencer implemented  (mhttpd.c 5071)
+     - starts/stops runs, changes ODB values, loops, waits for various events etc.
+
+ - Javascript ODB interface revisions
+     - addition of ODBMGet, ODBGetRecord etc. (mhttpd.c 5075)
+
+
+\subsection ndf_feb_2011 Feb 2011
+ - addition of ODBRpc_rev1 to return data to the web page  (mhttpd.c 4994)
+ - addition of /Experiment subdirectory "status items" to allow user to display parameters on the main status page  (mhttpd.c 4898)
+
+\subsection ndf_nov_2010 Nov 2010
+ - Javascript ODB interface  addition of ODBGenerateMsg  (mhttpd.c 4876)
 
 \anchor idx_YBOS
 \subsection ndf_sep_2010 Sep 2010
