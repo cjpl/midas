@@ -250,6 +250,8 @@ void haxis(gdImagePtr im, gdFont * font, int col, int gcol, int x1, int y1, int 
            int minor, int major, int text, int label, int grid, double xmin, double xmax);
 void get_elog_url(char *url, int len);
 void get_resource_dir(char *str, int size);
+void show_header(const char *title, const char *method, const char *path, int refresh);
+void show_navigation_bar(const char *cur_page);
 
 /* functions from sequencer.cxx */
 extern void show_seq_page();
@@ -890,25 +892,9 @@ void show_help_page()
 {
    char str[256];
 
-   /* header */
-   rsprintf("HTTP/1.0 200 Document follows\r\n");
-   rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
-   rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
+   show_header("Help", "", "./", 0);
+   show_navigation_bar("Help");
 
-   rsprintf("<html><head>\n");
-   rsprintf("<title>MIDAS Help</title>\n");
-   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
-   rsprintf("</head>\n\n");
-
-   rsprintf("<body>\n");
-
-   rsprintf("<form method=\"GET\" style=\"height:auto;\" action=\".\">\n");
-
-   rsprintf("<div id=\"helpWrapper\" class=\"wrapper\" style=\"margin: 0 auto -50px;\">\n");
-   rsprintf("<table class=\"headerTable\">\n");
-   rsprintf("<tr><td colspan=7><input type=submit name=cmd value=Status></td></tr>\n");
-   rsprintf("</table>\n");
-   
    rsprintf("<table class=\"subStatusTable\">\n");
    rsprintf("  <tr>\n");
    rsprintf("    <td class=\"subStatusTitle\">MIDAS Help Page</td>\n");
@@ -982,13 +968,15 @@ void show_help_page()
 
 /*------------------------------------------------------------------*/
 
-void show_header(HNDLE hDB, const char *title, const char *method, const char *path, int colspan,
-                 int refresh)
+void show_header(const char *title, const char *method, const char *path, int refresh)
 {
+   HNDLE hDB;
    time_t now;
    char str[256];
    int size;
 
+   cm_get_experiment_database(&hDB, NULL);
+   
    /* header */
    rsprintf("HTTP/1.0 200 Document follows\r\n");
    rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
@@ -1031,21 +1019,6 @@ void show_header(HNDLE hDB, const char *title, const char *method, const char *p
 
    /*---- body needs wrapper div to pin footer ----*/
    rsprintf("<div class=\"wrapper\">\n");
-
-   /*---- begin page header ----*/
-   rsprintf("<table class=\"headerTable\">\n");
-   rsprintf("<tr><td></td></tr>");
-
-/*
-   rsprintf("<tr><th colspan=%d>MIDAS experiment \"%s\"", colspan,
-            str);
-
-   if (refresh > 0)
-      rsprintf("<th colspan=%d>%s &nbsp;&nbsp;Refr:%d</tr>\n",
-               colspan, ctime(&now), refresh);
-   else
-      rsprintf("<th colspan=%d>%s</tr>\n", colspan, ctime(&now));
-*/
 }
 
 /*------------------------------------------------------------------*/
@@ -1147,6 +1120,47 @@ void exec_script(HNDLE hkey)
 
 /*------------------------------------------------------------------*/
 
+void show_navigation_bar(const char *cur_page)
+{
+   HNDLE hDB;
+   char str[256], *p;
+   int size;
+   
+   cm_get_experiment_database(&hDB, NULL);
+   
+   rsprintf("<table class=\"headerTable\">\n");
+   rsprintf("<tr><td>\n");
+   
+   /*---- menu buttons ----*/
+   
+#ifdef HAVE_MSCB
+   strlcpy(str, "Status, ODB, Messages, ELog, Alarms, Programs, History, MSCB, Sequencer, Config, Help", sizeof(str));
+#else
+   strlcpy(str, "Status, ODB, Messages, ELog, Alarms, Programs, History, Sequencer, Config, Help", sizeof(str));
+#endif
+   size = sizeof(str);
+   db_get_value(hDB, 0, "/Experiment/Menu Buttons", str, &size, TID_STRING, TRUE);
+   
+   p = strtok(str, ",");
+   
+   while (p) {
+      
+      while (*p == ' ')
+         p++;
+      strlcpy(str, p, sizeof(str));
+      while (str[strlen(str)-1] == ' ')
+         str[strlen(str)-1] = 0;
+      
+      rsprintf("<input type=submit name=cmd value=\"%s\" onclick=\"self.location=\'?cmd=%s\';\">\n", str, str);
+      
+      p = strtok(NULL, ",");
+   }
+   
+   rsprintf("</td></tr></table>\n\n");
+}
+
+/*------------------------------------------------------------------*/
+
 int requested_transition = 0;
 int requested_old_state = 0;
 
@@ -1155,7 +1169,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    int i, j, k, h, m, s, status, size, type, n_alarm, n_items, n_hidden;
    BOOL flag, first, expand;
    char str[1000], msg[256], name[32], ref[256], bgcol[32], fgcol[32], alarm_class[32],
-      value_str[256], status_data[256], *p;
+      value_str[256], status_data[256];
    const char *trans_name[] = { "Start", "Stop", "Pause", "Resume" };
    time_t now;
    DWORD difftime;
@@ -1287,36 +1301,10 @@ void show_status_page(int refresh, const char *cookie_wpwd)
       rsprintf("<embed src=\"alarm.mid\" autostart=\"true\" loop=\"false\" hidden=\"true\" height=\"0\" width=\"0\">\n");
    }
 
-   rsprintf("<div class=\"wrapper\">\n");  //body's wrapper div
-   /*---- page header ----*/
-   rsprintf("<table class=\"headerTable\">\n");
-
-   /*---- title row ----*/
-
-   //rsprintf("<tr><th id=\"experimentTitle\" colspan=3>MIDAS experiment \"%s\"", str);
-   //rsprintf("<th id=\"masterTime\" colspan=3>%s &nbsp;&nbsp;Refr:%d</tr>\n", ctime(&now), refresh);
-
-   rsprintf("<tr><td colspan=6>\n");
-   /*---- menu buttons ----*/
-
-#ifdef HAVE_MSCB
-   strlcpy(str, "Start, Pause, ODB, Messages, ELog, Alarms, Programs, History, MSCB, Sequencer, Config, Help", sizeof(str));
-#else
-   strlcpy(str, "Start, Pause, ODB, Messages, ELog, Alarms, Programs, History, Sequencer, Config, Help", sizeof(str));
-#endif
-   size = sizeof(str);
-   db_get_value(hDB, 0, "/Experiment/Menu Buttons", str, &size, TID_STRING, TRUE);
-
-   p = strtok(str, ",");
-
-   while (p) {
-
-      while (*p == ' ')
-         p++;
-      strlcpy(str, p, sizeof(str));
-      while (str[strlen(str)-1] == ' ')
-         str[strlen(str)-1] = 0;
-
+   /*---- navigation bar ----*/
+   show_navigation_bar("Status");
+   
+   /*
       if (stricmp(str, "Start") == 0) {
          if (runinfo.state == STATE_STOPPED)
             rsprintf("<input id=\"runButton\" type=submit name=cmd %s value=Start>\n", runinfo.transition_in_progress?"disabled":"");
@@ -1359,17 +1347,17 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             if (runinfo.state == STATE_PAUSED)
                rsprintf("<input id=\"pauseResumeButton\" type=submit name=cmd %s value=Resume>\n", runinfo.transition_in_progress?"disabled":"");
          }
-      } else
-         rsprintf("<input id=\"runButton\" type=submit name=cmd value=\"%s\">\n", str);
-
-      p = strtok(NULL, ",");
-   }
+      } 
+    */
+      
 
    /*---- script buttons ----*/
 
+   rsprintf("<table class=\"headerTable\">\n");
+
    status = db_find_key(hDB, 0, "Script", &hkey);
    if (status == DB_SUCCESS) {
-      rsprintf("<tr><td colspan=6>\n");
+      rsprintf("<tr><td>\n");
 
       for (i = 0;; i++) {
          db_enum_link(hDB, hkey, i, &hsubkey);
@@ -1378,9 +1366,8 @@ void show_status_page(int refresh, const char *cookie_wpwd)
          db_get_key(hDB, hsubkey, &key);
          rsprintf("<input type=submit name=script value=\"%s\">\n", key.name);
       }
+      rsprintf("</td></tr>\n\n");
    }
-
-   rsprintf("</tr>\n\n");
 
    /*---- manual triggered equipment ----*/
 
@@ -2083,51 +2070,13 @@ void show_messages_page(int refresh, int n_message)
 
    cm_get_experiment_database(&hDB, NULL);
 
-   /* header */
-   rsprintf("HTTP/1.0 200 Document follows\r\n");
-   rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
-   rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
-
-   rsprintf("<html><head>\n");
-
-   rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
-   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
-
-   /* auto refresh */
-   if (refresh > 0)
-      rsprintf("<meta http-equiv=\"Refresh\" content=\"%d\">\n\n", refresh);
-
-   rsprintf("<title>MIDAS messages</title></head>\n");
-   rsprintf("<body><form method=\"GET\" action=\".\">\n");
-
-   /*---- body needs wrapper div to pin footer ----*/
-   rsprintf("<div class=\"wrapper\">\n");
-
-   /*---- begin page header ----*/
-   rsprintf("<table class=\"headerTable\">\n");
-
-   /*---- title row ----*/
-
    size = sizeof(str);
    str[0] = 0;
    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
    time(&now);
 
-   //rsprintf("<tr><th>MIDAS experiment \"%s\"", str);
-   //rsprintf("<th>%s</tr>\n", ctime(&now));
-
-   /*---- menu buttons ----*/
-
-   rsprintf("<tr><td colspan=2>\n");
-
-   rsprintf("<input type=submit name=cmd value=ODB>\n");
-   rsprintf("<input type=submit name=cmd value=Status>\n");
-   rsprintf("<input type=submit name=cmd value=Config>\n");
-   rsprintf("<input type=submit name=cmd value=Help>\n");
-   rsprintf("</tr>\n");
-
-   //end header table
-   rsprintf("</table>\n");   
+   show_header("MIDAS messages", "GET", "./", 0);
+   show_navigation_bar("Status");
 
    /*---- messages ----*/
    /* more button */
@@ -2779,7 +2728,7 @@ void show_elog_delete(char *path)
 
    /* header */
    sprintf(str, "../EL/%s", path);
-   show_header(hDB, "Delete ELog entry", "GET", str, 1, 0);
+   show_header("Delete ELog entry", "GET", str, 0);
    rsprintf("</table>"); //end header
 
    rsprintf("<table class=\"dialogTable\">"); //main table
@@ -4651,7 +4600,7 @@ void show_sc_page(char *path, int refresh)
    }
 
    sprintf(str, "%s", group);
-   show_header(hDB, "MIDAS slow control", "", str, 8, i_edit == -1 ? refresh : 0);
+   show_header("MIDAS slow control", "", str, i_edit == -1 ? refresh : 0);
    rsprintf("<script type=\"text/javascript\" src=\"mhttpd.js\"></script>\n");
    
    /*---- menu buttons ----*/
@@ -7399,7 +7348,6 @@ void show_mscb_page(char *path, int refresh)
    BOOL comment_created;
    float fvalue;
    char str[256], comment[256], *pd, dbuf[256], value[256], evalue[256], unit[256], cur_subm_name[256];
-   time_t now;
    HNDLE hDB, hKeySubm, hKeyCurSubm, hKey, hKeyAddr, hKeyComm;
    KEY key;
    MSCB_INFO info;
@@ -7610,19 +7558,10 @@ void show_mscb_page(char *path, int refresh)
    else
       show_hidden = FALSE;
 
-   /* header */
-   rsprintf("HTTP/1.0 200 Document follows\r\n");
-   rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
-   rsprintf("Pragma: no-cache\r\n");
-   rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
-   rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
-
-   rsprintf("<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n");
-   rsprintf("<html><head>\n");
+   show_header("MSCB", "GET", "./", refresh);
+   show_navigation_bar("MSCB");
 
    /* style sheet */
-   rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
-   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
    rsprintf("<style type=\"text/css\">\r\n");
    rsprintf("select { width:150px; background-color:#FFFFE0; font-size:12px; }\r\n");
    rsprintf(".subm {\r\n");
@@ -7684,30 +7623,6 @@ void show_mscb_page(char *path, int refresh)
    rsprintf("   }\n");
    rsprintf("}\r\n");
    rsprintf("</script>\r\n\r\n");
-
-
-   /* auto refresh */
-   if (refresh > 0)
-      rsprintf("<meta http-equiv=\"Refresh\" content=\"%02d\">\n", refresh);
-
-   rsprintf("<title>MSCB Interface Page</title></head>\n");
-
-   rsprintf("<body><form name=\"form1\" method=\"GET\" action=\".\">\n\n");
-
-   /* title row */
-   size = sizeof(str);
-   str[0] = 0;
-   db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
-   time(&now);
-
-   /*---- body needs wrapper div to pin footer ----*/
-   rsprintf("<div class=\"wrapper\">\n");
-   /*---- begin page header ----*/
-   rsprintf("<table class=\"headerTable\">\n");
-   //rsprintf("<tr><th>MIDAS experiment \"%s\"", str);
-   //rsprintf("<th>%s  &nbsp;&nbsp;Refr:%d</tr>\n", ctime(&now), refresh);
-   rsprintf("<tr><td colspan=2><input type=submit name=cmd value=ODB> <input type=submit name=cmd value=Status> </td></tr>");
-   rsprintf("</table>");  //close header
 
    rsprintf("<table class=\"dialogTable\">");  //main table
    rsprintf("<tr><th class=\"subStatusTitle\" colspan=2>MSCB</th><tr>");
@@ -8066,14 +7981,14 @@ void show_start_page(int script)
    cm_get_experiment_database(&hDB, NULL);
 
    if (script) {
-      show_header(hDB, "Start sequence", "GET", "", 1, 0);
+      show_header("Start sequence", "GET", "", 0);
       //end header table
       rsprintf("</table>\n");
       //begin start menu dialog table:
       rsprintf("<table class=\"dialogTable\">\n");
       rsprintf("<tr><th colspan=2>Start script</th>\n");
    } else {
-      show_header(hDB, "Start run", "GET", "", 1, 0);
+      show_header("Start run", "GET", "", 0);
       //end header table
       rsprintf("</table>\n");
       //begin start menu dialog table:
@@ -8200,7 +8115,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    strlcpy(str, dec_path, sizeof(str));
    if (strrchr(str, '/'))
       strlcpy(str, strrchr(str, '/')+1, sizeof(str));
-   show_header(hDB, "MIDAS online database", "", str, 1, 0);
+   show_header("MIDAS online database", "", str, 0);
 
    /* add one "../" for each level */
    tmp_path[0] = 0;
@@ -8241,22 +8156,14 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
       }
    }
 
-   /*---- menu buttons ----*/
-   rsprintf("<tr><td colspan=2>\n");
+   /*---- navigation bar ----*/
    if (elog_mode) {
+      rsprintf("<table class=\"headerTable\">\n");
+      rsprintf("<tr><td colspan=2>\n");
       rsprintf("<input type=button value=ELog onclick=\"self.location=\'?cmd=Alarms\';\">\n");
-      rsprintf("</tr>\n");
-   } else {
-      rsprintf("<input type=button value=Alarms onclick=\"self.location=\'?cmd=Alarms\';\">\n");
-      rsprintf("<input type=button value=Programs onclick=\"self.location=\'?cmd=Programs\';\">\n");
-      rsprintf("<input type=button value=Status onclick=\"self.location=\'?cmd=Status\';\">\n");
-      rsprintf("<input type=button value=Help onclick=\"self.location=\'?cmd=Help\';\">\n");
-      rsprintf("</tr>\n");
-
-   }
-
-   /*---- end page header ----*/
-   rsprintf("</table>\n");
+      rsprintf("</td></tr></table>\n\n");
+   } else
+      show_navigation_bar("ODB");
 
    /*---- begin ODB directory table ----*/
    rsprintf("<table class=\"ODBtable\" style=\"border-spacing:0px;\">\n");
@@ -8497,7 +8404,7 @@ void show_set_page(char *enc_path, int enc_path_size, char *dec_path, const char
       strlcpy(str, dec_path, sizeof(str));
       if (strrchr(str, '/'))
          strlcpy(str, strrchr(str, '/')+1, sizeof(str));
-      show_header(hDB, "Set value", "POST", str, 1, 0);
+      show_header("Set value", "POST", str, 0);
       //close header:
       rsprintf("</table>");
 
@@ -8645,7 +8552,7 @@ void show_find_page(const char *enc_path, const char *value)
       for (const char* p=enc_path ; *p ; p++)
          if (*p == '/')
             strlcat(str, "../", sizeof(str));
-      show_header(hDB, "Find value", "GET", str, 1, 0);
+      show_header("Find value", "GET", str, 0);
 
       //end header:
       rsprintf("</table>");
@@ -8672,7 +8579,7 @@ void show_find_page(const char *enc_path, const char *value)
       strlcpy(str, enc_path, sizeof(str));
       if (strrchr(str, '/'))
          strlcpy(str, strrchr(str, '/')+1, sizeof(str));
-      show_header(hDB, "Search results", "GET", str, 1, 0);
+      show_header("Search results", "GET", str, 0);
 
       rsprintf("<tr><td colspan=2>\n");
       rsprintf("<input type=submit name=cmd value=Find>\n");
@@ -8714,7 +8621,7 @@ void show_create_page(const char *enc_path, const char *dec_path, const char *va
       strlcpy(str, enc_path, sizeof(str));
       if (strrchr(str, '/'))
          strlcpy(str, strrchr(str, '/')+1, sizeof(str));
-      show_header(hDB, "Create ODB entry", "GET", str, 1, 0);
+      show_header("Create ODB entry", "GET", str, 0);
       //close header:
       rsprintf("</table>");      
 
@@ -8850,7 +8757,7 @@ void show_delete_page(const char *enc_path, const char *dec_path, const char *va
       strlcpy(str, enc_path, sizeof(str));
       if (strrchr(str, '/'))
          strlcpy(str, strrchr(str, '/')+1, sizeof(str));
-      show_header(hDB, "Delete ODB entry", "GET", str, 1, 0);
+      show_header("Delete ODB entry", "GET", str, 0);
       //close header
       rsprintf("</table>");      
 
@@ -8929,39 +8836,13 @@ void show_alarm_page()
    HNDLE hDB, hkeyroot, hkey;
    KEY key;
    char str[256], ref[256], condition[256], value[256];
-   time_t now, last, interval;
+   time_t last, interval;
    INT al_list[] = { AT_EVALUATED, AT_PROGRAM, AT_INTERNAL, AT_PERIODIC };
 
    cm_get_experiment_database(&hDB, NULL);
 
-   /* header */
-   rsprintf("HTTP/1.0 200 Document follows\r\n");
-   rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
-   rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
-
-   rsprintf("<html><head>\n");
-   rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
-   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
-   rsprintf("<title>Alarms</title></head>\n");
-   rsprintf("<body>\n");
-
-   /* title row */
-   size = sizeof(str);
-   str[0] = 0;
-   db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
-   time(&now);
-
-   /*---- body needs wrapper div to pin footer ----*/
-   rsprintf("<div class=\"wrapper\">\n");
-
-   rsprintf("<form method=\"GET\" style=\"height:auto;\" action=\".\">\n"); //form inside wrapper this time, since this form doesn't wrap the whole page.
-
-   /*---- page header ----*/
-   rsprintf("<table class=\"headerTable\">\n");
-   //rsprintf("<tr><th colspan=4>MIDAS experiment \"%s\"", str);
-   //rsprintf("<th colspan=3>%s</tr>\n", ctime(&now));
-   rsprintf("<tr><td colspan=7><input type=submit name=cmd value=Status></td></tr>\n");
-   rsprintf("</table>"); //end header
+   show_header("Alarms", "GET", "./", 0);
+   show_navigation_bar("Alarms");
 
    /*---- menu buttons ----*/
    rsprintf("<table>");   //main table
@@ -9183,18 +9064,8 @@ void show_programs_page()
       return;
    }
 
-   show_header(hDB, "Programs", "GET", "", 3, 0);
-
-   /*---- menu buttons ----*/
-
-   rsprintf("<tr><td colspan=6>\n");
-
-   rsprintf("<input type=submit name=cmd value=Alarms>\n");
-   rsprintf("<input type=submit name=cmd value=Status>\n");
-   rsprintf("</tr>\n\n");
-
-   //end header table
-   rsprintf("</table>");
+   show_header("Programs", "GET", "", 0);
+   show_navigation_bar("Programs");
 
    rsprintf("<input type=hidden name=cmd value=Programs>\n");
 
@@ -9335,7 +9206,7 @@ void show_config_page(int refresh)
 
    cm_get_experiment_database(&hDB, NULL);
 
-   show_header(hDB, "Configure", "GET", "", 1, 0);
+   show_header("Configure", "GET", "", 0);
    //close header
    rsprintf("</table>");
 
@@ -11173,7 +11044,7 @@ void show_query_page(const char *path)
    strcpy(str, path);
    if (strrchr(str, '/'))
       strcpy(str, strrchr(str, '/')+1);
-   show_header(hDB, "History", "GET", str, 1, 0);
+   show_header("History", "GET", str, 0);
 
    /* menu buttons */
    rsprintf("<tr><td colspan=2>\n");
@@ -11740,7 +11611,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
       if (strrchr(str, '/'))
          strlcpy(str, strrchr(str, '/')+1, sizeof(str));
    }
-   show_header(hDB, "History Config", "GET", str, 4, 0);
+   show_header("History Config", "GET", str, 0);
    rsprintf("</table>");  //close header table
 
    rsprintf("<table class=\"dialogTable\">"); //open main table
@@ -12467,8 +12338,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
       strlcpy(str, path, sizeof(str));
       if (strrchr(str, '/'))
          strlcpy(str, strrchr(str, '/')+1, sizeof(str));
-      show_header(hDB, "History", "GET", str, 1, 0);
-      rsprintf("</table>"); //end header
+      show_header("History", "GET", str, 0);
 
       rsprintf("<table class=\"dialogTable\">");
       rsprintf("<tr><th class=\"subStatusTitle\" colspan=2>New History Item</th><tr>");
@@ -12763,16 +12633,9 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    strlcpy(str, path, sizeof(str));
    if (strrchr(str, '/'))
       strlcpy(str, strrchr(str, '/')+1, sizeof(str));
-   show_header(hDB, str, "GET", str, 1, offset == 0 ? refresh : 0);
-
-   /* menu buttons */
-   rsprintf("<tr><td colspan=2>\n");
-   rsprintf("<input type=submit name=cmd value=ODB>\n");
-   rsprintf("<input type=submit name=cmd value=Alarms>\n");
-   rsprintf("<input type=submit name=cmd value=Status>\n");
-   rsprintf("<input type=submit name=cmd value=History>\n");
-   rsprintf("</table>");  //end header menu
-
+   show_header(str, "GET", str, offset == 0 ? refresh : 0);
+   show_navigation_bar("History");
+   
    rsprintf("<table class=\"genericTable\">");
    rsprintf("<tr><th class=\"subStatusTitle\" colspan=2>History</th></tr>");
 
@@ -14011,17 +13874,6 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       return;
    }
 
-   if (strncmp(path, "HS/", 3) == 0) {
-      if (equal_ustring(command, "config")) {
-         sprintf(str, "%s?cmd=%s", path, command);
-         if (!check_web_password(cookie_wpwd, str, experiment))
-            return;
-      }
-
-      show_hist_page(dec_path + 3, sizeof(dec_path) - 3, NULL, NULL, refresh);
-      return;
-   }
-
    /*---- MSCB command ----------------------------------------------*/
 
    if (equal_ustring(command, "MSCB")) {
@@ -14046,13 +13898,6 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
 #else
       show_error("MSCB support not compiled into this version of mhttpd");
 #endif
-      return;
-   }
-
-   /*---- help command ----------------------------------------------*/
-
-   if (equal_ustring(command, "help")) {
-      show_help_page();
       return;
    }
 
@@ -14447,20 +14292,14 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       show_delete_page(enc_path, dec_path, value, index);
       return;
    }
-
-   /*---- slow control display --------------------------------------*/
-
-   if (strncmp(path, "SC/", 3) == 0) {
-      if (equal_ustring(command, "edit")) {
-         sprintf(str, "%s?cmd=Edit&index=%d", path, index);
-         if (!check_web_password(cookie_wpwd, str, experiment))
-            return;
-      }
-
-      show_sc_page(dec_path + 3, refresh);
+   
+   /*---- help command ----------------------------------------------*/
+   
+   if (equal_ustring(command, "help")) {
+      show_help_page();
       return;
    }
-
+   
    /*---- sequencer page --------------------------------------------*/
 
    if (equal_ustring(command, "sequencer")) {
@@ -14501,6 +14340,33 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       show_custom_page("Status", cookie_cpwd);
       return;
    }
+
+   /*---- slow control page -----------------------------------------*/
+   
+   if (strncmp(path, "SC/", 3) == 0) {
+      if (equal_ustring(command, "edit")) {
+         sprintf(str, "%s?cmd=Edit&index=%d", path, index);
+         if (!check_web_password(cookie_wpwd, str, experiment))
+            return;
+      }
+      
+      show_sc_page(dec_path + 3, refresh);
+      return;
+   }
+   
+   /*---- history page ----------------------------------------------*/
+   
+   if (strncmp(path, "HS/", 3) == 0) {
+      if (equal_ustring(command, "config")) {
+         sprintf(str, "%s?cmd=%s", path, command);
+         if (!check_web_password(cookie_wpwd, str, experiment))
+            return;
+      }
+      
+      show_hist_page(dec_path + 3, sizeof(dec_path) - 3, NULL, NULL, refresh);
+      return;
+   }
+   
 
    /*---- show status -----------------------------------------------*/
 

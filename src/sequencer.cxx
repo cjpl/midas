@@ -24,8 +24,8 @@ extern void rsprintf(const char *format, ...);
 extern int mhttpd_revision();
 extern void strencode(char *text);
 extern void strencode4(char *text);
-extern void show_header(HNDLE hDB, const char *title, const char *method, const char *path, int colspan,
-                        int refresh);
+extern void show_header(const char *title, const char *method, const char *path, int refresh);
+extern void show_navigation_bar(const char *cur_page);
 extern void page_footer();
 
 #undef NAME_LENGTH
@@ -779,8 +779,7 @@ void seq_start_page()
    
    cm_get_experiment_database(&hDB, NULL);
    
-   show_header(hDB, "Start sequence", "GET", "", 1, 0);
-   rsprintf("</table>"); //end header
+   show_header("Start sequence", "GET", "", 0);
 
    rsprintf("<table class=\"dialogTable\">");  //main table
 
@@ -1422,12 +1421,8 @@ void show_seq_page()
    
    /*---- body needs wrapper div to pin footer ----*/
    rsprintf("<div class=\"wrapper\">\n");
-   /*---- begin page header ----*/
-   rsprintf("<table class=\"headerTable\">\n");
-   //rsprintf("<tr><th>MIDAS experiment \"%s\"", str);
-   //rsprintf("<th>%s</tr>\n", ctime(&now));
-   rsprintf("<tr><td colspan=2><input type=submit name=cmd value=Status></td></tr>\n");
-   rsprintf("</table>"); //end header  
+   
+   show_navigation_bar("Sequencer");
 
    rsprintf("<table>");  //generic table for menu row
    /*---- menu buttons ----*/
