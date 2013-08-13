@@ -1343,7 +1343,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
          if (runinfo.state != STATE_STOPPED) {
             rsprintf("<noscript>\n");
             if (runinfo.state == STATE_RUNNING)
-               rsprintf("<input id=\"runButton\" type=submit name=cmd %s value=Pause>\n", runinfo.transition_in_progress?"disabled":"");
+               rsprintf("<input id=\"pauseResumeButton\" type=submit name=cmd %s value=Pause>\n", runinfo.transition_in_progress?"disabled":"");
             rsprintf("</noscript>\n");
             rsprintf("<script type=\"text/javascript\">\n");
             rsprintf("<!--\n");
@@ -1354,11 +1354,11 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             rsprintf("      window.location.href = '?cmd=Pause';\n");
             rsprintf("}\n");
             if (runinfo.state == STATE_RUNNING)
-               rsprintf("document.write('<input id=\"runButton\" type=button %s value=Pause onClick=\"pause();\"\\n>');\n", runinfo.transition_in_progress?"disabled":"");
+               rsprintf("document.write('<input id=\"pauseResumeButton\" type=button %s value=Pause onClick=\"pause();\"\\n>');\n", runinfo.transition_in_progress?"disabled":"");
             rsprintf("//-->\n");
             rsprintf("</script>\n");
             if (runinfo.state == STATE_PAUSED)
-               rsprintf("<input id=\"runButton\" type=submit name=cmd %s value=Resume>\n", runinfo.transition_in_progress?"disabled":"");
+               rsprintf("<input id=\"pauseResumeButton\" type=submit name=cmd %s value=Resume>\n", runinfo.transition_in_progress?"disabled":"");
          }
       } else
          rsprintf("<input id=\"runButton\" type=submit name=cmd value=\"%s\">\n", str);
@@ -1578,7 +1578,9 @@ void show_status_page(int refresh, const char *cookie_wpwd)
 
    //move the run transition button into runNumberCell
    rsprintf("<script type=\"text/javascript\">\n");
-   rsprintf("document.getElementById(\"runNumberCell\").insertBefore(document.getElementById(\"runButton\"), document.getElementById(\"foot\").nextSibling)");
+   rsprintf("document.getElementById(\"runNumberCell\").insertBefore(document.getElementById(\"runButton\"), document.getElementById(\"foot\").nextSibling);");
+   rsprintf("if(document.getElementById(\"pauseResumeButton\"))\n");
+   rsprintf("document.getElementById(\"runNumberCell\").insertBefore(document.getElementById(\"pauseResumeButton\"), document.getElementById(\"foot\").nextSibling)");
    rsprintf("</script>");
 
    /*---- time ----*/
