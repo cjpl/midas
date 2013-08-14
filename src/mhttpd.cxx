@@ -1614,28 +1614,34 @@ void show_status_page(int refresh, const char *cookie_wpwd)
       requested_transition = 0;
 
    if (requested_transition == TR_STOP)
-      rsprintf("<br><b>Run stop requested</b>");
+      rsprintf("<p id=\"transitionMessage\">Run stop requested</p>");
 
    if (requested_transition == TR_START)
-      rsprintf("<br><b>Run start requested</b>");
+      rsprintf("<p id=\"transitionMessage\">Run start requested</p>");
 
    if (requested_transition == TR_PAUSE)
-      rsprintf("<br><b>Run pause requested</b>");
+      rsprintf("<p id=\"transitionMessage\">Run pause requested</p>");
 
    if (requested_transition == TR_RESUME)
-      rsprintf("<br><b>Run resume requested</b>");
+      rsprintf("<p id=\"transitionMessage\">Run resume requested</p>");
 
    if (runinfo.transition_in_progress == TR_STOP)
-      rsprintf("<br><b>Stopping run</b>");
+      rsprintf("<p id=\"transitionMessage\">Stopping run</p>");
 
    if (runinfo.transition_in_progress == TR_START)
-      rsprintf("<br><b>Starting run</b>");
+      rsprintf("<p id=\"transitionMessage\">Starting run</p>");
 
    if (runinfo.transition_in_progress == TR_PAUSE)
-      rsprintf("<br><b>Pausing run</b>");
+      rsprintf("<p id=\"transitionMessage\">Pausing run</p>");
 
    if (runinfo.transition_in_progress == TR_RESUME)
-      rsprintf("<br><b>Resuming run</b>");
+      rsprintf("<p id=\"transitionMessage\">Resuming run</p>");
+
+   //inject transition message into runNumberCell
+   rsprintf("<script type=\"text/javascript\">\n");
+   rsprintf("document.getElementById(\"runNumberCell\").insertBefore(document.getElementById(\"transitionMessage\"), document.getElementById(\"foot\").nextSibling);");
+   rsprintf("</script>");
+
 
    if (runinfo.requested_transition)
       for (i = 0; i < 4; i++)
