@@ -277,10 +277,14 @@ int Sqlite::ConnectTable(const char* table_name)
       return DB_FILE_ERROR;
    }
 
+#if SQLITE_VERSION_NUMBER >= 3006020
    status = sqlite3_extended_result_codes(db, 1);
    if (status != SQLITE_OK) {
       cm_msg(MERROR, "Sqlite::Connect", "sqlite3_extended_result_codes(1) error %d (%s)", status, xsqlite3_errstr(db, status));
    }
+#else
+#warning Missing sqlite3_extended_result_codes()!
+#endif
 
    fMap[table_name] = db;
 
@@ -381,7 +385,12 @@ int Sqlite::Prepare(const char* table_name, const char* sql, sqlite3_stmt** st)
    assert(fTempDB==NULL);
    fTempDB = db;
 
+#if SQLITE_VERSION_NUMBER >= 3006020
    int status = sqlite3_prepare_v2(db, sql, strlen(sql), st, NULL);
+#else
+#warning Missing sqlite3_prepare_v2()!
+   int status = sqlite3_prepare(db, sql, strlen(sql), st, NULL);
+#endif
 
    if (status == SQLITE_OK)
       return DB_SUCCESS;
