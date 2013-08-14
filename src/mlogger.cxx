@@ -3112,7 +3112,7 @@ INT open_history()
             cm_msg(MERROR, "open_history", "defined event %d with no variables in ODB", eq_id);
 
          /* create tag array */
-         tag = (TAG *) malloc(sizeof(TAG) * n_tags);
+         tag = (TAG *) calloc(sizeof(TAG), n_tags);
  
          i_tag = 0;
          for (i=0; ; i++) {
@@ -3333,7 +3333,7 @@ INT open_history()
             cm_msg(MERROR, "open_history", "History event %s has no variables in ODB", hist_name);
          else {
             /* create tag array */
-            tag = (TAG *) malloc(sizeof(TAG) * n_var);
+            tag = (TAG *) calloc(sizeof(TAG), n_var);
 
             for (i = 0, size = 0, n_var = 0;; i++) {
                status = db_enum_link(hDB, hHistKey, i, &hLinkKey);
@@ -3387,7 +3387,7 @@ INT open_history()
 
    /*---- define run start/stop event -------------------------------*/
 
-   tag = (TAG *) malloc(sizeof(TAG) * 2);
+   tag = (TAG *) calloc(sizeof(TAG), 2);
 
    strcpy(tag[0].name, "State");
    tag[0].type = TID_DWORD;
