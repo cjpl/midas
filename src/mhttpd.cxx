@@ -1564,10 +1564,10 @@ void show_status_page(int refresh, const char *cookie_wpwd)
 
 
                db_get_key(hDB, hsubkey, &key);
-               rsprintf("<tr><td colspan=6 style=\"background-color:%s\" align=center>", bgcol);
-               rsprintf("<table width=\"100%%\"><tr><td align=center width=\"99%%\"><font color=\"%s\" size=+3>%s: %s</font></td>\n", fgcol,
+               rsprintf("<tr><td colspan=6 style=\"background-color:%s;border-radius:12px;\" align=center>", bgcol);
+               rsprintf("<table width=\"100%%\"><tr><td align=center width=\"99%%\" style=\"border:0px;\"><font color=\"%s\" size=+3>%s: %s</font></td>\n", fgcol,
                         alarm_class, str);
-               rsprintf("<td width=\"1%%\"><button type=\"button\" onclick=\"document.location.href='?cmd=alrst&name=%s'\"n\">Reset</button></td></tr></table></td></tr>\n", key.name);
+               rsprintf("<td width=\"1%%\" style=\"border:0px;\"><button type=\"button\" onclick=\"document.location.href='?cmd=alrst&name=%s'\"n\">Reset</button></td></tr></table></td></tr>\n", key.name);
             }
          }
       }
