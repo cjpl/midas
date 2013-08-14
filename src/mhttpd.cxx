@@ -1144,7 +1144,7 @@ void show_navigation_bar(const char *cur_page)
    
    cm_get_experiment_database(&hDB, NULL);
    
-   rsprintf("<table class=\"headerTable\">\n");
+   rsprintf("<table class=\"navigationTable\">\n");
    rsprintf("<tr><td>\n");
    
    /*---- menu buttons ----*/
@@ -1175,7 +1175,7 @@ void show_navigation_bar(const char *cur_page)
       while (str[strlen(str)-1] == ' ')
          str[strlen(str)-1] = 0;
       
-      rsprintf("<input type=submit name=cmd value=\"%s\" onclick=\"window.location.href=\'./%s?cmd=%s\';return false;\">\n",
+      rsprintf("<input type=button name=cmd value=\"%s\" class=\"navButton\" onclick=\"window.location.href=\'./%s?cmd=%s\';return false;\">\n",
                str, path, str);
       
       p = strtok(NULL, ",");
