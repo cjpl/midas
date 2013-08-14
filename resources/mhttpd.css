@@ -190,7 +190,6 @@ table.navigationTable{
 table.navigationTable td{
 	border: none;
    padding: 0px;
-   text-align: left;
 }
 
 input[type=button].navButton {
