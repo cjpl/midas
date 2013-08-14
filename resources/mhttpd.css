@@ -433,9 +433,13 @@ td.meterCell{
 }
 
 /*client table checkers*/
-#clientsTable td:nth-child(odd){
+#clientsTable tr:nth-child(odd) td:nth-child(odd){
 	background-color: #CCCCCC;
 }
+#clientsTable tr:nth-child(even) td:nth-child(even){
+	background-color: #CCCCCC;
+}
+
 
 #stripeList{
 	border-spacing: 0px 1px;
