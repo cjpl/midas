@@ -1779,45 +1779,134 @@ public:
 
    /*------------------------------------------------------------------*/
 
-   int hs_read2(time_t start_time, time_t end_time, time_t interval,
-                int num_var,
-                const char* const event_name[], const char* const tag_name[], const int var_index[],
-                int num_entries[],
-                time_t* time_buffer[],
-                double* mean_buffer[],
-                double* rms_buffer[],
-                double* min_buffer[],
-                double* max_buffer[],
-                int read_status[])
+   class ReadBuffer: public MidasHistoryBufferInterface
    {
-      int status = hs_read(start_time, end_time, interval, num_var, event_name, tag_name, var_index, num_entries, time_buffer, mean_buffer, read_status);
+   public:
+      time_t fFirstTime;
+      time_t fLastTime;
+      time_t fInterval;
 
-      for (int i=0; i<num_var; i++) {
-         int num = num_entries[i];
-         rms_buffer[i] = (double*)malloc(sizeof(double)*num);
-         min_buffer[i] = (double*)malloc(sizeof(double)*num);
-         max_buffer[i] = (double*)malloc(sizeof(double)*num);
+      int fNumAdded;
 
-         for (int j=0; j<num; j++) {
-            rms_buffer[i][j] = 0;
-            min_buffer[i][j] = mean_buffer[i][j];
-            max_buffer[i][j] = mean_buffer[i][j];
+      int      fNumAlloc;
+      int     *fNumEntries;
+      time_t **fTimeBuffer;
+      double **fDataBuffer;
+
+      time_t   fPrevTime;
+
+      ReadBuffer(time_t first_time, time_t last_time, time_t interval) // ctor
+      {
+         fNumAdded = 0;
+
+         fFirstTime = first_time;
+         fLastTime = last_time;
+         fInterval = interval;
+
+         fNumAlloc = 0;
+         fNumEntries = NULL;
+         fTimeBuffer = NULL;
+         fDataBuffer = NULL;
+
+         fPrevTime = 0;
+      }
+
+      ~ReadBuffer() // dtor
+      {
+      }
+
+      void Realloc(int wantalloc)
+      {
+         if (wantalloc < fNumAlloc - 10)
+            return;
+
+         int newalloc = fNumAlloc*2;
+
+         if (newalloc <= 1000)
+            newalloc = wantalloc + 1000;
+
+         //printf("wantalloc %d, fNumEntries %d, fNumAlloc %d, newalloc %d\n", wantalloc, *fNumEntries, fNumAlloc, newalloc);
+
+         *fTimeBuffer = (time_t*)realloc(*fTimeBuffer, sizeof(time_t)*newalloc);
+         assert(*fTimeBuffer);
+
+         *fDataBuffer = (double*)realloc(*fDataBuffer, sizeof(double)*newalloc);
+         assert(*fDataBuffer);
+
+         fNumAlloc = newalloc;
+      }
+
+      void Add(time_t t, double v)
+      {
+         if (t < fFirstTime)
+            return;
+         if (t > fLastTime)
+            return;
+
+         fNumAdded++;
+
+         if ((fPrevTime==0) || (t >= fPrevTime + fInterval)) {
+            int pos = *fNumEntries;
+
+            Realloc(pos + 1);
+            
+            (*fTimeBuffer)[pos] = t;
+            (*fDataBuffer)[pos] = v;
+            
+            (*fNumEntries) = pos + 1;
+
+            fPrevTime = t;
          }
       }
-      
-      return status;
-   }
+
+      void Finish()
+      {
+
+      }
+   };
 
    /*------------------------------------------------------------------*/
 
    int hs_read(time_t start_time, time_t end_time, time_t interval,
                int num_var,
-               const char* const event_name[], const char* const tag_name[], const int tag_index[],
+               const char* const event_name[], const char* const tag_name[], const int var_index[],
                int num_entries[],
                time_t* time_buffer[], double* data_buffer[],
                int st[])
    {
-      return HS_FILE_ERROR;
+      int status;
+
+      ReadBuffer** buffer = new ReadBuffer*[num_var];
+      MidasHistoryBufferInterface** xbuffer = new MidasHistoryBufferInterface*[num_var];
+
+      for (int i=0; i<num_var; i++) {
+         buffer[i] = new ReadBuffer(start_time, end_time, interval);
+         xbuffer[i] = buffer[i];
+
+         num_entries[i] = 0;
+
+         if (num_entries)
+            buffer[i]->fNumEntries = &num_entries[i];
+         if (time_buffer)
+            buffer[i]->fTimeBuffer = &time_buffer[i];
+         if (data_buffer)
+            buffer[i]->fDataBuffer = &data_buffer[i];
+      }
+
+      status = hs_read_buffer(start_time, end_time,
+                              num_var, event_name, tag_name, var_index,
+                              xbuffer,
+                              st);
+
+      for (int i=0; i<num_var; i++) {
+         buffer[i]->Finish();
+         delete buffer[i];
+      }
+
+      delete buffer;
+      delete xbuffer;
+
+      return status;
    }
    
    /*------------------------------------------------------------------*/
@@ -2016,4 +2105,10 @@ MidasHistoryInterface* MakeMidasHistorySqlite()
 
 #endif
 
-// end
+/* emacs
+ * Local Variables:
+ * tab-width: 8
+ * c-basic-offset: 3
+ * indent-tabs-mode: nil
+ * End:
+ */
