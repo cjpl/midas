@@ -514,6 +514,7 @@ INT al_reset_alarm(const char *alarm_name)
          cm_msg(MERROR, "al_reset_alarm", "Cannot update alarm class record");
          return AL_ERROR_ODB;
       }
+      cm_msg(MINFO, "al_reset_alarm", "Alarm \"%s\" reset", alarm_name);
       return AL_RESET;
    }
 
