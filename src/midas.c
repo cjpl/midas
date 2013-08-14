@@ -631,7 +631,7 @@ INT cm_msg_log1(INT message_type, const char *message, const char *facility)
    return CM_SUCCESS;
 }
 
-static INT cm_msg_format(char* local_message, int sizeof_local_message, char* send_message, int sizeof_send_message, INT message_type, const char *filename, INT line, const char *routine, const char *format, va_list* argptr)
+static INT cm_msg_format(char* message, int sizeof_message, INT message_type, const char *filename, INT line, const char *routine, const char *format, va_list* argptr)
 {
    char type_str[256], str[1000], format_cpy[900];
    const char *pc;
@@ -660,24 +660,21 @@ static INT cm_msg_format(char* local_message, int sizeof_local_message, char* se
 
    /* print client name into string */
    if (message_type == MT_USER)
-      sprintf(send_message, "[%s] ", routine);
+      sprintf(message, "[%s] ", routine);
    else {
       rpc_get_name(str);
       if (str[0])
-         sprintf(send_message, "[%s,%s] ", str, type_str);
+         sprintf(message, "[%s,%s] ", str, type_str);
       else
-         send_message[0] = 0;
+         message[0] = 0;
    }
-
-   local_message[0] = 0;
 
    /* preceed error messages with file and line info */
    if (message_type == MT_ERROR) {
       sprintf(str, "[%s:%d:%s,%s] ", pc, line, routine, type_str);
-      strlcat(send_message, str, sizeof_send_message);
-      strlcat(local_message, str, sizeof_send_message);
+      strlcat(message, str, sizeof_message);
    } else if (message_type == MT_USER)
-      sprintf(local_message, "[%s,%s] ", routine, type_str);
+      sprintf(message, "[%s,%s] ", routine, type_str);
 
    /* limit length of format */
    strlcpy(format_cpy, format, sizeof(format_cpy));
@@ -685,8 +682,7 @@ static INT cm_msg_format(char* local_message, int sizeof_local_message, char* se
    /* print argument list into message */
    vsprintf(str, (char *) format, *argptr);
 
-   strlcat(send_message, str, sizeof_send_message);
-   strlcat(local_message, str, sizeof_local_message);
+   strlcat(message, str, sizeof_message);
 
    return CM_SUCCESS;
 }
@@ -875,7 +871,7 @@ formated line as it is already added by the client on the receiving side.
 INT cm_msg(INT message_type, const char *filename, INT line, const char *routine, const char *format, ...)
 {
    va_list argptr;
-   char local_message[1000], send_message[1000];
+   char message[1000];
    INT status;
    static BOOL in_routine = FALSE;
    int ts = ss_time();
@@ -888,12 +884,12 @@ INT cm_msg(INT message_type, const char *filename, INT line, const char *routine
 
    /* print argument list into message */
    va_start(argptr, format);
-   cm_msg_format(local_message, sizeof(local_message), send_message, sizeof(send_message), message_type, filename, line, routine, format, &argptr);
+   cm_msg_format(message, sizeof(message), message_type, filename, line, routine, format, &argptr);
    va_end(argptr);
 
    /* call user function if set via cm_set_msg_print */
    if (_message_print != NULL && (message_type & _message_mask_user) != 0)
-      _message_print(local_message);
+      _message_print(message);
 
    /* return if system mask is not set */
    if ((message_type & _message_mask_system) == 0) {
@@ -901,7 +897,7 @@ INT cm_msg(INT message_type, const char *filename, INT line, const char *routine
       return CM_SUCCESS;
    }
 
-   status = cm_msg_buffer(ts, message_type, send_message);
+   status = cm_msg_buffer(ts, message_type, message);
 
    in_routine = FALSE;
 
@@ -937,8 +933,7 @@ INT cm_msg1(INT message_type, const char *filename, INT line,
             const char *facility, const char *routine, const char *format, ...)
 {
    va_list argptr;
-   char event[1000], str[256], local_message[256], send_message[256];
-   const char *pc;
+   char event[1000], message[256];
    EVENT_HEADER *pevent;
    INT status;
    static BOOL in_routine = FALSE;
@@ -949,47 +944,17 @@ INT cm_msg1(INT message_type, const char *filename, INT line,
 
    in_routine = TRUE;
 
-   /* strip path */
-   pc = filename + strlen(filename);
-   while (*pc != '\\' && *pc != '/' && pc != filename)
-      pc--;
-   if (pc != filename)
-      pc++;
-
-   /* print client name into string */
-   if (message_type == MT_USER)
-      sprintf(send_message, "[%s] ", routine);
-   else {
-      rpc_get_name(str);
-      if (str[0])
-         sprintf(send_message, "[%s] ", str);
-      else
-         send_message[0] = 0;
-   }
-
-   local_message[0] = 0;
-
-   /* preceed error messages with file and line info */
-   if (message_type == MT_ERROR) {
-      sprintf(str, "[%s:%d:%s] ", pc, line, routine);
-      strcat(send_message, str);
-      strcat(local_message, str);
-   }
-
    /* print argument list into message */
    va_start(argptr, format);
-   vsprintf(str, (char *) format, argptr);
+   cm_msg_format(message, sizeof(message), message_type, filename, line, routine, format, &argptr);
    va_end(argptr);
-
+   
    if (facility)
-      sprintf(local_message + strlen(local_message), "{%s} ", facility);
-
-   strcat(send_message, str);
-   strcat(local_message, str);
+      sprintf(message + strlen(message), "{%s} ", facility);
 
    /* call user function if set via cm_set_msg_print */
    if (_message_print != NULL && (message_type & _message_mask_user) != 0)
-      _message_print(local_message);
+      _message_print(message);
 
    /* return if system mask is not set */
    if ((message_type & _message_mask_system) == 0) {
@@ -999,7 +964,7 @@ INT cm_msg1(INT message_type, const char *filename, INT line,
 
    /* copy message to event */
    pevent = (EVENT_HEADER *) event;
-   strcpy(event + sizeof(EVENT_HEADER), send_message);
+   strcpy(event + sizeof(EVENT_HEADER), message);
 
    /* send event if not of type MLOG */
    if (message_type != MT_LOG) {
@@ -1018,7 +983,7 @@ INT cm_msg1(INT message_type, const char *filename, INT line,
    }
 
    /* log message */
-   cm_msg_log1(message_type, send_message, facility);
+   cm_msg_log1(message_type, message, facility);
 
    in_routine = FALSE;
 

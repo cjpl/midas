@@ -588,24 +588,26 @@ char message_buffer[256] = "";
 
 INT print_message(const char *message)
 {
-   strlcpy(message_buffer, message, sizeof(message_buffer));
+   time_t tm;
+   char str[80], line[256];
+   
+   /* prepare time */
+   time(&tm);
+   strcpy(str, ctime(&tm));
+   str[19] = 0;
+   
+   /* print message text which comes after event header */
+   strlcpy(line, str + 11, sizeof(line));
+   strlcat(line, " ", sizeof(line));
+   strlcat(line, (char *) message, sizeof(line));
+   
+   strlcpy(message_buffer, line, sizeof(message_buffer));
    return SUCCESS;
 }
 
 void receive_message(HNDLE hBuf, HNDLE id, EVENT_HEADER * pheader, void *message)
 {
-   time_t tm;
-   char str[80], line[256];
-
-   /* prepare time */
-   time(&tm);
-   strcpy(str, ctime(&tm));
-   str[19] = 0;
-
-   /* print message text which comes after event header */
-   strlcpy(line, str + 11, sizeof(line));
-   strlcat(line, (char *) message, sizeof(line));
-   print_message(line);
+   print_message((const char *)message);
 }
 
 /*-------------------------------------------------------------------*/
@@ -1577,13 +1579,13 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    rsprintf("<tr><th colspan=6 class=\"subStatusTitle\">Run Status</th></tr>\n");
 
    if (runinfo.state == STATE_STOPPED)
-      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"redLight\">Run<br>%d<br>Stopped<div id=\"foot\"></div>", runinfo.run_number);
+      rsprintf("<tr align=center><td rowspan=3 id=\"runNumberCell\" class=\"redLight\">Run<br>%d<br>Stopped<div id=\"foot\"></div>", runinfo.run_number);
    else if (runinfo.state == STATE_PAUSED)
-      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"yellowLight\">Run<br>%d<br>Paused<div id=\"foot\"></div>", runinfo.run_number);
+      rsprintf("<tr align=center><td rowspan=3 id=\"runNumberCell\" class=\"yellowLight\">Run<br>%d<br>Paused<div id=\"foot\"></div>", runinfo.run_number);
    else if (runinfo.state == STATE_RUNNING)
-      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"greenLight\">Run<br>%d<br>Running<div id=\"foot\"></div>", runinfo.run_number);
+      rsprintf("<tr align=center><td rowspan=3 id=\"runNumberCell\" class=\"greenLight\">Run<br>%d<br>Running<div id=\"foot\"></div>", runinfo.run_number);
    else
-      rsprintf("<tr align=center><td rowspan=4 id=\"runNumberCell\" class=\"yellowLight\">Run<br>%d<br>Run State Unknown<div id=\"foot\"></div>", runinfo.run_number);
+      rsprintf("<tr align=center><td rowspan=3 id=\"runNumberCell\" class=\"yellowLight\">Run<br>%d<br>Run State Unknown<div id=\"foot\"></div>", runinfo.run_number);
 
    //move the run transition button into runNumberCell
    rsprintf("<script type=\"text/javascript\">\n");
@@ -1689,19 +1691,11 @@ void show_status_page(int refresh, const char *cookie_wpwd)
       }
    }
 
-   /*---- run comment ----*/ 
+   /*---- if no status items present, create one to run comment ----*/
  
-   size = sizeof(str); 
-   if (db_get_value(hDB, 0, "/Experiment/Run parameters/Comment", str, 
-                    &size, TID_STRING, FALSE) == DB_SUCCESS) 
-      rsprintf("<tr class=\"titleRow\"><td style=\"text-align:left;\" colspan=5><b>%s</b></td></tr>\n", 
-               str); 
-   size = sizeof(str); 
-   if (db_get_value(hDB, 0, "/Experiment/Run parameters/Run Description", str, 
-                    &size, TID_STRING, FALSE) == DB_SUCCESS) 
-      rsprintf("<tr class=\"titleRow\"><td style=\"text-align:left;\" colspan=5><b>%s</b></td></tr>\n", 
-               str); 
- 
+   if (db_find_key(hDB, 0, "/Experiment/Status items", &hkey) != DB_SUCCESS)
+      db_create_link(hDB, 0, "/Experiment/Status items/Experiment Name", "/Experiment/Name");
+   
    /*---- Status items ----*/
 
    n_items = 0;
@@ -1734,7 +1728,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    rsprintf("<tr><td colspan=6 class=msgService>");
 
    if (message_buffer[0]) {
-      if (strstr(message_buffer, ",ERROR]"))
+      if (strstr(message_buffer, ",ERROR]") || strstr(message_buffer, ",TALK]"))
          rsprintf("<span style=\"color:#EEEEEE;background-color:#c0392b\"><b>%s</b></span>",
                   message_buffer);
       else
