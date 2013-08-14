@@ -98,7 +98,7 @@ EQUIPMENT equipment[] = {
    {"Scaler",                /* equipment name */
     {2, 0,                   /* event ID, trigger mask */
      "SYSTEM",               /* event buffer */
-     EQ_PERIODIC | EQ_MANUAL_TRIG,   /* equipment type */
+     EQ_PERIODIC,            /* equipment type */
      0,                      /* event source */
      "MIDAS",                /* format */
      TRUE,                   /* enabled */
