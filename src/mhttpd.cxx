@@ -1175,8 +1175,12 @@ void show_navigation_bar(const char *cur_page)
       while (str[strlen(str)-1] == ' ')
          str[strlen(str)-1] = 0;
       
-      rsprintf("<input type=button name=cmd value=\"%s\" class=\"navButton\" onclick=\"window.location.href=\'./%s?cmd=%s\';return false;\">\n",
-               str, path, str);
+      if (equal_ustring(str, cur_page))
+         rsprintf("<input type=button name=cmd value=\"%s\" class=\"navButtonSel\" onclick=\"window.location.href=\'./%s?cmd=%s\';return false;\">\n",
+                  str, path, str);
+      else
+         rsprintf("<input type=button name=cmd value=\"%s\" class=\"navButton\" onclick=\"window.location.href=\'./%s?cmd=%s\';return false;\">\n",
+                  str, path, str);
       
       p = strtok(NULL, ",");
    }
@@ -2098,8 +2102,8 @@ void show_messages_page(int refresh, int n_message)
    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
    time(&now);
 
-   show_header("MIDAS messages", "GET", "./", 0);
-   show_navigation_bar("Status");
+   show_header("Messages", "GET", "./", 0);
+   show_navigation_bar("Messages");
 
    /*---- messages ----*/
    /* more button */
@@ -3913,7 +3917,8 @@ void show_elog_page(char *path, int path_size)
       fsize;
    char str[256], orig_path[256], command[80], ref[256], file_name[256], dir[256], *fbuffer;
    char date[80], author[80], type[80], system[80], subject[256], text[10000],
-       orig_tag[80], reply_tag[80], attachment[3][256], encoding[80], att[256], url[256];
+        orig_tag[80], reply_tag[80], attachment[3][256], encoding[80], att[256], url[256],
+        action[80];
    HNDLE hDB, hkey, hkeyroot, hkeybutton;
    KEY key;
    FILE *f;
@@ -4245,19 +4250,9 @@ void show_elog_page(char *path, int path_size)
                             text, &size, orig_tag, reply_tag,
                             attachment[0], attachment[1], attachment[2], encoding);
 
-   /* header */
-   rsprintf("HTTP/1.0 200 Document follows\r\n");
-   rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
-   rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
-
-   rsprintf("<html><head>\n");
-   rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
-   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
-   rsprintf("<title>MIDAS ELog - %s</title></head>\n", subject);
-   rsprintf("<body><form method=\"GET\" action=\"../EL/%s\">\n", str);
-
-   /*---- body needs wrapper div to pin footer ----*/
-   rsprintf("<div class=\"wrapper\">\n");
+   sprintf(action, "../EL/%s", str);
+   show_header("ELog", "GET", action, 0);
+   show_navigation_bar("Elog");
 
    /*---- begin page header ----*/
    rsprintf("<table class=\"headerTable\">\n");
@@ -4289,8 +4284,6 @@ void show_elog_page(char *path, int path_size)
          rsprintf("<input type=submit name=form value=\"%s\">\n", key.name);
       }
    rsprintf("<input type=submit name=cmd value=Runlog>\n");
-   if (!elog_mode)
-      rsprintf("<input type=submit name=cmd value=Status>\n");
    rsprintf("</tr>\n");
 
    /* "last x" button row */
@@ -9230,9 +9223,8 @@ void show_config_page(int refresh)
    cm_get_experiment_database(&hDB, NULL);
 
    show_header("Configure", "GET", "", 0);
-   //close header
-   rsprintf("</table>");
-
+   show_navigation_bar("Config");
+  
    //main table
    rsprintf("<table class=\"dialogTable\">");
    rsprintf("<tr><th colspan=2 class=\"subStatusTitle\">Configure</tr>\n");
