@@ -35,14 +35,36 @@ to view the JS library. Alternatively, a recent version is shown here:
 <br><hr>
 @section RC_mhttpd_js_library_features List of functions in JS library
 
-Use of the following functions in custom webpages require the JS library to be included:
- - @ref RC_mhttpd_custom_odbget "ODBGet"
- - @ref RC_mhttpd_custom_odbset "ODBSet"
- - @ref RC_mhttpd_custom_odbedit "ODBEdit"
- - @ref RC_mhttpd_custom_odbkey "ODBKey"
- - @ref RC_mhttpd_custom_getmsg "ODBGetMsg"
- - @ref RC_mhttpd_custom_getmouse "getMouseXY"
- - @ref RC_mhttpd_custom_RPC_access "ODBRpc_rev0"
+Use of the following functions in custom webpages requires the JS library to be included:
+
+<table
+ style="text-align: left; width: 60%;" border="0" cellpadding="2"
+cellspacing="0">
+<tr>
+<td> @ref RC_mhttpd_custom_odbget "ODBGet" </td> <td>  <span class ="new">Modified  @ref  ndf_jun_2011</span> </td>
+</tr><tr>
+<td> @ref RC_mhttpd_custom_odbmget "ODBMGet"  </td> <td>   <span class ="new">New since  @ref  ndf_jun_2011</span> </td>
+</tr><tr>
+<td> @ref RC_mhttpd_custom_odbgetrecord "ODBGetRecord" </td> <td>    <span class ="new">New since  @ref  ndf_jun_2011 </span> </td>
+</tr><tr>
+<td> @ref RC_mhttpd_custom_odbextractrecord "ODBExtractRecord" </td> <td>    <span class ="new">New since @ref ndf_jun_2011 </span> </td>
+</tr><tr>
+<td> @ref RC_mhttpd_custom_odbset "ODBSet" </td> <td> <br> </td>
+</tr><tr>
+<td> @ref RC_mhttpd_custom_odbedit "ODBEdit" </td> <td>  <br> </td>
+</tr><tr>
+<td> @ref RC_mhttpd_custom_odbkey "ODBKey" </td> <td>  <br> </td>
+</tr><tr>
+<td> @ref RC_mhttpd_custom_getmsg "ODBGetMsg" </td> <td>  <br> </td>
+</tr><tr>
+<td> @ref RC_mhttpd_custom_generatemsg "ODBGenerateMsg"  </td> <td>   <span class ="new">New since  @ref ndf_nov_2010 </span> </td>
+</tr><tr>
+<td> @ref RC_mhttpd_custom_getmouse "getMouseXY" </td> <td>  <br> </td>
+</tr><tr>
+<td> @ref RC_mhttpd_custom_RPC_access "ODBRpc_rev0" </td> <td>  <br> </td>
+</tr><tr>
+<td> @ref RC_mhttpd_custom_RPC_access "ODBRpc_rev1" </td> <td>  <span class ="new">New since @ref ndf_feb_2011 </span> </td>
+</tr></table>
 
  <hr> 
 @section  RC_mhttpd_include_js_library Include the JS library mhttpd.js in a custom page
@@ -237,8 +259,11 @@ Access to the standard MIDAS Menu buttons can
 be provided with HTML  <span class = "htmltag">\<input...\></span> tags  of the form:
 -  <span class = "htmltag"> \<input name="cmd" value=\<\em button-name \>  type="submit" \> </span>
 
-Valid values are the standard MIDAS @ref RC_mhttpd_status_menu_buttons "Menu buttons" (Start, Pause, Resume, Stop,
-ODB, Elog, Alarms, History, Programs, etc). The  <span class = "htmltag">\<input...\></span> tags  must be declared
+Valid values are the standard MIDAS @ref RC_mhttpd_status_menu_buttons "Menu buttons" 
+(<span class="button">Start</span>  <span class="button">Pause</span>  <span class="button">Resume</span> 
+ <span class="button">Stop</span> <span class="button">ODB</span>  <span class="button">Elog</span> 
+ <span class="button">Alarms</span> <span class="button">History</span>  <span class="button">Programs</span>
+ etc). The  <span class = "htmltag">\<input...\></span> tags  must be declared
 within enclosing HTML <span class="htmltag">\<form...\>....\</form\> </span> tags (see @ref RC_mhttpd_custom_key_access "above").
 
 The following html fragment shows the inclusion of three of the standard buttons,
@@ -253,7 +278,36 @@ giving access to the Main Status, ODB and Messages pages :
 @endcode
 
 
+
+\anchor idx_redirect
+\anchor idx_mhttpd_custom_redirect
+@subsection RC_mhttpd_custom_redirect Redirect after Button is Pressed
+
+When buttons are included on a Custom Page, after pressing the button, it may be desirable to
+return to the same custom page.
+
+This can be done by including a hidden input tag with the name "redir". This name is detected by
+<span class="utility">mhttpd</span>, causing a redirect to the specified address, otherwise the Midas Main Status page will
+be shown. 
+
+e.g
+\code
+<!-- the following redirects screen back to custom page when buttons are pressed -->
+<input type=hidden name="redir" value="my_custom_page&">
+\endcode
+
+If instead of the Main Status Page a message <b>Invalid custom page: NULL path</b> is shown,
+and the URL is e.g. <i> myhost:8080/CS/ </i>,  redirect back to the Main Status Page as follows:
+\code
+<!-- the following redirects screen back to Main Status page when buttons are pressed 
+     if the default URL contains /CS   
+-->
+<input type=hidden name="redir" value="../">
+\endcode
+
+
 <hr>
+
 
 @section RC_mhttpd_custom_alias Alias Buttons and Hyperlinks
 Any hyperlink can easily be included on a custom page by using the standard HTML anchor <span class = "htmltag">\<a...\></span> tag, e.g.
@@ -272,13 +326,13 @@ Links on a custom page equivalent to @ref  RC_mhttpd_status_Alias_buttons "alias
 @section RC_mhttpd_custom_simple_example Simple Example of a custom page in HTML
 Here is a simple example of an HTML custom page demonstrating the features described above, including access to
  - the standard MIDAS Menu buttons
-    - "Status" and "ODB"
+    -  <span class="button">Status</span> and  <span class="button">ODB</span>
  - alias buttons
-    - "TPC Button" a local link through the <span class="odb">/alias</span> ODB tree 
-    - "triumf" an external link
+    -  <span class="button">TPC</span> is a local link through the <span class="odb">/alias</span> ODB tree 
+    -   <span class="button">triumf</span>  is an external link
  - alias links
-    - "TpcGasPlc" local link to  <span class="odb">/Equipment/TpcGasPlc</span>
-    - "TPC Alias-link" local link  through the <span class="odb">/alias</span> ODB tree (to same area as "TPC Button")
+    -  <span style="color:blue">TpcGasPlc</span> is a local link to  <span class="odb">/Equipment/TpcGasPlc</span>
+    -  <span style="color:blue">TPC Alias-link</span>" is a local link  through the <span class="odb">/alias</span> ODB tree (to same area as "TPC Button")
 
  * <br>
  * <center> 
@@ -338,8 +392,8 @@ style="vertical-align: top; background-color: fuschia;  text-align: center;">
 
 To create this page, you need an existing MIDAS experiment. To have all the buttons/links work, you need the
 ODB keys
-   -  <span class="odb">/Equipment/\<eqp-name\></span>  (<i>\<eqp-name\></i> is "TpcGasPlc" in the example)
-   -  <span class="odb">/Alias/\<alias-name\></span>  (<i>\<alias-name\></i> is "TPC Common&" in the example)
+   -  <span class="odb">/Equipment/\<eqp-name\></span>  ( <span class="odb">/EquipmentTpcGasPlc</span> in the example)
+   -  <span class="odb">/Alias/\<alias-name\></span>  ( <span class="odb">/Equipment/TPC Common&</span> in the example)
    
  - create a file <i>custom.html</i> containing the above code. In this example, the code is in path <i>/home/mydir/custom.html</i>
  - in  <i>custom.html</i>
@@ -353,8 +407,8 @@ ODB keys
      String length [32]:
      [local:customgas:S]/Custom>set test "/home/mydir/custom.html"
 \endcode
- - on the mhttpd status page for the experiment, there should now be a custom-button labelled "custom" 
- - click on this "custom" button to see the custom page
+ - on the mhttpd status page for the experiment, there should now be a button labelled  <span class="button">custom</span> 
+ - click on the  <span class="button">custom</span>  button to see the custom page
  
 <br><hr><br>
 \anchor idx_mhttpd_buttons_customscript
@@ -362,7 +416,11 @@ ODB keys
 @section RC_mhttpd_custom_script_buttons CustomScript Buttons
 
 CustomScript buttons can be provided on custom webpages. These buttons are equivalent to @ref RC_mhttpd_status_script_buttons
-on the MIDAS Main Status page, and allow a particular action to be performed when the button is pressed.
+on the MIDAS Main Status page, and allow a particular action to be performed when the button is pressed. 
+
+After pressing
+the button, the MIDAS Main Status page will be shown, unless a @ref  RC_mhttpd_custom_redirect "redirect input tag"
+is included to <b> redirect back to the custom page</b>.
 
 If the user defines a new tree in ODB named   <span class="odb">/CustomScript</span> ,
 then any key created in the  <span class="odb">/CustomScript</span> tree will appear as a 
@@ -370,7 +428,7 @@ script-button of that name on a custom page that includes an HTML  <span class =
 \code
         <input type=submit name=customscript value="my button">
 \endcode
-where the action of the button <i> "my button"</i> will be found in the  <span class="odb">/customscript/my button</span> subdirectory.
+where the action of the button  <span class="button">my button</span> will be found in the  <span class="odb">/customscript/my button</span> subdirectory.
 
 \anchor idx_ODB_tree_customscript
 @subsection RC_odb_customscript_tree  ODB /CustomScript tree
@@ -394,9 +452,13 @@ the @ref RC_mhttpd_status_script_buttons  under the  <span class="odb">/Script</
 <br>
 @subsection RC_mhttpd_customscript_example  Example of CustomScript buttons and corresponding /CustomScript tree
 
-The following JavaScript fragment shows customscript buttons that appear only when the run is stopped. The button
-labelled "tri_config" and, depending on the current experimental mode (given by variable <i> "ppg_mode" </i>), three of the mode buttons
-labelled "1a","1b","1c" or "1d" . 
+The following JavaScript fragment shows customscript buttons that appear only when the run is stopped. The  
+<span class="button">tri_config</span> button and, depending on the current experimental mode (given by variable <i> "ppg_mode" </i>), 
+three of the mode buttons 
+ <span class="button">1a</span>
+ <span class="button">1b</span>
+ <span class="button">1c</span> or
+ <span class="button">1d</span>. 
 @code
  if (rstate == state_stopped) // run stopped
 {
@@ -413,8 +475,9 @@ if(ppg_mode != '1d')
 @endcode
 
 The corresponding entry under /customscript is as shown below. The first button (tri_config) when pressed
-will cause a user-written program <i> tri_config </i> to be executed. The other buttons "1a","1b" etc. when pressed will cause the
-current experimental mode to be changed to that mode. Only the entry for "1a" is shown.
+will cause a user-written program <i> tri_config </i> to be executed. The other buttons <span class="button">1a</span>, 
+ <span class="button">1b</span> etc. when pressed will cause the
+current experimental mode to be changed to that mode. Only the entry for  <span class="button">1a</span> is shown.
 @code
 [local:ebit:S]/>ls /customscript/tri_config
 cmd                             /home/ebit/online/ppg/perl/exec.pl
@@ -441,16 +504,18 @@ These buttons are illustrated in the example @ref RC_Ebit_custom_page
 
 
 \anchor idx_ODBGetMsg-JavaScript-function
-@section  RC_mhttpd_custom_getmsg  Access to message log 
+@section  RC_mhttpd_custom_getmsg  Access to message log  using JavaScript function ODBGetMsg
 
-The message log can be accessed from a custom page using a call to the
+The message log (see @ref F_Messaging) can be accessed from a custom page using a call to the
 @ref RC_mhttpd_custom_js_lib  "JavaScript library function"  <span class="js"> ODBGetMsg </span> (provided the JS library is
-\ref RC_mhttpd_include_js_library "included").  There is no HTML equivalent to this JS function.
+\ref RC_mhttpd_include_js_library "included"). There is no HTML equivalent to this JS function.
+<br>
+
 <br>
 <table
  style="text-align: left; width: 100%;" border="1" cellpadding="2"
 cellspacing="0">
-  <caption>Above: ODB Message access from JavaScript
+  <caption>Above: JavaScript function ODBGetMsg
   </caption>
 <tr>
 <td colspan="1" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">JavaScript Function</td>
@@ -465,9 +530,7 @@ Parameters
 <!--   line    1     -->
 <tr>
 <td style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">
-@code
- ODBGetMsg(n)
-@endcode
+<span class="js">ODBGetMsg(n)</span>
 </td>
 <td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
 Get the most recent \b n lines from the system message log
@@ -497,7 +560,7 @@ document.write('Last message:'+message+'<br>');
 
 The Javascript call has been added to the  @ref RC_mhttpd_custom_simple_example  above, by
  - adding access to the standard MIDAS Javascript library to the header
- -  adding the call to ODBGetMsg()
+ - adding the call to <script class="js">ODBGetMsg()</script>
 
 as detailed below: 
 \code
@@ -521,6 +584,65 @@ document.write('<h2>Last message:</h2>'+message+'<br>');
 \endcode
 
 
+
+<br><hr><br>
+
+
+\anchor idx_ODBGenerateMsg-JavaScript-function
+@section  RC_mhttpd_custom_generatemsg  Generate a message log entry using JavaScript function ODBGenerateMsg
+
+A custom page can generate a message to be sent to the MIDAS message log (see @ref F_Messaging). This may be done with a call to the
+@ref RC_mhttpd_custom_js_lib  "JavaScript library function"  <span class="js"> ODBGenerateMsg </span> (provided the JS library is
+\ref RC_mhttpd_include_js_library "included").  There is no HTML equivalent to this JS function.
+<br>
+
+<br>
+<table
+ style="text-align: left; width: 100%;" border="1" cellpadding="2"
+cellspacing="0">
+  <caption>Above: JavaScript function ODBGenerateMsg
+  </caption>
+<tr>
+<td colspan="1" style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">JavaScript Function</td>
+</td>
+ <td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Purpose
+</td>
+ <td style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold; text-align: center;">
+Parameters
+</td>
+</tr> 
+<!--   line    1     -->
+<tr>
+<td style="vertical-align: top; background-color: white; font-weight: bold; text-align: left;">
+<span class="js"> ODBGenerateMsg(message)</span>
+</td>
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+Send a message to the system message log
+</td>
+<td style="vertical-align: top; background-color: white; font-weight: normal; text-align: left;">
+\b message <&nbsp><&nbsp> string containing the message
+</td>
+</tr>
+</table>
+<br>
+
+
+\b Usage
+\code
+ODBGenerateMsg("Unable to read new data")
+\endcode
+
+\b Example
+\code
+ODBGenerateMsg("This is a test from custom page \"try\" ");
+document.write('<br>Last Message: '+ODBGetMsg(1));
+\endcode
+
+\b Output from the above example
+\code
+Last Message: Tue Jul 5 11:24:30 2011 [mhttpd,INFO] This is a test from custom page "try" 
+\endcode
 
 
 <br><hr><br>

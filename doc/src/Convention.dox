@@ -175,19 +175,22 @@ style="vertical-align: top; background-color: white ; text-align: center; ">
 @section C_Document_Style  Document Style
 
 
-
  - New Features :
    - <span class ="new"> This feature is new since  @ref NDF "this date" </span>
  - ODB paths should appears like this :
    - <span class ="odb"> /Equipment/test  </span><br>
  - Midas Utilities :
    - <span class ="utility">midas_utility</span><br>
- - JavaScript functions :
+ - JavaScript built-in functions :
    - <span class ="js">ODBGet</span><br>
  - HTML tags :
    - <span class ="htmltag">\<img ...\> </span><br>
  - ODB tags (in HTML files) :
    - <span class ="odbtag">\<odb...\> </span><br>
+ - mhttpd buttons
+   - mhttpd <span class ="button">button</span>
+ - sequencer commands
+   - mhttpd <span class ="seq"> \<sequencer command\> </span>
  - Image titles should  appear like this :
    - <span class ="image"> Figure 1 Example  </span><br>
  - Warnings :

@@ -961,7 +961,7 @@ void show_help_page()
    rsprintf("</div>\n");
    rsprintf("<div id=\"helpFooter\" class=\"footerDiv\" style=\"font-size:10pt;height:50px;\">\n");
    rsprintf("<div id=\"contribList\" style=\"display:inline;\">\n");
-   rsprintf("Contributions: Pierre-Andre Amaudruz - Sergio Ballestrero - Suzannah Daviel - Peter Green - Qing Gu - Greg Hackman - Gertjan Hofman - Paul Knowles - Exaos Lee - Rudi Meier - Bill Mills - Glenn Moloney - Dave Morris - John M O'Donnell - Konstantin Olchanski - Chris Pearson - Renee Poutissou - Stefan Ritt - Tamsen Schurman - Andreas Suter - Jan M.Wouters - Piotr Adam Zolnierczuk\n");
+   rsprintf("Contributions: Pierre-Andre Amaudruz - Sergio Ballestrero - Suzannah Daviel - Peter Green - Qing Gu - Greg Hackman - Gertjan Hofman - Paul Knowles - Exaos Lee - Rudi Meier - Bill Mills - Glenn Moloney - Dave Morris - John M O'Donnell - Konstantin Olchanski - Chris Pearson - Renee Poutissou - Stefan Ritt - Ryu Sawada - Tamsen Schurman - Andreas Suter - Jan M.Wouters - Piotr Adam Zolnierczuk\n");
    rsprintf("</div></div>\n");
    
    rsprintf("</form>\n");
@@ -972,7 +972,7 @@ void show_help_page()
    rsprintf("console.log(footerHeight);");
    rsprintf("document.getElementById(\"helpPush\").style.height = footerHeight+\"px\";");
    rsprintf("document.getElementById(\"helpFooter\").style.height=footerHeight+\"px\";");
-   rsprintf("document.getElementById(\"helpWrapper\").style.height=-parseFloat(footerHeight, 10)+\"px\";");
+   rsprintf("document.getElementById(\"helpWrapper\").style.margin= \"0 auto -\"+parseFloat(footerHeight)+\"px\";");
    rsprintf("};");
    rsprintf("window.onresize();");
    rsprintf("</script>");
@@ -1020,8 +1020,7 @@ void show_header(HNDLE hDB, const char *title, const char *method, const char *p
           ("<body><form name=\"form1\" method=\"POST\" action=\"%s\" enctype=\"multipart/form-data\">\n\n",
            str);
    else if (equal_ustring(method, "GET"))
-      rsprintf("<body><form name=\"form1\" method=\"GET\" action=\"%s\">\n\n", method,
-               str);
+      rsprintf("<body><form name=\"form1\" method=\"GET\" action=\"%s\">\n\n", str);
 
    /* title row */
 
@@ -1343,7 +1342,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
          if (runinfo.state != STATE_STOPPED) {
             rsprintf("<noscript>\n");
             if (runinfo.state == STATE_RUNNING)
-               rsprintf("<input id=\"runButton\" type=submit name=cmd %s value=Pause>\n", runinfo.transition_in_progress?"disabled":"");
+               rsprintf("<input id=\"pauseResumeButton\" type=submit name=cmd %s value=Pause>\n", runinfo.transition_in_progress?"disabled":"");
             rsprintf("</noscript>\n");
             rsprintf("<script type=\"text/javascript\">\n");
             rsprintf("<!--\n");
@@ -1354,11 +1353,11 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             rsprintf("      window.location.href = '?cmd=Pause';\n");
             rsprintf("}\n");
             if (runinfo.state == STATE_RUNNING)
-               rsprintf("document.write('<input id=\"runButton\" type=button %s value=Pause onClick=\"pause();\"\\n>');\n", runinfo.transition_in_progress?"disabled":"");
+               rsprintf("document.write('<input id=\"pauseResumeButton\" type=button %s value=Pause onClick=\"pause();\"\\n>');\n", runinfo.transition_in_progress?"disabled":"");
             rsprintf("//-->\n");
             rsprintf("</script>\n");
             if (runinfo.state == STATE_PAUSED)
-               rsprintf("<input id=\"runButton\" type=submit name=cmd %s value=Resume>\n", runinfo.transition_in_progress?"disabled":"");
+               rsprintf("<input id=\"pauseResumeButton\" type=submit name=cmd %s value=Resume>\n", runinfo.transition_in_progress?"disabled":"");
          }
       } else
          rsprintf("<input id=\"runButton\" type=submit name=cmd value=\"%s\">\n", str);
@@ -1578,7 +1577,9 @@ void show_status_page(int refresh, const char *cookie_wpwd)
 
    //move the run transition button into runNumberCell
    rsprintf("<script type=\"text/javascript\">\n");
-   rsprintf("document.getElementById(\"runNumberCell\").insertBefore(document.getElementById(\"runButton\"), document.getElementById(\"foot\").nextSibling)");
+   rsprintf("document.getElementById(\"runNumberCell\").insertBefore(document.getElementById(\"runButton\"), document.getElementById(\"foot\").nextSibling);");
+   rsprintf("if(document.getElementById(\"pauseResumeButton\"))\n");
+   rsprintf("document.getElementById(\"runNumberCell\").insertBefore(document.getElementById(\"pauseResumeButton\"), document.getElementById(\"foot\").nextSibling)");
    rsprintf("</script>");
 
    /*---- time ----*/
@@ -1603,28 +1604,34 @@ void show_status_page(int refresh, const char *cookie_wpwd)
       requested_transition = 0;
 
    if (requested_transition == TR_STOP)
-      rsprintf("<br><b>Run stop requested</b>");
+      rsprintf("<p id=\"transitionMessage\">Run stop requested</p>");
 
    if (requested_transition == TR_START)
-      rsprintf("<br><b>Run start requested</b>");
+      rsprintf("<p id=\"transitionMessage\">Run start requested</p>");
 
    if (requested_transition == TR_PAUSE)
-      rsprintf("<br><b>Run pause requested</b>");
+      rsprintf("<p id=\"transitionMessage\">Run pause requested</p>");
 
    if (requested_transition == TR_RESUME)
-      rsprintf("<br><b>Run resume requested</b>");
+      rsprintf("<p id=\"transitionMessage\">Run resume requested</p>");
 
    if (runinfo.transition_in_progress == TR_STOP)
-      rsprintf("<br><b>Stopping run</b>");
+      rsprintf("<p id=\"transitionMessage\">Stopping run</p>");
 
    if (runinfo.transition_in_progress == TR_START)
-      rsprintf("<br><b>Starting run</b>");
+      rsprintf("<p id=\"transitionMessage\">Starting run</p>");
 
    if (runinfo.transition_in_progress == TR_PAUSE)
-      rsprintf("<br><b>Pausing run</b>");
+      rsprintf("<p id=\"transitionMessage\">Pausing run</p>");
 
    if (runinfo.transition_in_progress == TR_RESUME)
-      rsprintf("<br><b>Resuming run</b>");
+      rsprintf("<p id=\"transitionMessage\">Resuming run</p>");
+
+   //inject transition message into runNumberCell
+   rsprintf("<script type=\"text/javascript\">\n");
+   rsprintf("document.getElementById(\"runNumberCell\").insertBefore(document.getElementById(\"transitionMessage\"), document.getElementById(\"foot\").nextSibling);");
+   rsprintf("</script>");
+
 
    if (runinfo.requested_transition)
       for (i = 0; i < 4; i++)
@@ -1811,7 +1818,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
                if (equipment.status[0] == 0)
                   rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center class=\"greenLight\">%s@%s", ref, key.name, equipment.frontend_name, equipment.frontend_host);
                else
-                  rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center class=\"%s\">%s", ref, key.name, ( !strcasecmp(equipment.status_color, "#00FF00") )? "greenLight" : ( (!strcasecmp(equipment.status_color, "#FF0000")? "redLight" : "yellowLight" ) ), equipment.status);
+                  rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center class=\"%s\">%s", ref, key.name, ( !strcasecmp(equipment.status_color, "#00FF00") )? "greenLight" : ( (!strcasecmp(equipment.status_color, "#FF0000")? "redLight" : ( (!strcasecmp(equipment.status_color, "#FFFFFF"))?"":"yellowLight") ) ), equipment.status);
             } else
                rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center class=\"yellowLight\">(disabled)", ref, key.name);
          }
@@ -2036,7 +2043,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    if (db_find_key(hDB, 0, "/System/Clients", &hkey) == DB_SUCCESS) {
 
       /*---- Client Table ----*/
-      rsprintf("<tr><td colspan=6><table class=\"subStatusTable\" width=100%%>\n");
+      rsprintf("<tr><td colspan=6><table class=\"subStatusTable\" id=\"clientsTable\" width=100%%>\n");
       rsprintf("<tr><th colspan=6 class=\"subStatusTitle\">Clients</th><tr>\n");
 
       for (i = 0;; i++) {
@@ -8263,9 +8270,9 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    //buttons:
    if(!elog_mode){
       rsprintf("<tr><td colspan=2>\n");
-      rsprintf("<input type=button value=Find onclick=\"self.location=\'?cmd=Alarms\';\">\n");
-      rsprintf("<input type=button value=Create onclick=\"self.location=\'?cmd=Alarms\';\">\n");
-      rsprintf("<input type=button value=Delete onclick=\"self.location=\'?cmd=Alarms\';\">\n");
+      rsprintf("<input type=button value=Find onclick=\"self.location=\'?cmd=Find\';\">\n");
+      rsprintf("<input type=button value=Create onclick=\"self.location=\'?cmd=Create\';\">\n");
+      rsprintf("<input type=button value=Delete onclick=\"self.location=\'?cmd=Delete\';\">\n");
       rsprintf("<input type=button value=\"Create Elog from this page\" onclick=\"self.location=\'?cmd=Create Elog from this page\';\"></td></tr>\n");
    }
 
@@ -9848,69 +9855,34 @@ int time_to_sec(const char *str)
 
 /*------------------------------------------------------------------*/
 
-static MidasHistoryInterface* mh = NULL;
-static bool using_odbc = 0;
-
-static void set_history_path()
+static MidasHistoryInterface* get_history(bool reset = false)
 {
    int status;
    HNDLE hDB;
+   static MidasHistoryInterface* mh = NULL;
 
-   cm_get_experiment_database(&hDB, NULL);
-
-#ifdef HAVE_ODBC
-   /* check ODBC connection */
-   char str[256];
-   int size = sizeof(str);
-   str[0] = 0;
-   status = db_get_value(hDB, 0, "/History/ODBC_DSN", str, &size, TID_STRING, TRUE);
-   if ((status==DB_SUCCESS || status==DB_TRUNCATED) && str[0]!=0 && str[0]!='#') {
-
-      if (!using_odbc)
-         if (mh) {
-            delete mh;
-            mh = NULL;
-         }
-
-      if (!mh)
-         mh = MakeMidasHistoryODBC();
-
-      using_odbc = true;
-
-      int debug = 0;
-      size = sizeof(debug);
-      status = db_get_value(hDB, 0, "/History/ODBC_Debug", &debug, &size, TID_INT, TRUE);
-      assert(status==DB_SUCCESS);
-
-      mh->hs_set_debug(debug);
-
-      status = mh->hs_connect(str);
-
-      if (status != HS_SUCCESS) {
-         cm_msg(MERROR, "set_history_path", "Cannot connect to history database, hs_connect() status %d", status);
-      }
-
-   } else {
-      if (using_odbc)
-         if (mh) {
-            delete mh;
-            mh = NULL;
-
-         }
-      using_odbc = false;
+   if (reset && mh) {
+      mh->hs_disconnect();
+      delete mh;
+      mh = NULL;
    }
-#endif
 
-   if (!using_odbc) {
-      if (!mh)
-         mh = MakeMidasHistory();
+   if (mh)
+      return mh;
 
-      status = mh->hs_connect(NULL);
+   status = cm_get_experiment_database(&hDB, NULL);
+   assert(status == CM_SUCCESS);
 
-      if (status != HS_SUCCESS) {
-         cm_msg(MERROR, "set_history_path", "Cannot connect to midas history, hs_connect() status %d", status);
-      }
+   status = hs_get_history(hDB, 0, HS_GET_READER|HS_GET_INACTIVE|HS_GET_DEFAULT, verbose, &mh);
+   if (status != HS_SUCCESS || mh==NULL) {
+      cm_msg(MERROR, "get_history", "Cannot configure history, hs_get_history() status %d", status);
+      mh = NULL;
+      return NULL;
    }
+
+   cm_msg(MINFO, "get_history", "Reading history from channel \'%s\' type \'%s\'", mh->name, mh->type);
+
+   return mh;
 }
 
 /*------------------------------------------------------------------*/
@@ -9999,7 +9971,11 @@ int read_history(HNDLE hDB, const char *path, int index, int runmarker, time_t t
    // printf("read_history, path %s, index %d, runmarker %d, start %d, end %d, scale %d, data %p\n", path, index, runmarker, (int)tstart, (int)tend, (int)scale, data);
 
    /* connect to history */
-   set_history_path();
+   MidasHistoryInterface* mh = get_history();
+   if (mh == NULL) {
+      //rsprintf(str, "History is not configured\n");
+      return HS_FILE_ERROR;
+   }
 
    /* check panel name in ODB */
    status = db_find_key(hDB, 0, "/History/Display", &hkey);
@@ -10200,7 +10176,12 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
                  panel, fgcol);
 
    /* connect to history */
-   set_history_path();
+   MidasHistoryInterface *mh = get_history();
+   if (mh == NULL) {
+      sprintf(str, "History is not configured, see messages");
+      gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2, height / 2, str, red);
+      goto error;
+   }
 
    /* check panel name in ODB */
    sprintf(str, "/History/Display/%s", panel);
@@ -11596,6 +11577,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
 
    if (equal_ustring(cmd, "Clear history cache")) {
       strcpy(cmd, "refresh");
+      MidasHistoryInterface* mh = get_history();
       if (mh)
          mh->hs_clear_cache();
    }
@@ -11895,7 +11877,11 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
 
    /* get display event name */
 
-   set_history_path();
+   MidasHistoryInterface* mh = get_history();
+   if (mh == NULL) {
+      rsprintf(str, "History is not configured\n");
+      return;
+   }
 
    std::vector<std::string> events;
    mh->hs_get_events(&events);
@@ -13315,6 +13301,24 @@ void send_css()
    get_resource_dir(filename, sizeof(filename));
    strlcat(filename, "mhttpd.css", sizeof(filename));
    fh = open(filename, O_RDONLY | O_BINARY);
+   
+   if (fh <= 0 && getenv("MIDAS_DIR")) {
+      strlcpy(filename, getenv("MIDAS_DIR"), sizeof(filename));
+      if (filename[strlen(filename)-1] != DIR_SEPARATOR)
+         strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
+      strlcat(filename, "resources/mhttpd.css", sizeof(filename));
+      fh = open(filename, O_RDONLY | O_BINARY);
+   }
+   
+   if (fh <= 0) {
+      strlcpy(filename, "resources/mhttpd.css", sizeof(filename));
+      fh = open(filename, O_RDONLY | O_BINARY);
+   }
+   
+   if (fh <= 0) {
+      strlcpy(filename, "mhttpd.css", sizeof(filename));
+      fh = open(filename, O_RDONLY | O_BINARY);
+   }
    
    if (fh > 0) {
       fstat(fh, &stat_buf);

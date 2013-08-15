@@ -74,6 +74,11 @@ endif
 HAVE_ODBC := $(shell if [ -e /usr/include/sql.h ]; then echo 1; fi)
 
 #
+# Optional SQLITE history support
+#
+HAVE_SQLITE := $(shell if [ -e /usr/include/sqlite3.h ]; then echo 1; fi)
+
+#
 # Option to use our own implementation of strlcat, strlcpy
 #
 NEED_STRLCPY=1
@@ -133,6 +138,7 @@ OS_DIR = $(OSTYPE)
 CFLAGS += -DOS_LINUX
 NEED_MYSQL=
 HAVE_ODBC=
+HAVE_SQLITE=
 endif
 
 #-----------------------
@@ -301,6 +307,7 @@ OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
 	$(LIB_DIR)/dm_eb.o \
 	$(LIB_DIR)/history_midas.o \
 	$(LIB_DIR)/history_sql.o \
+	$(LIB_DIR)/history_sqlite.o \
 	$(LIB_DIR)/history.o $(LIB_DIR)/alarm.o $(LIB_DIR)/elog.o
 
 ifdef NEED_STRLCPY
@@ -392,6 +399,11 @@ ODBC_LIBS   += /System/Library/Frameworks/CoreFoundation.framework/CoreFoundatio
 endif
 endif
 
+ifdef HAVE_SQLITE
+CFLAGS      += -DHAVE_SQLITE
+SQLITE_LIBS += -lsqlite3
+endif
+
 ifdef ROOTSYS
 ROOTLIBS    := $(shell $(ROOTSYS)/bin/root-config --libs)
 ROOTGLIBS   := $(shell $(ROOTSYS)/bin/root-config --glibs)
@@ -421,7 +433,7 @@ CFLAGS     += -DHAVE_MSCB
 endif
 
 $(BIN_DIR)/mlogger: $(BIN_DIR)/%: $(SRC_DIR)/%.cxx
-	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(ROOTLIBS) $(ODBC_LIBS) $(MYSQL_LIBS) $(LIBS)
+	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(ROOTLIBS) $(ODBC_LIBS) $(SQLITE_LIBS) $(MYSQL_LIBS) $(LIBS)
 
 $(BIN_DIR)/%:$(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(LIBS)
@@ -432,11 +444,14 @@ $(BIN_DIR)/odbedit: $(SRC_DIR)/odbedit.c $(SRC_DIR)/cmdedit.c
 
 ifdef NEED_MSCB
 $(BIN_DIR)/mhttpd: $(LIB_DIR)/mhttpd.o $(LIB_DIR)/mgd.o $(LIB_DIR)/mscb.o $(LIB_DIR)/sequencer.o
-	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(ODBC_LIBS) $(LIBS) -lm
+	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(ODBC_LIBS) $(SQLITE_LIBS) $(LIBS) -lm
 else
 $(BIN_DIR)/mhttpd: $(LIB_DIR)/mhttpd.o $(LIB_DIR)/mgd.o $(LIB_DIR)/sequencer.o
-	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(ODBC_LIBS) $(LIBS) -lm
+	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(ODBC_LIBS) $(SQLITE_LIBS) $(LIBS) -lm
 endif
+
+$(BIN_DIR)/mhist: $(BIN_DIR)/%: $(UTL_DIR)/%.cxx
+	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(ODBC_LIBS) $(SQLITE_LIBS) $(LIBS)
 
 $(PROGS): $(LIBNAME)
 

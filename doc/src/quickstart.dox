@@ -29,7 +29,7 @@ to another computer to test the remote connection capability.
 @section Q_SVN MIDAS Package Source (SVN and tarball)
 The <b>MIDAS source code</b> is subject to the <a href="http://www.gnu.org/copyleft/gpl.html">GPL</a>
 
-An <a href="http://savannah.psi.ch/viewcvs/trunk/?root=midas" > online SVN web site 
+An <a href="https://savannah.psi.ch/viewvc/meg_midas/trunk/"> online SVN web site 
 </a> is available for the latest developments and for easy download. See specific
 instructions under \ref Q_Linux_Midas_Installation "Linux" or \ref Q_Windows_installation "Windows".
 
@@ -38,6 +38,10 @@ The MIDAS Package source (tarball) and some binaries are also kept in
 <a href="http://ladd00.triumf.ca/~daqweb/ftp/"> TRIUMF </a>.
 
 @section  Q_Quickstart_Installation MIDAS Installation
+
+Please see also our new wiki at TRIUMF
+<a href="https://www.triumf.info/wiki/DAQwiki/index.php/Setup_MIDAS_experiment">MIDAS installation instructions</a>.
+
 
 Even though MIDAS is available for multiple platforms, presently only instructions for the following are available:
 <div align=center; style="font-size: 125%;">
@@ -140,7 +144,7 @@ For full MIDAS operation \b ROOT is needed for the data logging and analysis pac
 @subsection  Q_Linux_Midas_Installation MIDAS Package Installation
 
 The source code can be extracted from the
-   <a HREF="http://savannah.psi.ch/viewcvs/trunk/?root=midas" > SVN repository</a>.
+   <a HREF="https://savannah.psi.ch/viewvc/meg_midas/trunk/" > SVN repository</a>.
   Anonymous access is available under the username \b svn and password \b svn 
   which may be required several time. The SVN web interface provides a quick 
   \b tarball. This suggested extraction method is shown below.
@@ -174,17 +178,13 @@ The MIDAS package requires the \b mxml auxiliary package which can be found at t
 \anchor idx_ROODY_installation
 @subsection  Q_Linux_Roody_Installation ROODY Package Installation
 
-   <a href="http://ladd00.triumf.ca/~daqweb/doc/roody/html" >
+   <a href="https://www.triumf.info/wiki/DAQwiki/index.php/ROODY" >
   ROODY</a> is a Histogram display tool. This package is supported by the Triumf DAQ group. Its 
   installation is similar to 
   the MIDAS package.
-  @code
-  cd $HOME/packages
-  svn checkout svn://ladd00.triumf.ca/roody/trunk roody
-  cd roody
-  make
-  $HOME/packages/roody/bin/roody   ... to run the program
-  @endcode
+ 
+ To install,  follow the instructions in the  
+<a href="https://www.triumf.info/wiki/DAQwiki/index.php/ROODY" >ROODY wiki </a/>.
   
 <hr>
 @section  Q_Linux_Basic_Test Basic test
@@ -246,8 +246,8 @@ NOTE: these instructions provide \b local access to the experiment. For \b remot
  - Run can be started and stopped under odbedit or through the web page.
  - While a run is in progress, the midas application <b>mdump</b> will provide you an event dump of the collected
    data from the running frontend.
- - For further data processing/analysis, either the <b> midas analyzer </b> or the 
-   <a href="http://daq-plone.triumf.ca/SR/rootana" > rootana </a> can used for data display as well. 
+ - For further data processing/analysis, either the <b> midas analyzer </b> or  
+   <a href="https://www.triumf.info/wiki/DAQwiki/index.php/ROOTANA" > ROOTANA </a> can used for data display as well. 
     @code
     $odbedit
 	[local:exp:S]> ls
