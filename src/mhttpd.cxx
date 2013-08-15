@@ -6492,8 +6492,9 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
    /* process "jcopy" command */
    if (equal_ustring(getparam("cmd"), "jcopy")) {
       
+      bool fmt_odb  = false;
       bool fmt_xml  = false;
-      bool fmt_json = false;
+      bool fmt_json = true;
       bool fmt_jsonp = false;
       int follow_links = 1;
       int save_keys = 1;
@@ -6502,8 +6503,17 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
       
       if (isparam("format")) {
          fmt = getparam("format");
+         fmt_odb = equal_ustring(fmt, "odb");
          fmt_xml = equal_ustring(fmt, "xml");
          fmt_json = strstr(fmt, "json");
+
+         if (fmt_odb)
+            fmt_xml = fmt_json = false;
+         if (fmt_xml)
+            fmt_odb = fmt_json = false;
+         if (fmt_json)
+            fmt_odb = fmt_xml = false;
+
          if (fmt_json)
             fmt_jsonp = strstr(fmt, "-p");
          if (fmt_jsonp && isparam("callback"))
@@ -6557,7 +6567,8 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
          }
          if (fmt_xml) {
             rsputs("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
-            rsputs("<xxx>\n");
+            rsputs("<jcopy>\n");
+            rsputs("<data>\n");
          } else if (fmt_json)
             rsputs("[\n");
          else
@@ -6571,7 +6582,7 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
 
             if (i > 0) {
                if (fmt_xml)
-                  rsputs("</xxx>\n<xxx>\n");
+                  rsputs("</data>\n<data>\n");
                else if (fmt_json)
                   rsputs(",\n");
                else
@@ -6581,7 +6592,7 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
             status = db_find_key(hDB, 0, str, &hkey);
             if (status != DB_SUCCESS) {
                if (fmt_xml)
-                  rsputs("<DB_NO_KEY>\n");
+                  rsputs("<DB_NO_KEY/>\n");
                else if (fmt_json) {
                   char tmp[256];
                   sprintf(tmp, "{ \"/error\" : %d }\n", status);
@@ -6595,19 +6606,27 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
             int bufsize = WEB_BUFFER_SIZE;
             char* buf = (char *)malloc(bufsize);
             
-            if (fmt_xml)
+            if (fmt_xml) {
                db_copy_xml(hDB, hkey, buf, &bufsize);
-            else if (fmt_json)
+               const char* s = strstr(buf, "-->");
+               if (s)
+                  s+=4;
+               else
+                  s = buf;
+               rsputs(s);
+            } else if (fmt_json) {
                db_copy_json(hDB, hkey, &buf, &bufsize, &end, save_keys, follow_links);
-            else
+               rsputs(buf);
+            } else {
                db_copy(hDB, hkey, buf, &bufsize, (char *)"");
+               rsputs(buf);
+            }
             
-            rsputs(buf);
             free(buf);
          }
 
          if (fmt_xml)
-            rsputs("</xxx>\n");
+            rsputs("</data>\n</jcopy>\n");
          else if (fmt_json)
             rsputs("]\n");
          else
@@ -6744,10 +6763,14 @@ void show_custom_page(const char *path, const char *cookie_cpwd)
 
       /* check if filename */
       if (strchr(ctext, '\n') == 0) {
-         strlcpy(filename, custom_path, sizeof(str));
-         if (filename[strlen(filename)-1] != DIR_SEPARATOR)
-            strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
-         strlcat(filename, ctext, sizeof(filename));
+         if (custom_path[0]) {
+            strlcpy(filename, custom_path, sizeof(filename));
+            if (filename[strlen(filename)-1] != DIR_SEPARATOR)
+               strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
+            strlcat(filename, ctext, sizeof(filename));
+         } else {
+            strlcpy(filename, ctext, sizeof(filename));
+         }
          fh = open(filename, O_RDONLY | O_BINARY);
          if (fh < 0) {
             sprintf(str, "Cannot open file \"%s\"", filename);
