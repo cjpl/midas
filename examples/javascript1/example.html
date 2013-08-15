@@ -7,38 +7,6 @@
 
     <script type="text/javascript">
 
-      function ODBMCopy(paths, callback, format)
-      {
-      var request = XMLHttpRequestGeneric();
-      
-      var url = '?cmd=jcopy';
-      for (var i=0 ; i<paths.length ; i++) {
-      url += '&odb'+i+'='+paths[i];
-      }
-
-      if (format != undefined && format != '')
-      url += '&format=' + format;
-
-      if (callback != undefined) {
-      request.onreadystatechange = function() 
-      {
-      if (request.readyState == 4) {
-      if (request.status == 200) {
-      var array = request.responseText.split('$#----#$\n');
-      callback(request.responseText);
-      }
-      }
-      }
-      request.open('GET', url, true);
-      request.send(null);
-      return;
-      }
-
-      request.open('GET', url, false);
-      request.send(null);
-      return request.responseText;
-      }
-
       function htmlize(text)
       {
       // Escape the angle brackets for display in HTML
@@ -69,7 +37,7 @@
 
       function copy_example()
       {
-      var data_odb = ODBCopy("/Equipment/RpcExample");
+      var data_odb = ODBCopy("/Equipment/RpcExample", "odb");
       document.getElementById('copy_target_odb').innerHTML = htmlize(data_odb);
 
       var data_xml = ODBCopy("/Equipment/RpcExample", "xml");
@@ -136,7 +104,7 @@
 
       document.getElementById('mcopy_paths').innerHTML = JSON.stringify(paths);
 
-      var data_odb = ODBMCopy(paths, undefined, '');
+      var data_odb = ODBMCopy(paths, undefined, 'odb');
       document.getElementById('mcopy_target_odb').innerHTML = htmlize(data_odb);
 
       var data_xml = ODBMCopy(paths, undefined, 'xml');
@@ -486,7 +454,7 @@ ODBEdit(path); --- undoc - forces page reload
     <address><a href="mailto:xxx@xxx">MIDAS Example</a></address>
 <!-- Created: Tue Sep 21 15:44:39 PDT 2010 -->
 <!-- hhmts start -->
-Last modified: Fri May 31 13:13:15 PDT 2013
+Last modified: Thu Aug 15 16:34:52 PDT 2013
 <!-- hhmts end -->
   </body>
 </html>
