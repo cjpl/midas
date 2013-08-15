@@ -15,11 +15,12 @@
 #include <string>
 #include <vector>
 
+#include "midas.h"
+
 /// \file history.h
 ///
 
 class MidasHistoryInterface;
-class MidasSqlInterface;
 
 // "factory" pattern
 
@@ -27,12 +28,30 @@ MidasHistoryInterface* MakeMidasHistory();
 MidasHistoryInterface* MakeMidasHistoryODBC();
 MidasHistoryInterface* MakeMidasHistorySqlDebug();
 
+#define HS_GET_READER   1
+#define HS_GET_WRITER   2
+#define HS_GET_INACTIVE 4
+#define HS_GET_DEFAULT  8
+
+// construct history interface class from logger history channel definition in /Logger/History/0/...
+int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistoryInterface **mh);
+
 // MIDAS history interface class
 
 class MidasHistoryInterface
 {
  public:
-  virtual ~MidasHistoryInterface() { };
+   char name[NAME_LENGTH]; /// history channel name
+   char type[NAME_LENGTH]; /// history type: MIDAS, ODBC, SQLITE, etc
+
+ public:
+   MidasHistoryInterface() // ctor
+      {
+         name[0] = 0;
+         type[0] = 0;
+      }
+
+   virtual ~MidasHistoryInterface() { }; // dtor
 
  public:
   virtual int hs_connect(const char* connect_string) = 0; ///< returns HS_SUCCESS

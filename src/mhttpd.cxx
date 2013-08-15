@@ -9855,69 +9855,34 @@ int time_to_sec(const char *str)
 
 /*------------------------------------------------------------------*/
 
-static MidasHistoryInterface* mh = NULL;
-static bool using_odbc = 0;
-
-static void set_history_path()
+static MidasHistoryInterface* get_history(bool reset = false)
 {
    int status;
    HNDLE hDB;
+   static MidasHistoryInterface* mh = NULL;
 
-   cm_get_experiment_database(&hDB, NULL);
-
-#ifdef HAVE_ODBC
-   /* check ODBC connection */
-   char str[256];
-   int size = sizeof(str);
-   str[0] = 0;
-   status = db_get_value(hDB, 0, "/History/ODBC_DSN", str, &size, TID_STRING, TRUE);
-   if ((status==DB_SUCCESS || status==DB_TRUNCATED) && str[0]!=0 && str[0]!='#') {
-
-      if (!using_odbc)
-         if (mh) {
-            delete mh;
-            mh = NULL;
-         }
-
-      if (!mh)
-         mh = MakeMidasHistoryODBC();
-
-      using_odbc = true;
-
-      int debug = 0;
-      size = sizeof(debug);
-      status = db_get_value(hDB, 0, "/History/ODBC_Debug", &debug, &size, TID_INT, TRUE);
-      assert(status==DB_SUCCESS);
-
-      mh->hs_set_debug(debug);
-
-      status = mh->hs_connect(str);
-
-      if (status != HS_SUCCESS) {
-         cm_msg(MERROR, "set_history_path", "Cannot connect to history database, hs_connect() status %d", status);
-      }
-
-   } else {
-      if (using_odbc)
-         if (mh) {
-            delete mh;
-            mh = NULL;
-
-         }
-      using_odbc = false;
+   if (reset && mh) {
+      mh->hs_disconnect();
+      delete mh;
+      mh = NULL;
    }
-#endif
 
-   if (!using_odbc) {
-      if (!mh)
-         mh = MakeMidasHistory();
+   if (mh)
+      return mh;
 
-      status = mh->hs_connect(NULL);
+   status = cm_get_experiment_database(&hDB, NULL);
+   assert(status == CM_SUCCESS);
 
-      if (status != HS_SUCCESS) {
-         cm_msg(MERROR, "set_history_path", "Cannot connect to midas history, hs_connect() status %d", status);
-      }
+   status = hs_get_history(hDB, 0, HS_GET_READER|HS_GET_INACTIVE|HS_GET_DEFAULT, verbose, &mh);
+   if (status != HS_SUCCESS || mh==NULL) {
+      cm_msg(MERROR, "get_history", "Cannot configure history, hs_get_history() status %d", status);
+      mh = NULL;
+      return NULL;
    }
+
+   cm_msg(MINFO, "get_history", "Reading history from channel \'%s\' type \'%s\'", mh->name, mh->type);
+
+   return mh;
 }
 
 /*------------------------------------------------------------------*/
@@ -10006,7 +9971,11 @@ int read_history(HNDLE hDB, const char *path, int index, int runmarker, time_t t
    // printf("read_history, path %s, index %d, runmarker %d, start %d, end %d, scale %d, data %p\n", path, index, runmarker, (int)tstart, (int)tend, (int)scale, data);
 
    /* connect to history */
-   set_history_path();
+   MidasHistoryInterface* mh = get_history();
+   if (mh == NULL) {
+      //rsprintf(str, "History is not configured\n");
+      return HS_FILE_ERROR;
+   }
 
    /* check panel name in ODB */
    status = db_find_key(hDB, 0, "/History/Display", &hkey);
@@ -10207,7 +10176,12 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
                  panel, fgcol);
 
    /* connect to history */
-   set_history_path();
+   MidasHistoryInterface *mh = get_history();
+   if (mh == NULL) {
+      sprintf(str, "History is not configured, see messages");
+      gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2, height / 2, str, red);
+      goto error;
+   }
 
    /* check panel name in ODB */
    sprintf(str, "/History/Display/%s", panel);
@@ -11603,6 +11577,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
 
    if (equal_ustring(cmd, "Clear history cache")) {
       strcpy(cmd, "refresh");
+      MidasHistoryInterface* mh = get_history();
       if (mh)
          mh->hs_clear_cache();
    }
@@ -11902,7 +11877,11 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
 
    /* get display event name */
 
-   set_history_path();
+   MidasHistoryInterface* mh = get_history();
+   if (mh == NULL) {
+      rsprintf(str, "History is not configured\n");
+      return;
+   }
 
    std::vector<std::string> events;
    mh->hs_get_events(&events);
@@ -13322,6 +13301,24 @@ void send_css()
    get_resource_dir(filename, sizeof(filename));
    strlcat(filename, "mhttpd.css", sizeof(filename));
    fh = open(filename, O_RDONLY | O_BINARY);
+   
+   if (fh <= 0 && getenv("MIDAS_DIR")) {
+      strlcpy(filename, getenv("MIDAS_DIR"), sizeof(filename));
+      if (filename[strlen(filename)-1] != DIR_SEPARATOR)
+         strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
+      strlcat(filename, "resources/mhttpd.css", sizeof(filename));
+      fh = open(filename, O_RDONLY | O_BINARY);
+   }
+   
+   if (fh <= 0) {
+      strlcpy(filename, "resources/mhttpd.css", sizeof(filename));
+      fh = open(filename, O_RDONLY | O_BINARY);
+   }
+   
+   if (fh <= 0) {
+      strlcpy(filename, "mhttpd.css", sizeof(filename));
+      fh = open(filename, O_RDONLY | O_BINARY);
+   }
    
    if (fh > 0) {
       fstat(fh, &stat_buf);
