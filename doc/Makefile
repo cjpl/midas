@@ -26,10 +26,10 @@ noindex::	images/done
 html: index rmtmp images/done
 	doxygen
 #	Javascript : copy files and required images to html
-	cp src/*.js html/.
-	cp src/*.css html/.
-	#cp images/page_*.gif html/.
-	#cp images/section_*.gif html/.
+	#cp src/*.js html/.
+	#cp src/*.css html/.
+	cp images/page_*.gif html/.
+	cp images/section_*.gif html/.
 
 images/done: midasdoc-images.tar.gz
 	tar xzvf midasdoc-images.tar.gz
