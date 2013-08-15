@@ -1383,7 +1383,29 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
             cm_msg(MINFO, "hs_get_history", "Connected history channel \'%s\' type ODBC (MySQL), DSN \'%s\'", key.name, dsn);
       }
    } else if (strcasecmp(type, "SQLITE")==0) {
+
+      char path[1024];
+      path[0] = 0;
       
+      size = sizeof(path);
+      //strlcpy(path, ".", sizeof(path));
+      status = db_get_value(hDB, hKey, "Sqlite dir", path, &size, TID_STRING, TRUE);
+      assert(status == DB_SUCCESS);
+      if (active || (flags & HS_GET_INACTIVE)) {
+         *mh = MakeMidasHistorySqlite();
+         assert(*mh);
+         
+         (*mh)->hs_set_debug(debug);
+         
+         status = (*mh)->hs_connect(path);
+         if (status != HS_SUCCESS) {
+            cm_msg(MERROR, "hs_get_history", "Cannot connect to SQLITE history, status %d", status);
+            return status;
+         }
+         
+         if (debug_flag)
+            cm_msg(MINFO, "hs_get_history", "Connected history channel \'%s\' type SQLITE in %s", key.name, path);
+      }
    }
 
    if (*mh == NULL)
