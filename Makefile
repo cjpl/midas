@@ -74,7 +74,7 @@ endif
 HAVE_ODBC := $(shell if [ -e /usr/include/sql.h ]; then echo 1; fi)
 
 #
-# Optional ODBC history support
+# Optional SQLITE history support
 #
 HAVE_SQLITE := $(shell if [ -e /usr/include/sqlite3.h ]; then echo 1; fi)
 
@@ -402,9 +402,6 @@ endif
 ifdef HAVE_SQLITE
 CFLAGS      += -DHAVE_SQLITE
 SQLITE_LIBS += -lsqlite3
-ifeq ($(OSTYPE),darwin)
-#ODBC_LIBS   += /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation
-endif
 endif
 
 ifdef ROOTSYS
