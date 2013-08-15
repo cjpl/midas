@@ -55,6 +55,8 @@
 		D570599D1798722600DA5416 /* midas.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = midas.h; path = "/midas//include/midas.h"; sourceTree = "<absolute>"; };
 		D570599E1798722600DA5416 /* midasinc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = midasinc.h; path = /midas/include/midasinc.h; sourceTree = "<absolute>"; };
 		D570599F1798722600DA5416 /* msystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = msystem.h; path = /midas/include/msystem.h; sourceTree = "<absolute>"; };
+		D5BE377E17BCE2B3004233D8 /* mhttpd.css */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.css; name = mhttpd.css; path = /midas/resources/mhttpd.css; sourceTree = "<absolute>"; };
+		D5BE377F17BCE2B3004233D8 /* mhttpd.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; name = mhttpd.js; path = /midas/resources/mhttpd.js; sourceTree = "<absolute>"; };
 		D5F40E041798757A004CBF77 /* mscb.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mscb.c; path = /midas/mscb/mscb.c; sourceTree = "<absolute>"; };
 		D5F40E0617987593004CBF77 /* mscbrpc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mscbrpc.c; path = /midas/mscb/mscbrpc.c; sourceTree = "<absolute>"; };
 		D5F40E08179875A6004CBF77 /* mscb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mscb.h; path = /midas/mscb/mscb.h; sourceTree = "<absolute>"; };
@@ -91,6 +93,7 @@
 		D570596517986E2F00DA5416 /* mhttpd */ = {
 			isa = PBXGroup;
 			children = (
+				D5BE377D17BCE29C004233D8 /* Resources */,
 				D570598617986EFF00DA5416 /* Sources */,
 				D570598517986EF300DA5416 /* Includes */,
 			);
@@ -129,6 +132,15 @@
 				D5705991179871EA00DA5416 /* system.c */,
 			);
 			name = Sources;
+			sourceTree = "<group>";
+		};
+		D5BE377D17BCE29C004233D8 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				D5BE377E17BCE2B3004233D8 /* mhttpd.css */,
+				D5BE377F17BCE2B3004233D8 /* mhttpd.js */,
+			);
+			name = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
