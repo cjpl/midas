@@ -510,6 +510,14 @@ public:
 
    /*------------------------------------------------------------------*/
 
+   int hs_flush_buffers()
+   {
+      //printf("hs_flush_buffers!\n");
+      return HS_SUCCESS;
+   }
+
+   /*------------------------------------------------------------------*/
+
    int GetEventsFromOdbEvents(std::vector<std::string> *events)
    {
       HNDLE hKeyRoot;
@@ -1025,6 +1033,15 @@ public:
 
    /*------------------------------------------------------------------*/
 
+   int hs_get_last_written(int num_var, const char* const event_name[], const char* const tag_name[], const int var_index[], time_t last_written[])
+   {
+      for (int i=0; i<num_var; i++)
+         last_written[i] = 0;
+      return HS_FILE_ERROR;
+   }
+
+   /*------------------------------------------------------------------*/
+
    int hs_read(time_t start_time, time_t end_time, time_t interval,
                int num_var,
                const char* const event_name[], const char* const tag_name[], const int var_index[],
@@ -1146,6 +1163,56 @@ public:
 
       return HS_SUCCESS;
    }
+
+   /*------------------------------------------------------------------*/
+
+   int hs_read2(time_t start_time, time_t end_time, time_t interval,
+                int num_var,
+                const char* const event_name[], const char* const tag_name[], const int var_index[],
+                int num_entries[],
+                time_t* time_buffer[],
+                double* mean_buffer[],
+                double* rms_buffer[],
+                double* min_buffer[],
+                double* max_buffer[],
+                int read_status[])
+   {
+      int status = hs_read(start_time, end_time, interval, num_var, event_name, tag_name, var_index, num_entries, time_buffer, mean_buffer, read_status);
+
+      for (int i=0; i<num_var; i++) {
+         int num = num_entries[i];
+         rms_buffer[i] = (double*)malloc(sizeof(double)*num);
+         min_buffer[i] = (double*)malloc(sizeof(double)*num);
+         max_buffer[i] = (double*)malloc(sizeof(double)*num);
+
+         for (int j=0; j<num; j++) {
+            rms_buffer[i][j] = 0;
+            min_buffer[i][j] = mean_buffer[i][j];
+            max_buffer[i][j] = mean_buffer[i][j];
+         }
+      }
+      
+      return status;
+   }
+
+   int hs_read_buffer(time_t start_time, time_t end_time,
+                      int num_var, const char* const event_name[], const char* const tag_name[], const int var_index[],
+                      MidasHistoryBufferInterface* buffer[],
+                      int status[])
+   {
+      return HS_FILE_ERROR;
+   }
+   
+   int hs_read_binned(time_t start_time, time_t end_time, int num_bins,
+                      int num_var, const char* const event_name[], const char* const tag_name[], const int var_index[],
+                      int num_entries[],
+                      int* count_bins[], double* mean_bins[], double* rms_bins[], double* min_bins[], double* max_bins[],
+                      time_t last_time[], double last_value[],
+                      int status[])
+   {
+      return HS_FILE_ERROR;
+   }
+
 }; // end class
 
 MidasHistoryInterface* MakeMidasHistory()

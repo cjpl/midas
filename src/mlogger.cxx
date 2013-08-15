@@ -3353,6 +3353,26 @@ INT open_history()
    return CM_SUCCESS;
 }
 
+/*---- periodically flush history buffers----------------------------*/
+
+DWORD last_history_flush = 0;
+
+void maybe_flush_history(DWORD now)
+{
+   DWORD flush_period_sec = 10;
+
+   if ((last_history_flush==0) || (now > last_history_flush + flush_period_sec)) {
+
+      if (verbose)
+	 printf("flush history buffers!\n");
+
+      for (unsigned h=0; h<mh.size(); h++)
+	 mh[h]->hs_flush_buffers();
+
+      last_history_flush = now;
+   }
+}
+
 /*---- close_history -----------------------------------------------*/
 
 void close_history()
@@ -3398,8 +3418,10 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info)
    if (i == hist_log_max)
       return;
 
+   DWORD now = ss_time();
+
    /* check if over period */
-   if (ss_time() - hist_log[i].last_log < hist_log[i].period)
+   if (now - hist_log[i].last_log < hist_log[i].period)
       return;
 
    /* check if event size has changed */
@@ -3415,7 +3437,7 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info)
       return;
    }
 
-   hist_log[i].last_log = ss_time();
+   hist_log[i].last_log = now;
 
    if (verbose)
       printf("write history event: \'%s\', timestamp %d, buffer %p, size %d\n", hist_log[i].event_name, hist_log[i].last_log, hist_log[i].buffer, hist_log[i].buffer_size);
@@ -3426,6 +3448,8 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info)
          if (status != HS_SUCCESS)
             printf("hs_write_event() status %d\n", status);
    }
+
+   maybe_flush_history(now);
 }
 
 /*------------------------------------------------------------------*/
@@ -3438,8 +3462,10 @@ void log_system_history(HNDLE hDB, HNDLE hKey, void *info)
 
    index = (INT) (POINTER_T) info;
 
+   DWORD now = ss_time();
+
    /* check if over period */
-   if (ss_time() - hist_log[index].last_log < hist_log[index].period)
+   if (now - hist_log[index].last_log < hist_log[index].period)
       return;
 
    for (i = 0, total_size = 0;; i++) {
@@ -3476,6 +3502,7 @@ void log_system_history(HNDLE hDB, HNDLE hKey, void *info)
       db_unlock_database(hDB);
    }
 
+   maybe_flush_history(now);
 }
 
 /*------------------------------------------------------------------*/
@@ -4434,6 +4461,9 @@ int main(int argc, char *argv[])
          last_time_stat = ss_millitime();
          db_send_changed_records();
       }
+
+      /* maybe flush history buffers */
+      maybe_flush_history(ss_time());
 
       /* check for auto restart */
       if (auto_restart && ss_time() > auto_restart) {
