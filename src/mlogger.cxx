@@ -3488,7 +3488,7 @@ void log_system_history(HNDLE hDB, HNDLE hKey, void *info)
          exit(1);
       }
    } else {
-      hist_log[index].last_log = ss_time();
+      hist_log[index].last_log = now;
 
       for (unsigned h=0; h<mh.size(); h++)
          mh[h]->hs_write_event(hist_log[index].event_name, hist_log[index].last_log, hist_log[index].buffer_size, hist_log[index].buffer);
