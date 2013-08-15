@@ -1386,11 +1386,12 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
 
       char path[1024];
       path[0] = 0;
-      
+
       size = sizeof(path);
       //strlcpy(path, ".", sizeof(path));
       status = db_get_value(hDB, hKey, "Sqlite dir", path, &size, TID_STRING, TRUE);
       assert(status == DB_SUCCESS);
+
       if (active || (flags & HS_GET_INACTIVE)) {
          *mh = MakeMidasHistorySqlite();
          assert(*mh);
@@ -1417,4 +1418,10 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
    return HS_SUCCESS;
 }
 
-// end
+/* emacs
+ * Local Variables:
+ * tab-width: 8
+ * c-basic-offset: 3
+ * indent-tabs-mode: nil
+ * End:
+ */
