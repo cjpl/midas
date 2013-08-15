@@ -189,7 +189,7 @@ input[type=button].navButton {
 	font-size: 100%;
 
 	border: 1px solid #808080;
-   border-bottom: 0px;
+   border-bottom: 1px solid #808080;
    border-top-right-radius: 15px;
    border-bottom-left-radius: 0px;
    border-bottom-right-radius: 0px;
@@ -199,8 +199,9 @@ input[type=button].navButton {
 input[type=button].navButtonSel {
    color: #F8F8F8;
 	font-size: 100%;
+   margin-bottom:0px;
 	border: 1px solid #808080;
-   border-bottom: 0px;
+   border-bottom: 2px double #808080;
    border-top-right-radius: 15px;
    border-bottom-left-radius: 0px;
    border-bottom-right-radius: 0px;
