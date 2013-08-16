@@ -164,16 +164,19 @@
   </head>
 
   <body>
-    <h1>Example MIDAS Javascript functions</h1>
+    <h1>Examples for MIDAS Javascript functions</h1>
 
     <h2>List of mhttpd.js functions</h2>
+
+    <p>For full documentation, go here: https://midas.triumf.ca/MidasWiki/index.php/Mhttpd.js</p>
+    <p>List of functions used in this example:</p>
     <pre>
 ODBSet(path, value, pwdname);
 ODBGet(path, format, defval, len, type);
-ODBMGet(paths, callback, formats); --- doc incomplete - no example of callback() use
+ODBMGet(paths, callback, formats);
 ODBGetRecord(path);
 ODBExtractRecord(record, key);
-new ODBKey(path); --- doc incomplete, wrong - one has to use "new ODBKey" - last_used was added.
+new ODBKey(path);
 ODBCopy(path, format); -- no doc. Format: "xml", "json", "" (traditional odb format)
 ODBMCopy(paths, callback, format); -- no doc
 ODBRpc_rev0(name, rpc, args); --- doc refer to example
@@ -453,8 +456,6 @@ ODBEdit(path); --- undoc - forces page reload
     <hr>
     <address><a href="mailto:xxx@xxx">MIDAS Example</a></address>
 <!-- Created: Tue Sep 21 15:44:39 PDT 2010 -->
-<!-- hhmts start -->
-Last modified: Thu Aug 15 16:34:52 PDT 2013
-<!-- hhmts end -->
+<!-- hhmts start -->Last modified: Thu Aug 15 23:29:24 PDT 2013 <!-- hhmts end -->
   </body>
 </html>
