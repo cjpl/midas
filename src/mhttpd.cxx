@@ -921,13 +921,38 @@ void show_help_page()
    rsprintf("      <table>\n");
 
    rsprintf("        <tr>\n");
-   rsprintf("          <td style=\"text-align:right;\">Experiment:</td>\n");
+   rsprintf("          <td style=\"text-align:right;\">Documentation:</td>\n");
+   rsprintf("          <td style=\"text-align:left;\"><a href=\"https://midas.triumf.ca\">https://midas.triumf.ca</a></td>\n");
+   rsprintf("        </tr>\n");
+   rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\">Discussion Forum:</td>\n");
+   rsprintf("          <td style=\"text-align:left;\"><a href=\"https://midas.triumf.ca/elog/Midas/\">https://midas.triumf.ca/elog/Midas/</a></td>\n");
+   rsprintf("        </tr>\n");
+   rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\">Code:</td>\n");
+   rsprintf("          <td style=\"text-align:left;\"><a href=\"https://bitbucket.org/tmidas/midas/\">https://bitbucket.org/tmidas/midas/</a></td>\n");
+   rsprintf("        </tr>\n");
+
+   rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\"><hr />Version:</td>\n");
+   rsprintf("          <td style=\"text-align:left;\">%s</td>\n", cm_get_version());
+   rsprintf("        </tr>\n");
+   rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\">Revision:</td>\n");
+   strlcpy(str, "https://bitbucket.org/tmidas/midas/commits/all?search=", sizeof(str));
+   if (strrchr(cm_get_revision(), '-'))
+      strlcat(str, strrchr(cm_get_revision(), '-')+2, sizeof(str));
+   rsprintf("          <td style=\"text-align:left;\"><a href=\"%s\">%s</a></td>\n", str, cm_get_revision());
+   rsprintf("        </tr>\n");
+   
+   rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\"><hr />Experiment:</td>\n");
    cm_get_experiment_name(str, sizeof(str));
    rsprintf("          <td style=\"text-align:left;\">%s</td>\n", str);
    rsprintf("        </tr>\n");
    
    rsprintf("        <tr>\n");
-   rsprintf("          <td style=\"text-align:right;\">MIDAS_EXPTAB:</td>\n");
+   rsprintf("          <td style=\"text-align:right;\"><hr />MIDAS_EXPTAB:</td>\n");
    s = getenv("MIDAS_EXPTAB");
    if (!s) s = "";
    strlcpy(str, s, sizeof(str));
@@ -956,29 +981,6 @@ void show_help_page()
    rsprintf("          <td style=\"text-align:left;\">%s</td>\n", str);
    rsprintf("        </tr>\n");
 
-   rsprintf("        <tr>\n");
-   rsprintf("          <td style=\"text-align:right;\">Documentation:</td>\n");
-   rsprintf("          <td style=\"text-align:left;\"><a href=\"https://midas.triumf.ca\">https://midas.triumf.ca</a></td>\n");
-   rsprintf("        </tr>\n");
-   rsprintf("        <tr>\n");
-   rsprintf("          <td style=\"text-align:right;\">Discussion Forum:</td>\n");
-   rsprintf("          <td style=\"text-align:left;\"><a href=\"https://midas.triumf.ca/elog/Midas/\">https://midas.triumf.ca/elog/Midas/</a></td>\n");
-   rsprintf("        </tr>\n");
-   rsprintf("        <tr>\n");
-   rsprintf("          <td style=\"text-align:right;\">Code:</td>\n");
-   rsprintf("          <td style=\"text-align:left;\"><a href=\"https://bitbucket.org/tmidas/midas/\">https://bitbucket.org/tmidas/midas/</a></td>\n");
-   rsprintf("        </tr>\n");
-   rsprintf("        <tr>\n");
-   rsprintf("          <td style=\"text-align:right;\">Version:</td>\n");
-   rsprintf("          <td style=\"text-align:left;\">%s</td>\n", cm_get_version());
-   rsprintf("        </tr>\n");
-   rsprintf("        <tr>\n");
-   rsprintf("          <td style=\"text-align:right;\">Revision:</td>\n");
-   strlcpy(str, "https://bitbucket.org/tmidas/midas/commits/all?search=", sizeof(str));
-   if (strrchr(cm_get_revision(), '-'))
-      strlcat(str, strrchr(cm_get_revision(), '-')+2, sizeof(str));
-   rsprintf("          <td style=\"text-align:left;\"><a href=\"%s\">%s</a></td>\n", str, cm_get_revision());
-   rsprintf("        </tr>\n");
    rsprintf("      </table>\n");
    rsprintf("    </td>\n");
    rsprintf("  </tr>\n");
