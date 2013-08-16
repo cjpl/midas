@@ -7,38 +7,6 @@
 
     <script type="text/javascript">
 
-      function ODBMCopy(paths, callback, format)
-      {
-      var request = XMLHttpRequestGeneric();
-      
-      var url = '?cmd=jcopy';
-      for (var i=0 ; i<paths.length ; i++) {
-      url += '&odb'+i+'='+paths[i];
-      }
-
-      if (format != undefined && format != '')
-      url += '&format=' + format;
-
-      if (callback != undefined) {
-      request.onreadystatechange = function() 
-      {
-      if (request.readyState == 4) {
-      if (request.status == 200) {
-      var array = request.responseText.split('$#----#$\n');
-      callback(request.responseText);
-      }
-      }
-      }
-      request.open('GET', url, true);
-      request.send(null);
-      return;
-      }
-
-      request.open('GET', url, false);
-      request.send(null);
-      return request.responseText;
-      }
-
       function htmlize(text)
       {
       // Escape the angle brackets for display in HTML
@@ -69,7 +37,7 @@
 
       function copy_example()
       {
-      var data_odb = ODBCopy("/Equipment/RpcExample");
+      var data_odb = ODBCopy("/Equipment/RpcExample", "odb");
       document.getElementById('copy_target_odb').innerHTML = htmlize(data_odb);
 
       var data_xml = ODBCopy("/Equipment/RpcExample", "xml");
@@ -136,7 +104,7 @@
 
       document.getElementById('mcopy_paths').innerHTML = JSON.stringify(paths);
 
-      var data_odb = ODBMCopy(paths, undefined, '');
+      var data_odb = ODBMCopy(paths, undefined, 'odb');
       document.getElementById('mcopy_target_odb').innerHTML = htmlize(data_odb);
 
       var data_xml = ODBMCopy(paths, undefined, 'xml');
@@ -196,16 +164,19 @@
   </head>
 
   <body>
-    <h1>Example MIDAS Javascript functions</h1>
+    <h1>Examples for MIDAS Javascript functions</h1>
 
     <h2>List of mhttpd.js functions</h2>
+
+    <p>For full documentation, go here: https://midas.triumf.ca/MidasWiki/index.php/Mhttpd.js</p>
+    <p>List of functions used in this example:</p>
     <pre>
 ODBSet(path, value, pwdname);
 ODBGet(path, format, defval, len, type);
-ODBMGet(paths, callback, formats); --- doc incomplete - no example of callback() use
+ODBMGet(paths, callback, formats);
 ODBGetRecord(path);
 ODBExtractRecord(record, key);
-new ODBKey(path); --- doc incomplete, wrong - one has to use "new ODBKey" - last_used was added.
+new ODBKey(path);
 ODBCopy(path, format); -- no doc. Format: "xml", "json", "" (traditional odb format)
 ODBMCopy(paths, callback, format); -- no doc
 ODBRpc_rev0(name, rpc, args); --- doc refer to example
@@ -485,8 +456,6 @@ ODBEdit(path); --- undoc - forces page reload
     <hr>
     <address><a href="mailto:xxx@xxx">MIDAS Example</a></address>
 <!-- Created: Tue Sep 21 15:44:39 PDT 2010 -->
-<!-- hhmts start -->
-Last modified: Fri May 31 13:13:15 PDT 2013
-<!-- hhmts end -->
+<!-- hhmts start -->Last modified: Thu Aug 15 23:29:24 PDT 2013 <!-- hhmts end -->
   </body>
 </html>

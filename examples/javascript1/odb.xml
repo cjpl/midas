@@ -1,13 +1,28 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<!-- created by MXML on Fri May 17 09:08:25 2013 -->
-<odb root="/" filename="odb.xml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/home/olchansk/packages/midas/odb.xsd">
+<!-- created by MXML on Thu Aug 15 16:50:45 2013 -->
+<odb root="/" filename="odb.xml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../..//odb.xsd">
   <dir name="System">
     <dir name="Clients">
-      <dir name="3928">
-        <key name="Name" type="STRING" size="32">Logger</key>
-        <key name="Host" type="STRING" size="256">ladd03.triumf.ca</key>
+      <dir name="12699">
+        <key name="Name" type="STRING" size="32">fejrpc</key>
+        <key name="Host" type="STRING" size="256">ladd00.triumf.ca</key>
         <key name="Hardware type" type="INT">44</key>
-        <key name="Server Port" type="INT">33487</key>
+        <key name="Server Port" type="INT">36527</key>
+        <key name="Transition START" type="INT">500</key>
+        <key name="Transition STOP" type="INT">500</key>
+        <key name="Transition PAUSE" type="INT">500</key>
+        <key name="Transition RESUME" type="INT">500</key>
+        <key name="Run state" type="INT">0</key>
+        <dir name="RPC">
+          <key name="101" type="BOOL">y</key>
+          <key name="102" type="BOOL">y</key>
+        </dir>
+      </dir>
+      <dir name="12706">
+        <key name="Name" type="STRING" size="32">Logger</key>
+        <key name="Host" type="STRING" size="256">ladd00.triumf.ca</key>
+        <key name="Hardware type" type="INT">44</key>
+        <key name="Server Port" type="INT">52894</key>
         <key name="Transition START" type="INT">200</key>
         <key name="Transition STARTABORT" type="INT">800</key>
         <key name="Transition STOP" type="INT">800</key>
@@ -17,25 +32,11 @@
           <key name="14000" type="BOOL">y</key>
         </dir>
       </dir>
-      <dir name="3929">
-        <key name="Name" type="STRING" size="32">fejrpc</key>
-        <key name="Host" type="STRING" size="256">ladd03.triumf.ca</key>
-        <key name="Hardware type" type="INT">44</key>
-        <key name="Server Port" type="INT">60252</key>
-        <key name="Transition START" type="INT">500</key>
-        <key name="Transition STOP" type="INT">500</key>
-        <key name="Transition PAUSE" type="INT">500</key>
-        <key name="Transition RESUME" type="INT">500</key>
-        <dir name="RPC">
-          <key name="101" type="BOOL">y</key>
-          <key name="102" type="BOOL">y</key>
-        </dir>
-      </dir>
-      <dir name="13439">
+      <dir name="17158">
         <key name="Name" type="STRING" size="32">ODBEdit</key>
-        <key name="Host" type="STRING" size="256">ladd03.triumf.ca</key>
+        <key name="Host" type="STRING" size="256">ladd00.triumf.ca</key>
         <key name="Hardware type" type="INT">44</key>
-        <key name="Server Port" type="INT">49394</key>
+        <key name="Server Port" type="INT">53478</key>
       </dir>
     </dir>
     <dir name="Tmp"/>
@@ -43,17 +44,6 @@
     <key name="Prompt" type="STRING" size="256">[%h:%e:%s]%p&gt;</key>
   </dir>
   <dir name="Programs">
-    <dir name="mhttpd">
-      <key name="Required" type="BOOL">n</key>
-      <key name="Watchdog timeout" type="INT">10000</key>
-      <key name="Check interval" type="DWORD">180000</key>
-      <key name="Start command" type="STRING" size="256"></key>
-      <key name="Auto start" type="BOOL">n</key>
-      <key name="Auto stop" type="BOOL">n</key>
-      <key name="Auto restart" type="BOOL">n</key>
-      <key name="Alarm class" type="STRING" size="32"></key>
-      <key name="First failed" type="DWORD">1368806897</key>
-    </dir>
     <dir name="ODBEdit">
       <key name="Required" type="BOOL">n</key>
       <key name="Watchdog timeout" type="INT">10000</key>
@@ -76,6 +66,28 @@
       <key name="Alarm class" type="STRING" size="32"></key>
       <key name="First failed" type="DWORD">0</key>
     </dir>
+    <dir name="mhttpd">
+      <key name="Required" type="BOOL">n</key>
+      <key name="Watchdog timeout" type="INT">10000</key>
+      <key name="Check interval" type="DWORD">180000</key>
+      <key name="Start command" type="STRING" size="256"></key>
+      <key name="Auto start" type="BOOL">n</key>
+      <key name="Auto stop" type="BOOL">n</key>
+      <key name="Auto restart" type="BOOL">n</key>
+      <key name="Alarm class" type="STRING" size="32"></key>
+      <key name="First failed" type="DWORD">1376610618</key>
+    </dir>
+    <dir name="mhist">
+      <key name="Required" type="BOOL">n</key>
+      <key name="Watchdog timeout" type="INT">10000</key>
+      <key name="Check interval" type="DWORD">180000</key>
+      <key name="Start command" type="STRING" size="256"></key>
+      <key name="Auto start" type="BOOL">n</key>
+      <key name="Auto stop" type="BOOL">n</key>
+      <key name="Auto restart" type="BOOL">n</key>
+      <key name="Alarm class" type="STRING" size="32"></key>
+      <key name="First failed" type="DWORD">1376407751</key>
+    </dir>
     <dir name="fejrpc">
       <key name="Required" type="BOOL">y</key>
       <key name="Watchdog timeout" type="INT">60000</key>
@@ -94,16 +106,16 @@
       <key name="SYSMSG" type="DWORD">100000</key>
       <key name="SYSTEM" type="DWORD">8388608</key>
     </dir>
-    <key name="Menu Buttons" type="STRING" size="1000">Start, Pause, ODB, Messages, ELog, Alarms, Programs, History, MSCB, Config, Help</key>
+    <key name="Menu Buttons" type="STRING" size="1000">Start, Stop, ODB, Messages, ELog, Alarms, Programs, History, MSCB, Config, Help</key>
     <key name="MAX_EVENT_SIZE" type="DWORD">4194304</key>
   </dir>
   <dir name="Logger">
     <key name="Data dir" type="STRING" size="256">./</key>
     <key name="Message file" type="STRING" size="256">midas.log</key>
-    <key name="Auto restart" type="BOOL">n</key>
     <key name="Write data" type="BOOL">y</key>
     <key name="ODB Dump" type="BOOL">n</key>
     <key name="ODB Dump File" type="STRING" size="256">run%05d.odb</key>
+    <key name="Auto restart" type="BOOL">n</key>
     <key name="Auto restart delay" type="INT">0</key>
     <key name="Tape message" type="BOOL">y</key>
     <dir name="Channels">
@@ -137,6 +149,29 @@
         </dir>
       </dir>
     </dir>
+    <key name="Run duration" type="DWORD">0</key>
+    <dir name="History">
+      <dir name="0">
+        <key name="Type" type="STRING" size="32">MIDAS</key>
+        <key name="Active" type="BOOL">y</key>
+        <key name="Debug" type="INT">0</key>
+        <key name="PerVariableHistory" type="INT">0</key>
+      </dir>
+      <dir name="1">
+        <key name="Type" type="STRING" size="32">ODBC</key>
+        <key name="Active" type="BOOL">n</key>
+        <key name="Debug" type="INT">0</key>
+        <key name="ODBC_DSN" type="STRING" size="256">history_writer</key>
+        <key name="Writer_ODBC_DSN" type="STRING" size="256">history_writer</key>
+        <key name="Reader_ODBC_DSN" type="STRING" size="256">history_reader</key>
+      </dir>
+      <dir name="2">
+        <key name="Type" type="STRING" size="32">SQLITE</key>
+        <key name="Active" type="BOOL">n</key>
+        <key name="Debug" type="INT">0</key>
+        <key name="Sqlite dir" type="STRING" size="1024"></key>
+      </dir>
+    </dir>
     <dir name="SQL">
       <key name="Create database" type="BOOL">n</key>
       <key name="Write data" type="BOOL">n</key>
@@ -154,10 +189,6 @@
         <key name="Stop time" type="LINK" size="19">/Runinfo/Stop time</key>
       </dir>
     </dir>
-    <key name="WriteFileHistory" type="BOOL">y</key>
-    <key name="ODBC_Debug" type="INT">0</key>
-    <key name="ODBC_DSN" type="STRING" size="256"></key>
-    <key name="Run duration" type="DWORD">0</key>
   </dir>
   <dir name="Runinfo">
     <key name="State" type="INT">1</key>
@@ -170,6 +201,157 @@
     <key name="Start time binary" type="DWORD">0</key>
     <key name="Stop time" type="STRING" size="32">Tue Sep 09 15:04:42 1997</key>
     <key name="Stop time binary" type="DWORD">0</key>
+  </dir>
+  <dir name="Alarms">
+    <key name="Alarm system active" type="BOOL">y</key>
+    <dir name="Alarms">
+      <dir name="Demo ODB">
+        <key name="Active" type="BOOL">n</key>
+        <key name="Triggered" type="INT">0</key>
+        <key name="Type" type="INT">3</key>
+        <key name="Check interval" type="INT">60</key>
+        <key name="Checked last" type="DWORD">0</key>
+        <key name="Time triggered first" type="STRING" size="32"></key>
+        <key name="Time triggered last" type="STRING" size="32"></key>
+        <key name="Condition" type="STRING" size="256">/Runinfo/Run number &gt; 100</key>
+        <key name="Alarm Class" type="STRING" size="32">Alarm</key>
+        <key name="Alarm Message" type="STRING" size="80">Run number became too large</key>
+      </dir>
+      <dir name="Demo periodic">
+        <key name="Active" type="BOOL">n</key>
+        <key name="Triggered" type="INT">0</key>
+        <key name="Type" type="INT">4</key>
+        <key name="Check interval" type="INT">28800</key>
+        <key name="Checked last" type="DWORD">1367945901</key>
+        <key name="Time triggered first" type="STRING" size="32"></key>
+        <key name="Time triggered last" type="STRING" size="32"></key>
+        <key name="Condition" type="STRING" size="256"></key>
+        <key name="Alarm Class" type="STRING" size="32">Warning</key>
+        <key name="Alarm Message" type="STRING" size="80">Please do your shift checks</key>
+      </dir>
+      <dir name="Example alarm">
+        <key name="Active" type="BOOL">y</key>
+        <key name="Triggered" type="INT">1140</key>
+        <key name="Type" type="INT">4</key>
+        <key name="Check interval" type="INT">60</key>
+        <key name="Checked last" type="DWORD">1376610607</key>
+        <key name="Time triggered first" type="STRING" size="32">Thu May 16 13:59:30 2013</key>
+        <key name="Time triggered last" type="STRING" size="32">Thu Aug 15 16:50:07 2013</key>
+        <key name="Condition" type="STRING" size="256"></key>
+        <key name="Alarm Class" type="STRING" size="32">Warning</key>
+        <key name="Alarm Message" type="STRING" size="80">This is an example alarm</key>
+      </dir>
+    </dir>
+    <dir name="Classes">
+      <dir name="Alarm">
+        <key name="Write system message" type="BOOL">y</key>
+        <key name="Write Elog message" type="BOOL">n</key>
+        <key name="System message interval" type="INT">60</key>
+        <key name="System message last" type="DWORD">0</key>
+        <key name="Execute command" type="STRING" size="256"></key>
+        <key name="Execute interval" type="INT">0</key>
+        <key name="Execute last" type="DWORD">0</key>
+        <key name="Stop run" type="BOOL">n</key>
+        <key name="Display BGColor" type="STRING" size="32">red</key>
+        <key name="Display FGColor" type="STRING" size="32">black</key>
+      </dir>
+      <dir name="Warning">
+        <key name="Write system message" type="BOOL">y</key>
+        <key name="Write Elog message" type="BOOL">n</key>
+        <key name="System message interval" type="INT">60</key>
+        <key name="System message last" type="DWORD">1376610607</key>
+        <key name="Execute command" type="STRING" size="256"></key>
+        <key name="Execute interval" type="INT">0</key>
+        <key name="Execute last" type="DWORD">0</key>
+        <key name="Stop run" type="BOOL">n</key>
+        <key name="Display BGColor" type="STRING" size="32">red</key>
+        <key name="Display FGColor" type="STRING" size="32">black</key>
+      </dir>
+    </dir>
+  </dir>
+  <dir name="History">
+    <dir name="Links"/>
+    <dir name="Display">
+      <dir name="Default">
+        <dir name="Trigger rate">
+          <keyarray name="Variables" type="STRING" size="64" num_values="2">
+            <value index="0">System:Trigger per sec.</value>
+            <value index="1">System:Trigger kB per sec.</value>
+          </keyarray>
+          <key name="Time Scale" type="STRING" size="32">1h</key>
+          <keyarray name="Factor" type="FLOAT" num_values="2">
+            <value index="0">1</value>
+            <value index="1">1</value>
+          </keyarray>
+          <keyarray name="Offset" type="FLOAT" num_values="2">
+            <value index="0">0</value>
+            <value index="1">0</value>
+          </keyarray>
+          <key name="Timescale" type="STRING" size="32">1h</key>
+          <key name="Zero ylow" type="BOOL">y</key>
+          <key name="Show run markers" type="BOOL">y</key>
+          <keyarray name="Buttons" type="STRING" size="32" num_values="7">
+            <value index="0">10m</value>
+            <value index="1">1h</value>
+            <value index="2">3h</value>
+            <value index="3">12h</value>
+            <value index="4">24h</value>
+            <value index="5">3d</value>
+            <value index="6">7d</value>
+          </keyarray>
+          <key name="Log axis" type="BOOL">n</key>
+          <key name="Show values" type="BOOL">n</key>
+          <key name="Minimum" type="FLOAT">-inf</key>
+          <key name="Maximum" type="FLOAT">inf</key>
+        </dir>
+        <dir name="slow">
+          <key name="Timescale" type="STRING" size="32">10m</key>
+          <key name="Zero ylow" type="BOOL">y</key>
+          <key name="Show run markers" type="BOOL">y</key>
+          <key name="Show values" type="BOOL">y</key>
+          <key name="Sort Vars" type="BOOL">n</key>
+          <key name="Log axis" type="BOOL">n</key>
+          <key name="Minimum" type="FLOAT">0</key>
+          <key name="Maximum" type="FLOAT">0</key>
+          <key name="Variables" type="STRING" size="64">RpcExample:SLOW[2]</key>
+          <key name="Label" type="STRING" size="32"></key>
+          <key name="Colour" type="STRING" size="32">#0000FF</key>
+          <key name="Factor" type="FLOAT">1</key>
+          <key name="Offset" type="FLOAT">0</key>
+          <keyarray name="Buttons" type="STRING" size="32" num_values="7">
+            <value index="0">10m</value>
+            <value index="1">1h</value>
+            <value index="2">3h</value>
+            <value index="3">12h</value>
+            <value index="4">24h</value>
+            <value index="5">3d</value>
+            <value index="6">7d</value>
+          </keyarray>
+        </dir>
+      </dir>
+    </dir>
+    <key name="MaxDisplayEvents" type="INT">20</key>
+    <key name="MaxDisplayTags" type="INT">200</key>
+    <dir name="Display Settings">
+      <key name="Width Individual" type="STRING" size="256">640</key>
+    </dir>
+    <dir name="Events">
+      <key name="1" type="STRING" size="11">RpcExample</key>
+      <key name="0" type="STRING" size="16">Run transitions</key>
+    </dir>
+    <key name="DisableTags" type="BOOL">n</key>
+    <dir name="Tags">
+      <keyarray name="1" type="STRING" size="96" num_values="2">
+        <value index="0">RpcExample</value>
+        <value index="1">10[3] SLOW</value>
+      </keyarray>
+      <keyarray name="0" type="STRING" size="96" num_values="3">
+        <value index="0">Run transitions</value>
+        <value index="1">6[1] State</value>
+        <value index="2">6[1] Run number</value>
+      </keyarray>
+    </dir>
+    <key name="LoggerHistoryChannel" type="STRING" size="32">0</key>
   </dir>
   <dir name="Sequencer">
     <dir name="State">
@@ -264,142 +446,6 @@
       <key name="Last msg" type="STRING" size="10">00:00:00</key>
     </dir>
   </dir>
-  <dir name="Alarms">
-    <key name="Alarm system active" type="BOOL">y</key>
-    <dir name="Alarms">
-      <dir name="Demo ODB">
-        <key name="Active" type="BOOL">n</key>
-        <key name="Triggered" type="INT">0</key>
-        <key name="Type" type="INT">3</key>
-        <key name="Check interval" type="INT">60</key>
-        <key name="Checked last" type="DWORD">0</key>
-        <key name="Time triggered first" type="STRING" size="32"></key>
-        <key name="Time triggered last" type="STRING" size="32"></key>
-        <key name="Condition" type="STRING" size="256">/Runinfo/Run number &gt; 100</key>
-        <key name="Alarm Class" type="STRING" size="32">Alarm</key>
-        <key name="Alarm Message" type="STRING" size="80">Run number became too large</key>
-      </dir>
-      <dir name="Demo periodic">
-        <key name="Active" type="BOOL">n</key>
-        <key name="Triggered" type="INT">0</key>
-        <key name="Type" type="INT">4</key>
-        <key name="Check interval" type="INT">28800</key>
-        <key name="Checked last" type="DWORD">1367945901</key>
-        <key name="Time triggered first" type="STRING" size="32"></key>
-        <key name="Time triggered last" type="STRING" size="32"></key>
-        <key name="Condition" type="STRING" size="256"></key>
-        <key name="Alarm Class" type="STRING" size="32">Warning</key>
-        <key name="Alarm Message" type="STRING" size="80">Please do your shift checks</key>
-      </dir>
-      <dir name="Example alarm">
-        <key name="Active" type="BOOL">y</key>
-        <key name="Triggered" type="INT">1047</key>
-        <key name="Type" type="INT">4</key>
-        <key name="Check interval" type="INT">60</key>
-        <key name="Checked last" type="DWORD">1368806886</key>
-        <key name="Time triggered first" type="STRING" size="32">Thu May 16 13:59:30 2013</key>
-        <key name="Time triggered last" type="STRING" size="32">Fri May 17 09:08:06 2013</key>
-        <key name="Condition" type="STRING" size="256"></key>
-        <key name="Alarm Class" type="STRING" size="32">Warning</key>
-        <key name="Alarm Message" type="STRING" size="80">This is an example alarm</key>
-      </dir>
-    </dir>
-    <dir name="Classes">
-      <dir name="Alarm">
-        <key name="Write system message" type="BOOL">y</key>
-        <key name="Write Elog message" type="BOOL">n</key>
-        <key name="System message interval" type="INT">60</key>
-        <key name="System message last" type="DWORD">0</key>
-        <key name="Execute command" type="STRING" size="256"></key>
-        <key name="Execute interval" type="INT">0</key>
-        <key name="Execute last" type="DWORD">0</key>
-        <key name="Stop run" type="BOOL">n</key>
-        <key name="Display BGColor" type="STRING" size="32">red</key>
-        <key name="Display FGColor" type="STRING" size="32">black</key>
-      </dir>
-      <dir name="Warning">
-        <key name="Write system message" type="BOOL">y</key>
-        <key name="Write Elog message" type="BOOL">n</key>
-        <key name="System message interval" type="INT">60</key>
-        <key name="System message last" type="DWORD">1368806886</key>
-        <key name="Execute command" type="STRING" size="256"></key>
-        <key name="Execute interval" type="INT">0</key>
-        <key name="Execute last" type="DWORD">0</key>
-        <key name="Stop run" type="BOOL">n</key>
-        <key name="Display BGColor" type="STRING" size="32">red</key>
-        <key name="Display FGColor" type="STRING" size="32">black</key>
-      </dir>
-    </dir>
-  </dir>
-  <dir name="History">
-    <dir name="Links"/>
-    <key name="PerVariableHistory" type="INT">0</key>
-    <dir name="Events">
-      <key name="1" type="STRING" size="11">RpcExample</key>
-      <key name="0" type="STRING" size="16">Run transitions</key>
-    </dir>
-    <key name="DisableTags" type="BOOL">n</key>
-    <dir name="Tags">
-      <keyarray name="1" type="STRING" size="96" num_values="2">
-        <value index="0">RpcExample</value>
-        <value index="1">10[3] SLOW</value>
-      </keyarray>
-      <keyarray name="0" type="STRING" size="96" num_values="3">
-        <value index="0">Run transitions</value>
-        <value index="1">6[1] State</value>
-        <value index="2">6[1] Run number</value>
-      </keyarray>
-    </dir>
-    <dir name="Display">
-      <dir name="Default">
-        <dir name="Trigger rate">
-          <keyarray name="Variables" type="STRING" size="64" num_values="2">
-            <value index="0">System:Trigger per sec.</value>
-            <value index="1">System:Trigger kB per sec.</value>
-          </keyarray>
-          <key name="Time Scale" type="STRING" size="32">1h</key>
-          <keyarray name="Factor" type="FLOAT" num_values="2">
-            <value index="0">1</value>
-            <value index="1">1</value>
-          </keyarray>
-          <keyarray name="Offset" type="FLOAT" num_values="2">
-            <value index="0">0</value>
-            <value index="1">0</value>
-          </keyarray>
-          <key name="Timescale" type="STRING" size="32">1h</key>
-          <key name="Zero ylow" type="BOOL">y</key>
-          <key name="Show run markers" type="BOOL">y</key>
-        </dir>
-        <dir name="slow">
-          <key name="Timescale" type="STRING" size="32">10m</key>
-          <key name="Zero ylow" type="BOOL">y</key>
-          <key name="Show run markers" type="BOOL">y</key>
-          <key name="Show values" type="BOOL">y</key>
-          <key name="Sort Vars" type="BOOL">n</key>
-          <key name="Log axis" type="BOOL">n</key>
-          <key name="Minimum" type="FLOAT">0</key>
-          <key name="Maximum" type="FLOAT">0</key>
-          <key name="Variables" type="STRING" size="64">RpcExample:SLOW[2]</key>
-          <key name="Label" type="STRING" size="32"></key>
-          <key name="Colour" type="STRING" size="32">#0000FF</key>
-          <key name="Factor" type="FLOAT">1</key>
-          <key name="Offset" type="FLOAT">0</key>
-          <keyarray name="Buttons" type="STRING" size="32" num_values="7">
-            <value index="0">10m</value>
-            <value index="1">1h</value>
-            <value index="2">3h</value>
-            <value index="3">12h</value>
-            <value index="4">24h</value>
-            <value index="5">3d</value>
-            <value index="6">7d</value>
-          </keyarray>
-        </dir>
-      </dir>
-    </dir>
-    <key name="MaxDisplayEvents" type="INT">20</key>
-    <key name="MaxDisplayTags" type="INT">200</key>
-    <key name="ODBC_DSN" type="STRING" size="256"></key>
-  </dir>
   <dir name="Equipment">
     <dir name="RpcExample">
       <dir name="Common">
@@ -415,31 +461,32 @@
         <key name="Event limit" type="DOUBLE">0</key>
         <key name="Num subevents" type="DWORD">0</key>
         <key name="Log history" type="INT">1</key>
-        <key name="Frontend host" type="STRING" size="32">ladd03.triumf.ca</key>
+        <key name="Frontend host" type="STRING" size="32">ladd00.triumf.ca</key>
         <key name="Frontend name" type="STRING" size="32">fejrpc</key>
         <key name="Frontend file name" type="STRING" size="256">fejrpc.cxx</key>
-        <key name="Status" type="STRING" size="256">fejrpc@ladd03.triumf.ca</key>
+        <key name="Status" type="STRING" size="256">fejrpc@ladd00.triumf.ca</key>
         <key name="Status color" type="STRING" size="32">#00FF00</key>
+        <key name="Hidden" type="BOOL">n</key>
       </dir>
       <dir name="Variables">
         <keyarray name="SLOW" type="DOUBLE" num_values="3">
-          <value index="0">64630</value>
-          <value index="1">1368806905</value>
-          <value index="2">96.59258243656663</value>
+          <value index="0">1273</value>
+          <value index="1">1376610644</value>
+          <value index="2">74.31448279461522</value>
         </keyarray>
       </dir>
       <dir name="Statistics">
-        <key name="Events sent" type="DOUBLE">64630</key>
+        <key name="Events sent" type="DOUBLE">1273</key>
         <key name="Events per sec." type="DOUBLE">0.9689922480620154</key>
         <key name="kBytes per sec." type="DOUBLE">0.05677688953488372</key>
       </dir>
       <dir name="Settings">
-        <key name="example_int" type="INT">123</key>
+        <key name="example_int" type="INT">3</key>
         <key name="example_link" type="LINK" size="20">/Runinfo/Run number</key>
       </dir>
     </dir>
   </dir>
   <dir name="Custom">
-    <key name="example&amp;" type="STRING" size="64">/home/olchansk/packages/midas/examples/javascript1/example.html</key>
+    <key name="example&amp;" type="STRING" size="64">./example.html</key>
   </dir>
 </odb>

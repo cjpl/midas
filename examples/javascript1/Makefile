@@ -1,9 +1,9 @@
 # Makefile
 
-#ifndef MIDASSYS
+ifndef MIDASSYS
 MIDASSYS=$(HOME)/packages/midas
 MIDAS_OS=linux
-#endif
+endif
 
 #ifndef MIDASSYS
 #MIDASSYS=$(HOME)/daq/midas
@@ -16,7 +16,11 @@ CXXFLAGS = $(CFLAGS)
 
 #OSFLAGS += -m32
 
-LIBS = -lm -lutil -lpthread -lrt
+LIBS = -lm -lutil -lpthread
+
+ifeq ($(MIDAS_OS),linux)
+LIBS += -lrt
+endif
 
 # MIDAS library
 MIDASLIBS = $(MIDASSYS)/$(MIDAS_OS)/lib/libmidas.a

@@ -906,6 +906,7 @@ void page_footer()  //wraps up body wrapper and inserts page footer
 
 void show_help_page()
 {
+   const char *s;
    char str[256];
 
    show_header("Help", "", "./", 0);
@@ -926,6 +927,30 @@ void show_help_page()
    rsprintf("        </tr>\n");
    
    rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\">MIDAS_EXPTAB:</td>\n");
+   s = getenv("MIDAS_EXPTAB");
+   if (!s) s = "";
+   strlcpy(str, s, sizeof(str));
+   rsprintf("          <td style=\"text-align:left;\">%s</td>\n", str);
+   rsprintf("        </tr>\n");
+
+   rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\">MIDAS_DIR:</td>\n");
+   s = getenv("MIDAS_DIR");
+   if (!s) s = "";
+   strlcpy(str, s, sizeof(str));
+   rsprintf("          <td style=\"text-align:left;\">%s</td>\n", str);
+   rsprintf("        </tr>\n");
+
+   rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\">MIDASSYS:</td>\n");
+   s = getenv("MIDASSYS");
+   if (!s) s = "";
+   strlcpy(str, s, sizeof(str));
+   rsprintf("          <td style=\"text-align:left;\">%s</td>\n", str);
+   rsprintf("        </tr>\n");
+
+   rsprintf("        <tr>\n");
    rsprintf("          <td style=\"text-align:right;\">Resource directory:</td>\n");
    get_resource_dir(str, sizeof(str));
    rsprintf("          <td style=\"text-align:left;\">%s</td>\n", str);
@@ -933,7 +958,7 @@ void show_help_page()
 
    rsprintf("        <tr>\n");
    rsprintf("          <td style=\"text-align:right;\">Documentation:</td>\n");
-   rsprintf("          <td style=\"text-align:left;\"><a href=\"http://midas.triumf.ca\">http://midas.triumf.ca</a></td>\n");
+   rsprintf("          <td style=\"text-align:left;\"><a href=\"https://midas.triumf.ca\">https://midas.triumf.ca</a></td>\n");
    rsprintf("        </tr>\n");
    rsprintf("        <tr>\n");
    rsprintf("          <td style=\"text-align:right;\">Discussion Forum:</td>\n");
@@ -941,7 +966,7 @@ void show_help_page()
    rsprintf("        </tr>\n");
    rsprintf("        <tr>\n");
    rsprintf("          <td style=\"text-align:right;\">Code:</td>\n");
-   rsprintf("          <td style=\"text-align:left;\"><a href=\"http://bitbucket.org/tmidas/midas/\">http://bitbucket.org/tmidas/midas/</a></td>\n");
+   rsprintf("          <td style=\"text-align:left;\"><a href=\"https://bitbucket.org/tmidas/midas/\">https://bitbucket.org/tmidas/midas/</a></td>\n");
    rsprintf("        </tr>\n");
    rsprintf("        <tr>\n");
    rsprintf("          <td style=\"text-align:right;\">Version:</td>\n");
@@ -6451,8 +6476,9 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
    /* process "jcopy" command */
    if (equal_ustring(getparam("cmd"), "jcopy")) {
       
+      bool fmt_odb  = false;
       bool fmt_xml  = false;
-      bool fmt_json = false;
+      bool fmt_json = true;
       bool fmt_jsonp = false;
       int follow_links = 1;
       int save_keys = 1;
@@ -6461,8 +6487,17 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
       
       if (isparam("format")) {
          fmt = getparam("format");
+         fmt_odb = equal_ustring(fmt, "odb");
          fmt_xml = equal_ustring(fmt, "xml");
          fmt_json = strstr(fmt, "json");
+
+         if (fmt_odb)
+            fmt_xml = fmt_json = false;
+         if (fmt_xml)
+            fmt_odb = fmt_json = false;
+         if (fmt_json)
+            fmt_odb = fmt_xml = false;
+
          if (fmt_json)
             fmt_jsonp = strstr(fmt, "-p");
          if (fmt_jsonp && isparam("callback"))
@@ -6516,7 +6551,8 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
          }
          if (fmt_xml) {
             rsputs("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
-            rsputs("<xxx>\n");
+            rsputs("<jcopy>\n");
+            rsputs("<data>\n");
          } else if (fmt_json)
             rsputs("[\n");
          else
@@ -6530,7 +6566,7 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
 
             if (i > 0) {
                if (fmt_xml)
-                  rsputs("</xxx>\n<xxx>\n");
+                  rsputs("</data>\n<data>\n");
                else if (fmt_json)
                   rsputs(",\n");
                else
@@ -6540,7 +6576,7 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
             status = db_find_key(hDB, 0, str, &hkey);
             if (status != DB_SUCCESS) {
                if (fmt_xml)
-                  rsputs("<DB_NO_KEY>\n");
+                  rsputs("<DB_NO_KEY/>\n");
                else if (fmt_json) {
                   char tmp[256];
                   sprintf(tmp, "{ \"/error\" : %d }\n", status);
@@ -6554,19 +6590,27 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
             int bufsize = WEB_BUFFER_SIZE;
             char* buf = (char *)malloc(bufsize);
             
-            if (fmt_xml)
+            if (fmt_xml) {
                db_copy_xml(hDB, hkey, buf, &bufsize);
-            else if (fmt_json)
+               const char* s = strstr(buf, "-->");
+               if (s)
+                  s+=4;
+               else
+                  s = buf;
+               rsputs(s);
+            } else if (fmt_json) {
                db_copy_json(hDB, hkey, &buf, &bufsize, &end, save_keys, follow_links);
-            else
+               rsputs(buf);
+            } else {
                db_copy(hDB, hkey, buf, &bufsize, (char *)"");
+               rsputs(buf);
+            }
             
-            rsputs(buf);
             free(buf);
          }
 
          if (fmt_xml)
-            rsputs("</xxx>\n");
+            rsputs("</data>\n</jcopy>\n");
          else if (fmt_json)
             rsputs("]\n");
          else
@@ -6703,10 +6747,14 @@ void show_custom_page(const char *path, const char *cookie_cpwd)
 
       /* check if filename */
       if (strchr(ctext, '\n') == 0) {
-         strlcpy(filename, custom_path, sizeof(str));
-         if (filename[strlen(filename)-1] != DIR_SEPARATOR)
-            strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
-         strlcat(filename, ctext, sizeof(filename));
+         if (custom_path[0]) {
+            strlcpy(filename, custom_path, sizeof(filename));
+            if (filename[strlen(filename)-1] != DIR_SEPARATOR)
+               strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
+            strlcat(filename, ctext, sizeof(filename));
+         } else {
+            strlcpy(filename, ctext, sizeof(filename));
+         }
          fh = open(filename, O_RDONLY | O_BINARY);
          if (fh < 0) {
             sprintf(str, "Cannot open file \"%s\"", filename);
@@ -9735,69 +9783,34 @@ int time_to_sec(const char *str)
 
 /*------------------------------------------------------------------*/
 
-static MidasHistoryInterface* mh = NULL;
-static bool using_odbc = 0;
-
-static void set_history_path()
+static MidasHistoryInterface* get_history(bool reset = false)
 {
    int status;
    HNDLE hDB;
+   static MidasHistoryInterface* mh = NULL;
 
-   cm_get_experiment_database(&hDB, NULL);
-
-#ifdef HAVE_ODBC
-   /* check ODBC connection */
-   char str[256];
-   int size = sizeof(str);
-   str[0] = 0;
-   status = db_get_value(hDB, 0, "/History/ODBC_DSN", str, &size, TID_STRING, TRUE);
-   if ((status==DB_SUCCESS || status==DB_TRUNCATED) && str[0]!=0 && str[0]!='#') {
-
-      if (!using_odbc)
-         if (mh) {
-            delete mh;
-            mh = NULL;
-         }
-
-      if (!mh)
-         mh = MakeMidasHistoryODBC();
-
-      using_odbc = true;
-
-      int debug = 0;
-      size = sizeof(debug);
-      status = db_get_value(hDB, 0, "/History/ODBC_Debug", &debug, &size, TID_INT, TRUE);
-      assert(status==DB_SUCCESS);
-
-      mh->hs_set_debug(debug);
-
-      status = mh->hs_connect(str);
-
-      if (status != HS_SUCCESS) {
-         cm_msg(MERROR, "set_history_path", "Cannot connect to history database, hs_connect() status %d", status);
-      }
-
-   } else {
-      if (using_odbc)
-         if (mh) {
-            delete mh;
-            mh = NULL;
-
-         }
-      using_odbc = false;
+   if (reset && mh) {
+      mh->hs_disconnect();
+      delete mh;
+      mh = NULL;
    }
-#endif
 
-   if (!using_odbc) {
-      if (!mh)
-         mh = MakeMidasHistory();
+   if (mh)
+      return mh;
 
-      status = mh->hs_connect(NULL);
+   status = cm_get_experiment_database(&hDB, NULL);
+   assert(status == CM_SUCCESS);
 
-      if (status != HS_SUCCESS) {
-         cm_msg(MERROR, "set_history_path", "Cannot connect to midas history, hs_connect() status %d", status);
-      }
+   status = hs_get_history(hDB, 0, HS_GET_READER|HS_GET_INACTIVE|HS_GET_DEFAULT, verbose, &mh);
+   if (status != HS_SUCCESS || mh==NULL) {
+      cm_msg(MERROR, "get_history", "Cannot configure history, hs_get_history() status %d", status);
+      mh = NULL;
+      return NULL;
    }
+
+   cm_msg(MINFO, "get_history", "Reading history from channel \'%s\' type \'%s\'", mh->name, mh->type);
+
+   return mh;
 }
 
 /*------------------------------------------------------------------*/
@@ -9886,7 +9899,11 @@ int read_history(HNDLE hDB, const char *path, int index, int runmarker, time_t t
    // printf("read_history, path %s, index %d, runmarker %d, start %d, end %d, scale %d, data %p\n", path, index, runmarker, (int)tstart, (int)tend, (int)scale, data);
 
    /* connect to history */
-   set_history_path();
+   MidasHistoryInterface* mh = get_history();
+   if (mh == NULL) {
+      //rsprintf(str, "History is not configured\n");
+      return HS_FILE_ERROR;
+   }
 
    /* check panel name in ODB */
    status = db_find_key(hDB, 0, "/History/Display", &hkey);
@@ -10087,7 +10104,12 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
                  panel, fgcol);
 
    /* connect to history */
-   set_history_path();
+   MidasHistoryInterface *mh = get_history();
+   if (mh == NULL) {
+      sprintf(str, "History is not configured, see messages");
+      gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2, height / 2, str, red);
+      goto error;
+   }
 
    /* check panel name in ODB */
    sprintf(str, "/History/Display/%s", panel);
@@ -11483,6 +11505,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
 
    if (equal_ustring(cmd, "Clear history cache")) {
       strcpy(cmd, "refresh");
+      MidasHistoryInterface* mh = get_history();
       if (mh)
          mh->hs_clear_cache();
    }
@@ -11782,7 +11805,11 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
 
    /* get display event name */
 
-   set_history_path();
+   MidasHistoryInterface* mh = get_history();
+   if (mh == NULL) {
+      rsprintf(str, "History is not configured\n");
+      return;
+   }
 
    std::vector<std::string> events;
    mh->hs_get_events(&events);
@@ -13194,6 +13221,24 @@ void send_css()
    get_resource_dir(filename, sizeof(filename));
    strlcat(filename, "mhttpd.css", sizeof(filename));
    fh = open(filename, O_RDONLY | O_BINARY);
+   
+   if (fh <= 0 && getenv("MIDAS_DIR")) {
+      strlcpy(filename, getenv("MIDAS_DIR"), sizeof(filename));
+      if (filename[strlen(filename)-1] != DIR_SEPARATOR)
+         strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
+      strlcat(filename, "resources/mhttpd.css", sizeof(filename));
+      fh = open(filename, O_RDONLY | O_BINARY);
+   }
+   
+   if (fh <= 0) {
+      strlcpy(filename, "resources/mhttpd.css", sizeof(filename));
+      fh = open(filename, O_RDONLY | O_BINARY);
+   }
+   
+   if (fh <= 0) {
+      strlcpy(filename, "mhttpd.css", sizeof(filename));
+      fh = open(filename, O_RDONLY | O_BINARY);
+   }
    
    if (fh > 0) {
       fstat(fh, &stat_buf);
