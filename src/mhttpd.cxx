@@ -1166,7 +1166,7 @@ void exec_script(HNDLE hkey)
 void show_navigation_bar(const char *cur_page)
 {
    HNDLE hDB;
-   char str[256], dec_path[256], path[256], *p;
+   char str[1000], dec_path[256], path[256], *p;
    int size;
    
    cm_get_experiment_database(&hDB, NULL);
