@@ -323,7 +323,7 @@ INT hs_define_event(DWORD event_id, const char *name, const TAG * tag, DWORD siz
       time_t ltime;
       char str[256], event_name[NAME_LENGTH], *buffer;
       int fh, fhi, fhd;
-      INT i, n, len, index, status, semaphore;
+      INT i, n, index, status, semaphore;
       struct tm *tmb;
 
       /* request semaphore */
