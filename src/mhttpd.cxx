@@ -974,7 +974,7 @@ void show_help_page()
    rsprintf("console.log(footerHeight);");
    rsprintf("document.getElementById(\"helpPush\").style.height = footerHeight+\"px\";");
    rsprintf("document.getElementById(\"helpFooter\").style.height=footerHeight+\"px\";");
-   rsprintf("document.getElementById(\"helpWrapper\").style.margin= \"0 auto -\"+parseFloat(footerHeight)+\"px\";");
+   rsprintf("document.getElementById(\"wrapper\").style.margin= \"0 auto -\"+parseFloat(footerHeight)+\"px\";");
    rsprintf("};");
    rsprintf("window.onresize();");
    rsprintf("</script>");
@@ -1034,7 +1034,7 @@ void show_header(const char *title, const char *method, const char *path, int re
    time(&now);
 
    /*---- body needs wrapper div to pin footer ----*/
-   rsprintf("<div class=\"wrapper\">\n");
+   rsprintf("<div id=\"wrapper\" class=\"wrapper\">\n");
 }
 
 /*------------------------------------------------------------------*/
