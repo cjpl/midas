@@ -408,7 +408,7 @@ function ODBInlineEdit(p, odb_path)
    var index;
    
    p.ODBsent = false;
-   if (p.childNodes.length == 2) {
+   if (odb_path.indexOf('[') > 0) {
       index = odb_path.substr(odb_path.indexOf('['));
    
       p.innerHTML = index+"&nbsp;<input type=\"text\" size=\""+size+"\" value=\""+cur_val+"\" onKeydown=\"ODBInlineEditKeydown(this.parentNode,\'"+odb_path+"\');\" onBlur=\"ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\');\" >";
