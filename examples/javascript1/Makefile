@@ -18,7 +18,7 @@ CXXFLAGS = $(CFLAGS)
 
 LIBS = -lm -lutil -lpthread
 
-ifeq ($(MIDAS_OS),"linux")
+ifeq ($(MIDAS_OS),linux)
 LIBS += -lrt
 endif
 

@@ -242,6 +242,37 @@ function ODBCopy(path, format)
    return request.responseText;
 }
 
+function ODBMCopy(paths, callback, format)
+{
+   var request = XMLHttpRequestGeneric();
+      
+   var url = '?cmd=jcopy';
+   for (var i=0 ; i<paths.length ; i++) {
+      url += '&odb'+i+'='+paths[i];
+   }
+
+   if (format != undefined && format != '')
+      url += '&format=' + format;
+   
+   if (callback != undefined) {
+      request.onreadystatechange = function() 
+         {
+            if (request.readyState == 4) {
+               if (request.status == 200) {
+                  callback(request.responseText);
+               }
+            }
+         }
+      request.open('GET', url, true);
+      request.send(null);
+      return;
+   }
+   
+   request.open('GET', url, false);
+   request.send(null);
+   return request.responseText;
+}
+
 function ODBRpc_rev0(name, rpc, args)
 {
    var request = XMLHttpRequestGeneric();
@@ -328,7 +359,7 @@ function ODBFinishInlineEdit(p, path)
       value = p.childNodes[1].value;
    else
       value = p.childNodes[0].value;
-   
+
    ODBSet(path, value);
    p.ODBsent = true;
    

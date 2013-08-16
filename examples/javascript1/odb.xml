@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<!-- created by MXML on Tue Aug 13 09:25:51 2013 -->
-<odb root="/" filename="odb.xml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/Users/olchansk/git/midas/examples/javascript1/../../odb.xsd">
+<!-- created by MXML on Thu Aug 15 16:50:45 2013 -->
+<odb root="/" filename="odb.xml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../..//odb.xsd">
   <dir name="System">
     <dir name="Clients">
-      <dir name="75286">
+      <dir name="12699">
         <key name="Name" type="STRING" size="32">fejrpc</key>
-        <key name="Host" type="STRING" size="256">konstantin-olchanskis-macbook.local</key>
+        <key name="Host" type="STRING" size="256">ladd00.triumf.ca</key>
         <key name="Hardware type" type="INT">44</key>
-        <key name="Server Port" type="INT">64661</key>
+        <key name="Server Port" type="INT">36527</key>
         <key name="Transition START" type="INT">500</key>
         <key name="Transition STOP" type="INT">500</key>
         <key name="Transition PAUSE" type="INT">500</key>
@@ -18,17 +18,11 @@
           <key name="102" type="BOOL">y</key>
         </dir>
       </dir>
-      <dir name="78626">
-        <key name="Name" type="STRING" size="32">mhttpd</key>
-        <key name="Host" type="STRING" size="256">konstantin-olchanskis-macbook.local</key>
-        <key name="Hardware type" type="INT">44</key>
-        <key name="Server Port" type="INT">65502</key>
-      </dir>
-      <dir name="78628">
+      <dir name="12706">
         <key name="Name" type="STRING" size="32">Logger</key>
-        <key name="Host" type="STRING" size="256">konstantin-olchanskis-macbook.local</key>
+        <key name="Host" type="STRING" size="256">ladd00.triumf.ca</key>
         <key name="Hardware type" type="INT">44</key>
-        <key name="Server Port" type="INT">65503</key>
+        <key name="Server Port" type="INT">52894</key>
         <key name="Transition START" type="INT">200</key>
         <key name="Transition STARTABORT" type="INT">800</key>
         <key name="Transition STOP" type="INT">800</key>
@@ -38,11 +32,11 @@
           <key name="14000" type="BOOL">y</key>
         </dir>
       </dir>
-      <dir name="78671">
+      <dir name="17158">
         <key name="Name" type="STRING" size="32">ODBEdit</key>
-        <key name="Host" type="STRING" size="256">konstantin-olchanskis-macbook.local</key>
+        <key name="Host" type="STRING" size="256">ladd00.triumf.ca</key>
         <key name="Hardware type" type="INT">44</key>
-        <key name="Server Port" type="INT">49152</key>
+        <key name="Server Port" type="INT">53478</key>
       </dir>
     </dir>
     <dir name="Tmp"/>
@@ -81,7 +75,7 @@
       <key name="Auto stop" type="BOOL">n</key>
       <key name="Auto restart" type="BOOL">n</key>
       <key name="Alarm class" type="STRING" size="32"></key>
-      <key name="First failed" type="DWORD">0</key>
+      <key name="First failed" type="DWORD">1376610618</key>
     </dir>
     <dir name="mhist">
       <key name="Required" type="BOOL">n</key>
@@ -107,12 +101,12 @@
     </dir>
   </dir>
   <dir name="Experiment">
-    <key name="Name" type="STRING" size="32">Default</key>
+    <key name="Name" type="STRING" size="32">javascript1</key>
     <dir name="Buffer sizes">
       <key name="SYSMSG" type="DWORD">100000</key>
       <key name="SYSTEM" type="DWORD">8388608</key>
     </dir>
-    <key name="Menu Buttons" type="STRING" size="1000">Start, Pause, ODB, Messages, ELog, Alarms, Programs, History, MSCB, Config, Help</key>
+    <key name="Menu Buttons" type="STRING" size="1000">Start, Stop, ODB, Messages, ELog, Alarms, Programs, History, MSCB, Config, Help</key>
     <key name="MAX_EVENT_SIZE" type="DWORD">4194304</key>
   </dir>
   <dir name="Logger">
@@ -175,6 +169,7 @@
         <key name="Type" type="STRING" size="32">SQLITE</key>
         <key name="Active" type="BOOL">n</key>
         <key name="Debug" type="INT">0</key>
+        <key name="Sqlite dir" type="STRING" size="1024"></key>
       </dir>
     </dir>
     <dir name="SQL">
@@ -236,12 +231,12 @@
       </dir>
       <dir name="Example alarm">
         <key name="Active" type="BOOL">y</key>
-        <key name="Triggered" type="INT">1098</key>
+        <key name="Triggered" type="INT">1140</key>
         <key name="Type" type="INT">4</key>
         <key name="Check interval" type="INT">60</key>
-        <key name="Checked last" type="DWORD">1376411122</key>
+        <key name="Checked last" type="DWORD">1376610607</key>
         <key name="Time triggered first" type="STRING" size="32">Thu May 16 13:59:30 2013</key>
-        <key name="Time triggered last" type="STRING" size="32">Tue Aug 13 09:25:22 2013</key>
+        <key name="Time triggered last" type="STRING" size="32">Thu Aug 15 16:50:07 2013</key>
         <key name="Condition" type="STRING" size="256"></key>
         <key name="Alarm Class" type="STRING" size="32">Warning</key>
         <key name="Alarm Message" type="STRING" size="80">This is an example alarm</key>
@@ -264,7 +259,7 @@
         <key name="Write system message" type="BOOL">y</key>
         <key name="Write Elog message" type="BOOL">n</key>
         <key name="System message interval" type="INT">60</key>
-        <key name="System message last" type="DWORD">1376411122</key>
+        <key name="System message last" type="DWORD">1376610607</key>
         <key name="Execute command" type="STRING" size="256"></key>
         <key name="Execute interval" type="INT">0</key>
         <key name="Execute last" type="DWORD">0</key>
@@ -466,32 +461,32 @@
         <key name="Event limit" type="DOUBLE">0</key>
         <key name="Num subevents" type="DWORD">0</key>
         <key name="Log history" type="INT">1</key>
-        <key name="Frontend host" type="STRING" size="32">konstantin-olchanskis-macbook.l</key>
+        <key name="Frontend host" type="STRING" size="32">ladd00.triumf.ca</key>
         <key name="Frontend name" type="STRING" size="32">fejrpc</key>
         <key name="Frontend file name" type="STRING" size="256">fejrpc.cxx</key>
-        <key name="Status" type="STRING" size="256">fejrpc@konstantin-olchanskis-macbook.l</key>
+        <key name="Status" type="STRING" size="256">fejrpc@ladd00.triumf.ca</key>
         <key name="Status color" type="STRING" size="32">#00FF00</key>
         <key name="Hidden" type="BOOL">n</key>
       </dir>
       <dir name="Variables">
         <keyarray name="SLOW" type="DOUBLE" num_values="3">
-          <value index="0">2551</value>
-          <value index="1">1376411150</value>
-          <value index="2">-49.99999989082251</value>
+          <value index="0">1273</value>
+          <value index="1">1376610644</value>
+          <value index="2">74.31448279461522</value>
         </keyarray>
       </dir>
       <dir name="Statistics">
-        <key name="Events sent" type="DOUBLE">2549</key>
-        <key name="Events per sec." type="DOUBLE">0.9800718719372754</key>
-        <key name="kBytes per sec." type="DOUBLE">0.05742608624632473</key>
+        <key name="Events sent" type="DOUBLE">1273</key>
+        <key name="Events per sec." type="DOUBLE">0.9689922480620154</key>
+        <key name="kBytes per sec." type="DOUBLE">0.05677688953488372</key>
       </dir>
       <dir name="Settings">
-        <key name="example_int" type="INT">123</key>
+        <key name="example_int" type="INT">3</key>
         <key name="example_link" type="LINK" size="20">/Runinfo/Run number</key>
       </dir>
     </dir>
   </dir>
   <dir name="Custom">
-    <key name="example&amp;" type="STRING" size="64">example.html</key>
+    <key name="example&amp;" type="STRING" size="64">./example.html</key>
   </dir>
 </odb>
