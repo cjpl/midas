@@ -1367,9 +1367,7 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
             *mh = MakeMidasHistorySqlDebug();
             assert(*mh);
          } else if (strlen(dsn) > 1) {
-#ifdef HAVE_ODBC
             *mh = MakeMidasHistoryODBC();
-#endif
             assert(*mh);
          }
          

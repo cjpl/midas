@@ -2139,6 +2139,11 @@ MidasHistoryInterface* MakeMidasHistoryODBC()
 {
    return new SqlHistory(new SqlODBC());
 }
+#else
+MidasHistoryInterface* MakeMidasHistoryODBC()
+{
+   return NULL;
+}
 #endif
 
 MidasHistoryInterface* MakeMidasHistorySqlDebug()
