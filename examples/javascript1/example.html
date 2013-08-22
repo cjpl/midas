@@ -20,10 +20,10 @@
 
       function getrecord_example()
       {
-      var rec1 = ODBGetRecord("/Equipment/RpcExample/Variables");
+      var rec1 = ODBGetRecord(encodeURIComponent("/Equipment/RpcExample/Variables"));
       document.getElementById('getrecord1_target').innerHTML = rec1;
 
-      var rec2 = ODBGetRecord("/Equipment/RpcExample/Settings");
+      var rec2 = ODBGetRecord(encodeURIComponent("/Equipment/RpcExample/Settings"));
       document.getElementById('getrecord2_target').innerHTML = rec2;
 
       document.getElementById('getrecord3_target').innerHTML = ODBExtractRecord(rec1, 'SLOW[2]');
@@ -31,8 +31,9 @@
 
       function getkey_example()
       {
-      var key = new ODBKey("/Equipment/RpcExample/Variables/SLOW");
-      document.getElementById('getkey_target').innerHTML = JSON.stringify(key);
+      var key = new ODBKey(encodeURIComponent("/Equipment/RpcExample/Variables/SLOW"));
+      document.getElementById('getkey_name_target').innerHTML = "name: " + key.name + " type: " + key.type; 
+      document.getElementById('getkey_target').innerHTML = JSON.stringify(key); 
       }
 
       function copy_example()
@@ -177,14 +178,14 @@ ODBMGet(paths, callback, formats);
 ODBGetRecord(path);
 ODBExtractRecord(record, key);
 new ODBKey(path);
-ODBCopy(path, format); -- no doc. Format: "xml", "json", "" (traditional odb format)
-ODBMCopy(paths, callback, format); -- no doc
-ODBRpc_rev0(name, rpc, args); --- doc refer to example
-ODBRpc_rev1(name, rpc, max_reply_length, args); --- same
+ODBCopy(path, format);
+ODBMCopy(paths, callback, format);
+ODBRpc_rev0(name, rpc, args);
+ODBRpc_rev1(name, rpc, max_reply_length, args);
 ODBGetMsg(n);
 ODBGenerateMsg(m);
-ODBGetAlarms(); --- no doc
-ODBEdit(path); --- undoc - forces page reload
+ODBGetAlarms();
+ODBEdit(path);
 </pre>
 
     <h2>Example custom page starts here</h2>
@@ -260,6 +261,9 @@ ODBEdit(path); --- undoc - forces page reload
         <p>
           <input type=button value='Get ODB key /Equipment/RpcExample/Variables/SLOW' onClick='clearTimeout(updateTimerId); getkey_example(); update();'></input>
         </p>
+        <pre id='getkey_name_target'>
+(empty)
+        </pre>
         <pre id='getkey_target'>
 (empty)
         </pre>
@@ -432,7 +436,7 @@ ODBEdit(path); --- undoc - forces page reload
             or press "Get MIDAS messages" button in the ODBGetMsg() section above</i>
         </p>
         <p>
-          <input type=input size=40 value='' onKeyPress='if (event.keyCode==13) { ODBGenerateMsg(this.value); }'></input>
+          <input type=input size=40 value='' onKeyPress='if (event.keyCode==13) { ODBGenerateMsg(encodeURIComponent(this.value)); }'></input>
         </p>
 
       <li>
@@ -456,6 +460,6 @@ ODBEdit(path); --- undoc - forces page reload
     <hr>
     <address><a href="mailto:xxx@xxx">MIDAS Example</a></address>
 <!-- Created: Tue Sep 21 15:44:39 PDT 2010 -->
-<!-- hhmts start -->Last modified: Thu Aug 15 23:29:24 PDT 2013 <!-- hhmts end -->
+<!-- hhmts start -->Last modified: Thu Aug 22 08:50:46 PDT 2013 <!-- hhmts end -->
   </body>
 </html>
