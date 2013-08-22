@@ -699,7 +699,9 @@ indent:
 	find . -name "*.[hc]" -exec indent -kr -nut -i3 -l90 {} \;
 
 clean:
-	-rm -f $(LIB_DIR)/*.o $(LIB_DIR)/*.a $(LIB_DIR)/*.so $(LIB_DIR)/*.dylib
+	-rm -vf $(LIB_DIR)/*.o $(LIB_DIR)/*.a $(LIB_DIR)/*.so $(LIB_DIR)/*.dylib
+	-rm -rvf $(BIN_DIR)/*.dSYM
+	-rm -vf $(BIN_DIR)/*
 
 mrproper : clean
 	rm -rf $(OS_DIR)
