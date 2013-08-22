@@ -242,17 +242,17 @@ function ODBCopy(path, format)
    return request.responseText;
 }
 
-function ODBMCopy(paths, callback, format)
+function ODBMCopy(paths, callback, encoding)
 {
    var request = XMLHttpRequestGeneric();
       
    var url = '?cmd=jcopy';
    for (var i=0 ; i<paths.length ; i++) {
-      url += '&odb'+i+'='+paths[i];
+      url += '&odb'+i+'='+encodeURIComponent(paths[i]);
    }
 
-   if (format != undefined && format != '')
-      url += '&format=' + format;
+   if (encoding != undefined && encoding != '')
+      url += '&encoding=' + encodeURIComponent(encoding);
    
    if (callback != undefined) {
       request.onreadystatechange = function() 

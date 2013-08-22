@@ -6482,8 +6482,13 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
       const char* fmt = NULL;
       const char* jsonp_callback = "callback";
       
-      if (isparam("format")) {
+      if (isparam("encoding")) {
+         fmt = getparam("encoding");
+      } else if (isparam("format")) {
          fmt = getparam("format");
+      }
+
+      if (fmt) {
          fmt_odb = equal_ustring(fmt, "odb");
          fmt_xml = equal_ustring(fmt, "xml");
          fmt_json = strstr(fmt, "json");
