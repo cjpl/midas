@@ -6331,6 +6331,15 @@ void output_key(HNDLE hkey, int index, const char *format)
    
 /*------------------------------------------------------------------*/
 
+bool starts_with(const std::string& s1, const char* s2)
+{
+   if (s1.length() < strlen(s2))
+      return false;
+   return (strncasecmp(s1.c_str(), s2, strlen(s2)) == 0);
+}
+
+/*------------------------------------------------------------------*/
+
 void java_script_commands(const char *path, const char *cookie_cpwd)
 {
    int status;
@@ -6341,7 +6350,69 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
    char data[TEXT_SIZE];
 
    cm_get_experiment_database(&hDB, NULL);
+
+   // process common parameters
+
+   const int ENCODING_NONE = 0;
+   const int ENCODING_ODB = 1;
+   const int ENCODING_XML = 2;
+   const int ENCODING_JSON = 3;
+
+   std::string cmd_parameter;
+   std::string encoding_parameter;
+   int encoding = ENCODING_NONE; // default encoding
+   bool jsonp = false; // default is no JSONP wrapper
+   std::string jsonp_callback; // default is no JSONP
+   bool single = false; // single encoding
+   bool multiple = false; // multiple encoding
+   std::vector<std::string> odb; // multiple odb parameters
+   //HNDLE hodb; // ODB handle for single odb parameter
+   //std::vector<HNDLE> hodbm; // ODB handle for multiple odb parameter
+
+   if (isparam("cmd")) {
+      cmd_parameter = getparam("cmd");
+   }
    
+   if (isparam("encoding")) {
+      encoding_parameter = getparam("encoding");
+   }
+
+   if (encoding_parameter.length() > 0) {
+      if (starts_with(encoding_parameter, "odb"))
+         encoding = ENCODING_ODB;
+      else if (starts_with(encoding_parameter, "xml"))
+         encoding = ENCODING_XML;
+      else if (starts_with(encoding_parameter, "json"))
+         encoding = ENCODING_JSON;
+   }
+
+   if (encoding == ENCODING_JSON) {
+      if (isparam("callback")) {
+         jsonp = true;
+         jsonp_callback = getparam("callback");
+      }
+   }
+      
+   if (isparam("odb")) {
+      single = true;
+      odb.push_back(getparam("odb"));
+   }
+
+   if (isparam("odb0")) {
+      multiple = true;
+      for (int i=0 ; ; i++) {
+         char ppath[256];
+         sprintf(ppath, "odb%d", i);
+         if (!isparam(ppath))
+            break;
+         odb.push_back(getparam(ppath));
+      }
+   }
+
+   if (1) {
+      printf("command [%s], encoding %d [%s], jsonp %d, single %d, multiple %d, odb array size %d\n", cmd_parameter.c_str(), encoding, encoding_parameter.c_str(), jsonp, single, multiple, (int)odb.size());
+   }
+         
    /* process "jset" command */
    if (equal_ustring(getparam("cmd"), "jset")) {
       
@@ -6627,19 +6698,78 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
 
    /* process "jkey" command */
    if (equal_ustring(getparam("cmd"), "jkey")) {
+
+      // test:
+      // curl "http://localhost:8080?cmd=jkey&odb0=/runinfo/run+number&odb1=/nonexistant&odb2=/&encoding=json&callback=aaa"
       
       show_text_header();
-      
-      if (isparam("odb") && db_find_key(hDB, 0, getparam("odb"), &hkey) == DB_SUCCESS) {
-         db_get_key(hDB, hkey, &key);
-         rsprintf("%s\n", key.name);
-         rsprintf("TID_%s\n", rpc_tid_name(key.type));
-         rsprintf("%d\n", key.num_values);
-         rsprintf("%d\n", key.item_size);
-         rsprintf("%d", key.last_written);
-      } else
-         rsputs("<DB_NO_KEY>");
-      
+
+      if (jsonp) {
+         rsputs(jsonp_callback.c_str());
+         rsputs("(");
+      }
+
+      if (multiple) {
+         switch (encoding) {
+         default:
+            break;
+         case ENCODING_JSON:
+            rsprintf("[ ");
+            break;
+         }
+      }
+
+      for (unsigned i=0; i<odb.size(); i++) {
+         status = db_find_key(hDB, 0, odb[i].c_str(), &hkey);
+         if (status == DB_SUCCESS)
+            status = db_get_key(hDB, hkey, &key);
+         switch (encoding) {
+         default:
+            if (multiple && i>0)
+               rsputs("$#----#$\n");
+            if (status == DB_SUCCESS) {
+               rsprintf("%s\n", key.name);
+               rsprintf("TID_%s\n", rpc_tid_name(key.type));
+               rsprintf("%d\n", key.num_values);
+               rsprintf("%d\n", key.item_size);
+               rsprintf("%d\n", key.last_written);
+            } else {
+               rsputs("<DB_NO_KEY>\n");
+            }
+            break;
+         case ENCODING_JSON:
+            if (multiple && i>0)
+               rsprintf(", ");
+            if (status == DB_SUCCESS) {
+               rsprintf("{ ");
+               rsprintf("\"name\":\"%s\",", key.name);
+               rsprintf("\"type\":%d,", key.type);
+               rsprintf("\"type_name\":\"TID_%s\",", rpc_tid_name(key.type));
+               rsprintf("\"num_values\":%d,", key.num_values);
+               rsprintf("\"item_size\":%d,", key.item_size);
+               rsprintf("\"last_written\":%d", key.last_written);
+               rsprintf(" }");
+            } else {
+               rsprintf("{ \"/error\":%d }", status);
+            }
+            break;
+         }
+      }
+
+      if (multiple) {
+         switch (encoding) {
+         default:
+            break;
+         case ENCODING_JSON:
+            rsprintf(" ]");
+            break;
+         }
+      }
+
+      if (jsonp) {
+         rsputs(");\n");
+      }
+
       return;
    }
    
