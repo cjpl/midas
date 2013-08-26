@@ -67,6 +67,13 @@ function XMLHttpRequestGeneric()
    return request;
 }
 
+var ODBUrlBase = "";
+
+function ODBSetURL(url)
+{
+    ODBUrlBase = url;
+}
+
 function ODBSet(path, value, pwdname)
 {
    var value, request, url;
@@ -78,7 +85,7 @@ function ODBSet(path, value, pwdname)
 
    var request = XMLHttpRequestGeneric();
 
-   url = '?cmd=jset&odb=' + path + '&value=' + encodeURIComponent(value);
+   url = ODBUrlBase + '?cmd=jset&odb=' + path + '&value=' + encodeURIComponent(value);
 
    if (pwdname != undefined)
       url += '&pnam=' + pwdname;
@@ -98,7 +105,7 @@ function ODBGet(path, format, defval, len, type)
 {
    var request = XMLHttpRequestGeneric();
 
-   var url = '?cmd=jget&odb=' + path;
+   var url = ODBUrlBase + '?cmd=jget&odb=' + path;
    if (format != undefined && format != '')
       url += '&format=' + format;
    request.open('GET', url, false);
@@ -134,7 +141,7 @@ function ODBMGet(paths, callback, formats)
 {
    var request = XMLHttpRequestGeneric();
 
-   var url = '?cmd=jget';
+   var url = ODBUrlBase + '?cmd=jget';
    for (var i=0 ; i<paths.length ; i++) {
       url += '&odb'+i+'='+paths[i];
       if (formats != undefined && formats != '')
@@ -179,7 +186,7 @@ function ODBGetRecord(path)
 {
    var request = XMLHttpRequestGeneric();
 
-   var url = '?cmd=jget&odb=' + path + '&name=1';
+   var url = ODBUrlBase + '?cmd=jget&odb=' + path + '&name=1';
    request.open('GET', url, false);
    request.send(null);
    return request.responseText;
@@ -217,7 +224,7 @@ function ODBKey(path)
 {
    var request = XMLHttpRequestGeneric();
 
-   var url = '?cmd=jkey&odb=' + path;
+   var url = ODBUrlBase + '?cmd=jkey&odb=' + path;
    request.open('GET', url, false);
    request.send(null);
    if (request.responseText == null)
@@ -234,7 +241,7 @@ function ODBCopy(path, format)
 {
    var request = XMLHttpRequestGeneric();
 
-   var url = '?cmd=jcopy&odb=' + path;
+   var url = ODBUrlBase + '?cmd=jcopy&odb=' + path;
    if (format != undefined && format != '')
       url += '&format=' + format;
    request.open('GET', url, false);
@@ -246,7 +253,7 @@ function ODBMCopy(paths, callback, encoding)
 {
    var request = XMLHttpRequestGeneric();
       
-   var url = '?cmd=jcopy';
+   var url = ODBUrlBase + '?cmd=jcopy';
    for (var i=0 ; i<paths.length ; i++) {
       url += '&odb'+i+'='+encodeURIComponent(paths[i]);
    }
@@ -277,7 +284,7 @@ function ODBRpc_rev0(name, rpc, args)
 {
    var request = XMLHttpRequestGeneric();
 
-   var url = '?cmd=jrpc_rev0&name=' + name + '&rpc=' + rpc;
+   var url = ODBUrlBase +  '?cmd=jrpc_rev0&name=' + name + '&rpc=' + rpc;
    for (var i = 2; i < arguments.length; i++) {
      url += '&arg'+(i-2)+'='+arguments[i];
    };
@@ -292,7 +299,7 @@ function ODBRpc_rev1(name, rpc, max_reply_length, args)
 {
    var request = XMLHttpRequestGeneric();
 
-   var url = '?cmd=jrpc_rev1&name=' + name + '&rpc=' + rpc + '&max_reply_length=' + max_reply_length;
+   var url = ODBUrlBase + '?cmd=jrpc_rev1&name=' + name + '&rpc=' + rpc + '&max_reply_length=' + max_reply_length;
    for (var i = 3; i < arguments.length; i++) {
      url += '&arg'+(i-3)+'='+arguments[i];
    };
@@ -307,7 +314,7 @@ function ODBGetMsg(n)
 {
    var request = XMLHttpRequestGeneric();
 
-   var url = '?cmd=jmsg&n=' + n;
+   var url = ODBUrlBase + '?cmd=jmsg&n=' + n;
    request.open('GET', url, false);
    request.send(null);
 
@@ -322,7 +329,7 @@ function ODBGenerateMsg(m)
 {
    var request = XMLHttpRequestGeneric();
 
-   var url = '?cmd=jgenmsg&msg=' + m;
+   var url = ODBUrlBase + '?cmd=jgenmsg&msg=' + m;
    request.open('GET', url, false);
    request.send(null);
    return request.responseText;
@@ -331,7 +338,7 @@ function ODBGenerateMsg(m)
 function ODBGetAlarms()
 {
    var request = XMLHttpRequestGeneric();
-   request.open('GET', '?cmd=jalm', false);
+   request.open('GET', ODBUrlBase + '?cmd=jalm', false);
    request.send(null);
    var a = request.responseText.split('\n');
    a.length = a.length-1;

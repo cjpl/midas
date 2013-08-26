@@ -1070,6 +1070,7 @@ void show_text_header()
 {
    rsprintf("HTTP/1.0 200 Document follows\r\n");
    rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
+   rsprintf("Access-Control-Allow-Origin: *\r\n");
    rsprintf("Pragma: no-cache\r\n");
    rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
    rsprintf("Content-Type: text/plain; charset=iso-8859-1\r\n\r\n");
