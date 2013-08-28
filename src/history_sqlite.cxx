@@ -271,7 +271,7 @@ int Sqlite::ConnectTable(const char* table_name)
    int status = sqlite3_open(fname.c_str(), &db);
 
    if (status != SQLITE_OK) {
-      cm_msg(MERROR, "Sqlite::Connect", "sqlite3_open(%s) error %d (%s)", fname.c_str(), status, xsqlite3_errstr(db, status));
+      cm_msg(MERROR, "Sqlite::Connect", "Table %s: sqlite3_open(%s) error %d (%s)", table_name, fname.c_str(), status, xsqlite3_errstr(db, status));
       sqlite3_close(db);
       db = NULL;
       return DB_FILE_ERROR;
@@ -280,7 +280,7 @@ int Sqlite::ConnectTable(const char* table_name)
 #if SQLITE_VERSION_NUMBER >= 3006020
    status = sqlite3_extended_result_codes(db, 1);
    if (status != SQLITE_OK) {
-      cm_msg(MERROR, "Sqlite::Connect", "sqlite3_extended_result_codes(1) error %d (%s)", status, xsqlite3_errstr(db, status));
+      cm_msg(MERROR, "Sqlite::Connect", "Table %s: sqlite3_extended_result_codes(1) error %d (%s)", table_name, status, xsqlite3_errstr(db, status));
    }
 #else
 #warning Missing sqlite3_extended_result_codes()!
@@ -301,7 +301,7 @@ int Sqlite::ConnectTable(const char* table_name)
    }
 
    if (fDebug)
-      cm_msg(MINFO, "Sqlite::Connect", "Connected to Sqlite file \'%s\'", fname.c_str());
+      cm_msg(MINFO, "Sqlite::Connect", "Table %s: connected to Sqlite file \'%s\'", table_name, fname.c_str());
 
    return DB_SUCCESS;
 }
@@ -395,7 +395,7 @@ int Sqlite::Prepare(const char* table_name, const char* sql, sqlite3_stmt** st)
    if (status == SQLITE_OK)
       return DB_SUCCESS;
 
-   cm_msg(MERROR, "Sqlite::Prepare", "sqlite3_prepare_v2(%s) error %d (%s)", sql, status, xsqlite3_errstr(db, status));
+   cm_msg(MERROR, "Sqlite::Prepare", "Table %s: sqlite3_prepare_v2(%s) error %d (%s)", table_name, sql, status, xsqlite3_errstr(db, status));
 
    fTempDB = NULL;
 
@@ -587,7 +587,7 @@ int Sqlite::Exec(const char* table_name, const char* sql)
 
    status = sqlite3_exec(db, sql, callback, 0, &errmsg);
    if (status != SQLITE_OK) {
-      cm_msg(MERROR, "Sqlite::Exec", "sqlite3_exec(%s) error %d (%s)", sql, status, errmsg);
+      cm_msg(MERROR, "Sqlite::Exec", "Table %s: sqlite3_exec(%s) error %d (%s)", table_name, sql, status, errmsg);
       sqlite3_free(errmsg);
       return DB_FILE_ERROR;
    }
