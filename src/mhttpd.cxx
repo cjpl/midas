@@ -6774,6 +6774,309 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
       return;
    }
    
+   /* process "jcreate" command */
+   if (equal_ustring(getparam("cmd"), "jcreate")) {
+
+      // test:
+      // curl "http://localhost:8080?cmd=jcreate&odb0=/test/foo&type0=7&odb1=/nonexistant&type1=100&odb2=/test/bar&type2=12&encoding=json&callback=aaa"
+      // curl "http://localhost:8080?cmd=jcreate&odb=/test/foo&type=7"
+      
+      show_text_header();
+
+      if (jsonp) {
+         rsputs(jsonp_callback.c_str());
+         rsputs("(");
+      }
+
+      if (multiple) {
+         switch (encoding) {
+         default:
+         case ENCODING_JSON:
+            rsprintf("[ ");
+            break;
+         }
+      }
+
+      for (unsigned i=0; i<odb.size(); i++) {
+         int type = 0;
+         if (single)
+            type = atoi(getparam("type"));
+         else if (multiple) {
+            char p[256];
+            sprintf(p, "type%d", i);
+            type = atoi(getparam(p));
+         }
+
+         status = db_create_key(hDB, 0, odb[i].c_str(), type);
+
+         switch (encoding) {
+         default:
+         case ENCODING_JSON:
+            if (multiple && i>0)
+               rsprintf(", ");
+            rsprintf("%d", status);
+            break;
+         }
+      }
+
+      if (multiple) {
+         switch (encoding) {
+         default:
+         case ENCODING_JSON:
+            rsprintf(" ]");
+            break;
+         }
+      }
+
+      if (jsonp) {
+         rsputs(");\n");
+      }
+
+      return;
+   }
+   
+   /* process "jrename" command */
+   if (equal_ustring(getparam("cmd"), "jrename")) {
+
+      // test:
+      // curl "http://localhost:8080?cmd=jrename&odb0=/test/foo&type0=7&odb1=/nonexistant&type1=100&odb2=/test/bar&type2=12&encoding=json&callback=aaa"
+      // curl "http://localhost:8080?cmd=jrename&odb=/test/foo&name=foofoo"
+      
+      show_text_header();
+
+      if (jsonp) {
+         rsputs(jsonp_callback.c_str());
+         rsputs("(");
+      }
+
+      if (multiple) {
+         switch (encoding) {
+         default:
+         case ENCODING_JSON:
+            rsprintf("[ ");
+            break;
+         }
+      }
+
+      for (unsigned i=0; i<odb.size(); i++) {
+         const char* name = NULL;
+         if (single)
+            name = getparam("name");
+         else if (multiple) {
+            char p[256];
+            sprintf(p, "name%d", i);
+            name = getparam(p);
+         }
+         status = db_find_key(hDB, 0, odb[i].c_str(), &hkey);
+         if (status == DB_SUCCESS) {
+            status = db_rename_key(hDB, hkey, name);
+         }
+         switch (encoding) {
+         default:
+         case ENCODING_JSON:
+            if (multiple && i>0)
+               rsprintf(", ");
+            rsprintf("%d", status);
+            break;
+         }
+      }
+
+      if (multiple) {
+         switch (encoding) {
+         default:
+         case ENCODING_JSON:
+            rsprintf(" ]");
+            break;
+         }
+      }
+
+      if (jsonp) {
+         rsputs(");\n");
+      }
+
+      return;
+   }
+   
+   /* process "jlink" command */
+   if (equal_ustring(getparam("cmd"), "jlink")) {
+
+      // test:
+      // curl "http://localhost:8080?cmd=jlink&odb=/test/link&dest=/test/foo"
+      // curl "http://localhost:8080?cmd=jlink&odb0=/test/link0&dest0=/test/foo&odb1=/test/link1&dest1=/test/foo"      
+
+      show_text_header();
+
+      if (jsonp) {
+         rsputs(jsonp_callback.c_str());
+         rsputs("(");
+      }
+
+      if (multiple) {
+         switch (encoding) {
+         default:
+         case ENCODING_JSON:
+            rsprintf("[ ");
+            break;
+         }
+      }
+
+      for (unsigned i=0; i<odb.size(); i++) {
+         const char* dest = NULL;
+         if (single)
+            dest = getparam("dest");
+         else if (multiple) {
+            char p[256];
+            sprintf(p, "dest%d", i);
+            dest = getparam(p);
+         }
+
+         status = db_create_link(hDB, 0, odb[i].c_str(), dest);
+
+         switch (encoding) {
+         default:
+         case ENCODING_JSON:
+            if (multiple && i>0)
+               rsprintf(", ");
+            rsprintf("%d", status);
+            break;
+         }
+      }
+
+      if (multiple) {
+         switch (encoding) {
+         default:
+         case ENCODING_JSON:
+            rsprintf(" ]");
+            break;
+         }
+      }
+
+      if (jsonp) {
+         rsputs(");\n");
+      }
+
+      return;
+   }
+   
+   /* process "jreorder" command */
+   if (equal_ustring(getparam("cmd"), "jreorder")) {
+
+      // test:
+      // curl "http://localhost:8080?cmd=jreorder&odb0=/test/foo&index0=0&odb1=/test/bar&index1=1"
+      // curl "http://localhost:8080?cmd=jreorder&odb=/test/bar&index=0"
+      
+      show_text_header();
+
+      if (jsonp) {
+         rsputs(jsonp_callback.c_str());
+         rsputs("(");
+      }
+
+      if (multiple) {
+         switch (encoding) {
+         default:
+         case ENCODING_JSON:
+            rsprintf("[ ");
+            break;
+         }
+      }
+
+      for (unsigned i=0; i<odb.size(); i++) {
+         int index = 0;
+         if (single)
+            index = atoi(getparam("index"));
+         else if (multiple) {
+            char p[256];
+            sprintf(p, "index%d", i);
+            index = atoi(getparam(p));
+         }
+
+         status = db_find_key(hDB, 0, odb[i].c_str(), &hkey);
+         if (status == DB_SUCCESS) {
+            status = db_reorder_key(hDB, hkey, index);
+         }
+
+         switch (encoding) {
+         default:
+         case ENCODING_JSON:
+            if (multiple && i>0)
+               rsprintf(", ");
+            rsprintf("%d", status);
+            break;
+         }
+      }
+
+      if (multiple) {
+         switch (encoding) {
+         default:
+         case ENCODING_JSON:
+            rsprintf(" ]");
+            break;
+         }
+      }
+
+      if (jsonp) {
+         rsputs(");\n");
+      }
+
+      return;
+   }
+   
+   /* process "jdelete" command */
+   if (equal_ustring(getparam("cmd"), "jdelete")) {
+
+      // test:
+      // curl "http://localhost:8080?cmd=jdelete&odb0=/test/foo&odb1=/nonexistant&odb2=/test/bar&encoding=json&callback=aaa"
+      // curl "http://localhost:8080?cmd=jdelete&odb=/test/foo"
+      
+      show_text_header();
+
+      if (jsonp) {
+         rsputs(jsonp_callback.c_str());
+         rsputs("(");
+      }
+
+      if (multiple) {
+         switch (encoding) {
+         default:
+         case ENCODING_JSON:
+            rsprintf("[ ");
+            break;
+         }
+      }
+
+      for (unsigned i=0; i<odb.size(); i++) {
+         BOOL follow_links = 0;
+         status = db_find_key(hDB, 0, odb[i].c_str(), &hkey);
+         if (status == DB_SUCCESS) {
+            status = db_delete_key(hDB, hkey, follow_links);
+         }
+         switch (encoding) {
+         default:
+         case ENCODING_JSON:
+            if (multiple && i>0)
+               rsprintf(", ");
+            rsprintf("%d", status);
+            break;
+         }
+      }
+
+      if (multiple) {
+         switch (encoding) {
+         default:
+         case ENCODING_JSON:
+            rsprintf(" ]");
+            break;
+         }
+      }
+
+      if (jsonp) {
+         rsputs(");\n");
+      }
+
+      return;
+   }
+   
    /* process "jmsg" command */
    if (equal_ustring(getparam("cmd"), "jmsg")) {
       
@@ -14059,6 +14362,11 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
        equal_ustring(command, "jcopy") ||
        equal_ustring(command, "jpaste") ||
        equal_ustring(command, "jkey") ||
+       equal_ustring(command, "jcreate") ||
+       equal_ustring(command, "jlink") ||
+       equal_ustring(command, "jrename") ||
+       equal_ustring(command, "jreorder") ||
+       equal_ustring(command, "jdelete") ||
        equal_ustring(command, "jmsg") ||
        equal_ustring(command, "jalm") ||
        equal_ustring(command, "jgenmsg") ||
