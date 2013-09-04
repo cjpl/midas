@@ -1862,7 +1862,7 @@ Create a link to a key or set the destination of and existing link.
 @param hKey          Key handle to start with, 0 for root
 @param link_name     Name of key in the form "/key/key/key"
 @param destination   Destination of link in the form "/key/key/key"
-@return DB_SUCCESS, DB_INVALID_HANDLE, DB_FULL, DB_KEY_EXIST, DB_NO_ACCESS
+@return DB_SUCCESS, DB_INVALID_HANDLE, DB_FULL, DB_KEY_EXIST, DB_NO_ACCESS, DB_INVALID_NAME
 */
 INT db_create_link(HNDLE hDB, HNDLE hKey, const char *link_name, const char *destination)
 {
@@ -1871,6 +1871,16 @@ INT db_create_link(HNDLE hDB, HNDLE hKey, const char *link_name, const char *des
 
    if (rpc_is_remote())
       return rpc_call(RPC_DB_CREATE_LINK, hDB, hKey, link_name, destination);
+
+   if (destination == NULL) {
+      cm_msg(MERROR, "db_create_link", "destination name is NULL");
+      return DB_INVALID_NAME;
+   }
+
+   if (strlen(destination) < 1) {
+      cm_msg(MERROR, "db_create_link", "destination name is too short");
+      return DB_INVALID_NAME;
+   }
 
    /* check if destination exists */
    status = db_find_key(hDB, hKey, destination, &hkey);
@@ -4035,10 +4045,21 @@ INT db_rename_key(HNDLE hDB, HNDLE hKey, const char *name)
          return DB_INVALID_HANDLE;
       }
 
+      if (name == NULL) {
+         cm_msg(MERROR, "db_rename_key", "key name is NULL");
+         return DB_INVALID_NAME;
+      }
+
+      if (strlen(name) < 1) {
+         cm_msg(MERROR, "db_rename_key", "key name is too short");
+         return DB_INVALID_NAME;
+      }
+
       if (strchr(name, '/')) {
          cm_msg(MERROR, "db_rename_key", "key name may not contain \"/\"");
          return DB_INVALID_NAME;
       }
+
       db_lock_database(hDB);
 
       pheader = _database[hDB - 1].database_header;
