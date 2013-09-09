@@ -249,18 +249,10 @@ function ODBCopy(path, format)
    return request.responseText;
 }
 
-function ODBMCopy(paths, callback, encoding)
+function ODBCall(url, callback)
 {
    var request = XMLHttpRequestGeneric();
       
-   var url = ODBUrlBase + '?cmd=jcopy';
-   for (var i=0 ; i<paths.length ; i++) {
-      url += '&odb'+i+'='+encodeURIComponent(paths[i]);
-   }
-
-   if (encoding != undefined && encoding != '')
-      url += '&encoding=' + encodeURIComponent(encoding);
-   
    if (callback != undefined) {
       request.onreadystatechange = function() 
          {
@@ -278,6 +270,68 @@ function ODBMCopy(paths, callback, encoding)
    request.open('GET', url, false);
    request.send(null);
    return request.responseText;
+}
+
+function ODBMCopy(paths, callback, encoding)
+{
+   var url = ODBUrlBase + '?cmd=jcopy';
+   for (var i=0 ; i<paths.length ; i++) {
+      url += '&odb'+i+'='+encodeURIComponent(paths[i]);
+   }
+
+   if (encoding != undefined && encoding != '')
+      url += '&encoding=' + encodeURIComponent(encoding);
+
+   return ODBCall(url, callback);
+}
+
+function ODBMCreate(paths, types, callback)
+{
+   var url = ODBUrlBase + '?cmd=jcreate';
+   for (var i=0 ; i<paths.length ; i++) {
+      url += '&odb'+i+'='+encodeURIComponent(paths[i]);
+      url += '&type'+i+'='+encodeURIComponent(types[i]);
+   }
+   return ODBCall(url, callback);
+}
+
+function ODBMRename(paths, names, callback)
+{
+   var url = ODBUrlBase + '?cmd=jrename';
+   for (var i=0 ; i<paths.length ; i++) {
+      url += '&odb'+i+'='+encodeURIComponent(paths[i]);
+      url += '&name'+i+'='+encodeURIComponent(names[i]);
+   }
+   return ODBCall(url, callback);
+}
+
+function ODBMLink(paths, links, callback)
+{
+   var url = ODBUrlBase + '?cmd=jlink';
+   for (var i=0 ; i<paths.length ; i++) {
+      url += '&dest'+i+'='+encodeURIComponent(paths[i]);
+      url += '&odb'+i+'='+encodeURIComponent(links[i]);
+   }
+   return ODBCall(url, callback);
+}
+
+function ODBMReorder(paths, indices, callback)
+{
+   var url = ODBUrlBase + '?cmd=jreorder';
+   for (var i=0 ; i<paths.length ; i++) {
+      url += '&odb'+i+'='+encodeURIComponent(paths[i]);
+      url += '&index'+i+'='+encodeURIComponent(indices[i]);
+   }
+   return ODBCall(url, callback);
+}
+
+function ODBMDelete(paths, callback)
+{
+   var url = ODBUrlBase + '?cmd=jdelete';
+   for (var i=0 ; i<paths.length ; i++) {
+      url += '&odb'+i+'='+encodeURIComponent(paths[i]);
+   }
+   return ODBCall(url, callback);
 }
 
 function ODBRpc_rev0(name, rpc, args)

@@ -7,6 +7,8 @@
 
     <script type="text/javascript">
 
+      //ODBSetURL("http://localhost:8080/");
+
       function htmlize(text)
       {
       // Escape the angle brackets for display in HTML
@@ -180,6 +182,11 @@ ODBExtractRecord(record, key);
 new ODBKey(path);
 ODBCopy(path, format);
 ODBMCopy(paths, callback, format);
+ODBMCreate(paths, types, callback);
+ODBMRename(paths, names, callback);  
+ODBMLink(paths, links, callback);  
+ODBMReorder(paths, indices, callback);
+ODBMDelete(paths, callback);
 ODBRpc_rev0(name, rpc, args);
 ODBRpc_rev1(name, rpc, max_reply_length, args);
 ODBGetMsg(n);
@@ -364,6 +371,76 @@ ODBEdit(path);
         <script src='?cmd=jcopy&odb0=/Runinfo&odb1=/Runinfo/Run number&odb2=/does-not-exist&odb3=/Equipment/RpcExample/Settings&odb4=/Equipment/RpcExample/Variables&format=json-p&callback=mcopy_jsonp_callback'></script>
 
       <li>
+        <h2>ODBMCreate()</h2>
+
+        <p>
+          <input type=button value='Push me' onClick='
+            clearTimeout(updateTimerId);
+            var paths = [ "/Test/foo", "/Test/noexistant", "/Test/bar" ]; 
+            var types = [ TID_INT, 0, TID_STRING ]; 
+            var data = ODBMCreate(paths, types);
+            document.getElementById("mcreate_reply").innerHTML = data;
+            update();
+            '></input>
+          Reply: <tt id='mcreate_reply'></tt>
+        </p> 
+
+      <li>
+        <h2>ODBMRename()</h2>
+
+        <p>
+          <input type=button value='Push me' onClick='
+            clearTimeout(updateTimerId);
+            var data = ODBMRename([ "/Test/foo" ], [ "foofoo" ]);
+            document.getElementById("mrename_reply").innerHTML = data;
+            update();
+            '></input>
+          Reply: <tt id='mrename_reply'></tt>
+        </p> 
+
+      <li>
+        <h2>ODBMLink()</h2>
+
+        <p>
+          <input type=button value='Push me' onClick='
+            clearTimeout(updateTimerId);
+            var data = ODBMLink([ "/Test/bar" ], [ "/Test/barlink" ]);
+            document.getElementById("mlink_reply").innerHTML = data;
+            update();
+            '></input>
+          Reply: <tt id='mlink_reply'></tt>
+        </p> 
+
+      <li>
+        <h2>ODBMReorder()</h2>
+
+        <p>
+          <input type=button value='Push me' onClick='
+            clearTimeout(updateTimerId);
+            var paths = [  "/Test/bar", "/Test/barlink", "/Test/foofoo" ]; 
+            var indices = [ 0, 1, 2 ]; 
+            var data = ODBMReorder(paths, indices);
+            document.getElementById("mreorder_reply").innerHTML = data;
+            update();
+            '></input>
+          Reply: <tt id='mreorder_reply'></tt>
+        </p> 
+
+      <li>
+        <h2>ODBMDelete()</h2>
+
+        <p>
+          <input type=button value='Push me' onClick='
+            clearTimeout(updateTimerId);
+            var paths = [ "/Test/foo", "/Test/noexistant", "/Test/bar", "/Test/foofoo", "/Test/barlink" ];
+            var data = ODBMDelete(paths);
+            document.getElementById("mdelete_reply").innerHTML = data;
+            update();
+            '></input>
+          Reply: <tt id='mdelete_reply'></tt>
+        </p> 
+
+      <li>
         <h2>ODBSet()</h2>
       
         <p>
@@ -460,6 +537,6 @@ ODBEdit(path);
     <hr>
     <address><a href="mailto:xxx@xxx">MIDAS Example</a></address>
 <!-- Created: Tue Sep 21 15:44:39 PDT 2010 -->
-<!-- hhmts start -->Last modified: Thu Aug 22 08:50:46 PDT 2013 <!-- hhmts end -->
+<!-- hhmts start -->Last modified: Mon Sep  9 08:33:20 PDT 2013 <!-- hhmts end -->
   </body>
 </html>
