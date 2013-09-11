@@ -395,7 +395,8 @@ int Sqlite::Prepare(const char* table_name, const char* sql, sqlite3_stmt** st)
    if (status == SQLITE_OK)
       return DB_SUCCESS;
 
-   cm_msg(MERROR, "Sqlite::Prepare", "Table %s: sqlite3_prepare_v2(%s) error %d (%s)", table_name, sql, status, xsqlite3_errstr(db, status));
+   std::string sqlstring = sql;
+   cm_msg(MERROR, "Sqlite::Prepare", "Table %s: sqlite3_prepare_v2(%s...) error %d (%s)", table_name, sqlstring.substr(0,60).c_str(), status, xsqlite3_errstr(db, status));
 
    fTempDB = NULL;
 
@@ -587,7 +588,8 @@ int Sqlite::Exec(const char* table_name, const char* sql)
 
    status = sqlite3_exec(db, sql, callback, 0, &errmsg);
    if (status != SQLITE_OK) {
-      cm_msg(MERROR, "Sqlite::Exec", "Table %s: sqlite3_exec(%s) error %d (%s)", table_name, sql, status, errmsg);
+      std::string sqlstring = sql;
+      cm_msg(MERROR, "Sqlite::Exec", "Table %s: sqlite3_exec(%s...) error %d (%s)", table_name, sqlstring.substr(0,60).c_str(), status, errmsg);
       sqlite3_free(errmsg);
       return DB_FILE_ERROR;
    }
@@ -1103,7 +1105,7 @@ public:
                      
                      //printf("column \'%s\', data type %s\n", colname.c_str(), columns[k+1].c_str());
 
-                     printf("hs_define_event: event [%s] tag [%s] type %d (%s), column [%s] type [%s] compatible %d\n", event_name, tagname.c_str(), tagtype, midasTypeName(tagtype), colname.c_str(), columns[k+1].c_str(), compatible);
+                     //printf("hs_define_event: event [%s] tag [%s] type %d (%s), column [%s] type [%s] compatible %d\n", event_name, tagname.c_str(), tagtype, midasTypeName(tagtype), colname.c_str(), columns[k+1].c_str(), compatible);
                      
                      break;
                   }
