@@ -20,9 +20,7 @@
 
 std::map<int,const char*> gEventName;
 
-MidasHistoryInterface *mh = NULL;
-
-int readHstFile(FILE*f)
+int copyHstFile(FILE*f, MidasHistoryInterface *mh)
 {
   assert(f!=NULL);
 
@@ -112,7 +110,7 @@ int readHstFile(FILE*f)
   return 0;
 }
 
-int readHst(const char* name)
+int copyHst(const char* name, MidasHistoryInterface* mh)
 {
   FILE* f = fopen(name,"r");
   if (!f)
@@ -121,25 +119,34 @@ int readHst(const char* name)
       exit(1);
     }
 
-  readHstFile(f);
+  copyHstFile(f, mh);
   fclose(f);
+  mh->hs_flush_buffers();
   return 0;
 }
 
 void help()
 {
-  fprintf(stderr,"Usage: mh2sql odbc_dsn file1.hst file2.hst ...\n");
+  fprintf(stderr,"Usage: mh2sql [-h] [switches...] file1.hst file2.hst ...\n");
   fprintf(stderr,"\n");
   fprintf(stderr,"Switches:\n");
   fprintf(stderr,"  -h --- print this help message\n");
+  fprintf(stderr,"  --hs-debug <hs_debug_flag> --- set the history debug flag\n");
+  fprintf(stderr,"  --odbc <ODBC_DSN> --- write to ODBC (SQL) history using given ODBC DSN\n");
+  fprintf(stderr,"  --sqlite <path> --- write to SQLITE database at the given path\n");
   fprintf(stderr,"\n");
   fprintf(stderr,"Examples:\n");
+  fprintf(stderr,"  mh2sql --hs-debug 1 --sqlite . 130813.hst\n");
   exit(1);
 }
 
 int main(int argc,char*argv[])
 {
    int status;
+   int hs_debug_flag = 0;
+   HNDLE hDB;
+   MidasHistoryInterface *mh = NULL;
+
    if (argc <= 2)
       help(); // DOES NOT RETURN
 
@@ -147,21 +154,65 @@ int main(int argc,char*argv[])
    if (status != SUCCESS)
       exit(1);
 
-   mh = MakeMidasHistoryODBC();
-   assert(mh);
+   status = cm_get_experiment_database(&hDB, NULL);
+   assert(status == HS_SUCCESS);
 
-   status = mh->hs_connect(argv[1]);
-   if (status != SUCCESS)
-      exit(1);
-   
-   for (int iarg=2; iarg<argc; iarg++)
-      if (strcmp(argv[iarg], "-h")==0) {
+   for (int iarg=1; iarg<argc; iarg++) {
+      const char* arg = argv[iarg];
+      if (arg[0] != '-')
+         continue;
+      
+      if (strcmp(arg, "-h")==0) {
          help(); // DOES NOT RETURN
-      } else if (argv[iarg][0]=='-' && argv[iarg][1]=='v') {
-         mh->hs_set_debug(atoi(argv[iarg]+2));
-      } else {
-         readHst(argv[iarg]);
+      } else if (strcmp(arg, "--hs-debug") == 0) {
+         hs_debug_flag = atoi(argv[iarg+1]);
+         iarg++;
+      } else if (strcmp(arg, "--odbc") == 0) {
+         mh = MakeMidasHistoryODBC();
+         assert(mh);
+         mh->hs_set_debug(hs_debug_flag);
+         status = mh->hs_connect(argv[iarg+1]);
+         if (status != HS_SUCCESS)
+            exit(1);
+         iarg++;
+      } else if (strcmp(arg, "--sqlite") == 0) {
+         mh = MakeMidasHistorySqlite();
+         assert(mh);
+         mh->hs_set_debug(hs_debug_flag);
+         status = mh->hs_connect(argv[iarg+1]);
+         if (status != HS_SUCCESS)
+            exit(1);
+         iarg++;
       }
+   }
+
+   if (!mh) {
+      status = hs_get_history(hDB, 0, HS_GET_DEFAULT|HS_GET_WRITER|HS_GET_INACTIVE, hs_debug_flag, &mh);
+      assert(status == HS_SUCCESS);
+      assert(mh);
+   }
+   
+   for (int iarg=1; iarg<argc; iarg++) {
+      const char* arg = argv[iarg];
+
+      if (arg[0] != '-')
+         continue;
+      
+      if (strcmp(arg, "--hs-debug") == 0) {
+         mh->hs_set_debug(atoi(argv[iarg]+2));
+         iarg++;
+      }
+   }
+
+   for (int iarg=1; iarg<argc; iarg++) {
+      const char* arg = argv[iarg];
+
+      if (strstr(arg, ".hst") != NULL) {
+         copyHst(arg, mh);
+      }
+   }
+
+   mh->hs_disconnect();
 
    cm_disconnect_experiment();
 
