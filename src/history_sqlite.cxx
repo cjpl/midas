@@ -1529,8 +1529,10 @@ public:
 
    int hs_get_last_written(time_t start_time, int num_var, const char* const event_name[], const char* const tag_name[], const int var_index[], time_t last_written[])
    {
+      double dstart_time = start_time;
+
       if (fDebug) {
-         printf("hs_get_last_written: start time %d, num_var %d\n", (int)start_time, num_var);
+         printf("hs_get_last_written: start time %.0f, num_var %d\n", dstart_time, num_var);
       }
 
       for (int i=0; i<num_var; i++) {
@@ -1557,7 +1559,7 @@ public:
             const char* cn = xitem[j].columnName.c_str();
 
             char cmd[256];
-            sprintf(cmd, "SELECT _i_time, %s FROM %s ORDER BY _i_time DESC LIMIT 2;", cn, tn);
+            sprintf(cmd, "SELECT _i_time, %s FROM %s WHERE _i_time <= %.0f ORDER BY _i_time DESC LIMIT 2;", cn, tn, dstart_time);
 
             sqlite3_stmt *st;
             
@@ -1586,6 +1588,9 @@ public:
                time_t t = fSql->GetInt64(st, 0);
                double v = fSql->GetDouble(st, 1);
 
+               if (t > start_time)
+                  continue;
+
                if (0) {
                   if (k<10)
                      printf("count %d, t %d, v %f, tt %d\n", k, (int)t, v, (int)tt);
@@ -1602,7 +1607,7 @@ public:
       }
 
       if (fDebug) {
-         printf("hs_get_last_written: num_var %d\n", num_var);
+         printf("hs_get_last_written: start time %.0f, num_var %d\n", dstart_time, num_var);
          for (int i=0; i<num_var; i++) {
             printf("  event [%s] tag [%s] index [%d] last_written %d\n", event_name[i], tag_name[i], var_index[i], (int)last_written[i]);
          }
