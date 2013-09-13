@@ -10161,14 +10161,18 @@ int read_history(HNDLE hDB, const char *path, int index, int runmarker, time_t t
 }
 
 void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
-                         int width, int height, int scale, int toffset, int index,
+                         int width, int height,
+                         int scale, int toffset,
+                         //time_t starttime, time_t endtime,
+                         int index,
                          int labels, const char *bgcolor, const char *fgcolor, const char *gridcolor)
 {
    HNDLE hDB, hkey, hkeypanel, hkeyeq, hkeydvar, hkeyvars, hkeyroot, hkeynames;
    KEY key;
    gdImagePtr im;
    gdGifBuffer gb;
-   int i, j, k, l, n_vars, size, status, row, x_marker, n_vp, r, g, b;
+   int i, j, k, l, n_vars, size, status, row, n_vp, r, g, b;
+   //int x_marker;
    int length, aoffset;
    int flag, x1, y1, x2, y2, xs, xs_old, ys, xold, yold, xmaxm;
    int white, black, grey, ltgrey, red, green, blue, fgcol, bgcol, gridcol,
@@ -10184,7 +10188,8 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
    double y[MAX_VARS][MAX_POINTS];
    float factor[MAX_VARS], offset[MAX_VARS];
    BOOL logaxis, runmarker;
-   double xmin, xmax, ymin, ymax;
+   //double xmin, xrange;
+   double ymin, ymax;
    gdPoint poly[3];
    double upper_limit[MAX_VARS], lower_limit[MAX_VARS];
    double yb1, yb2, yf1, yf2, ybase;
@@ -10204,6 +10209,11 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
       tbuffer = (DWORD*)malloc(hbuffer_size);
       ybuffer = (char*)malloc(hbuffer_size);
    }
+
+   time_t now = ss_time();
+
+   time_t starttime = now - scale + toffset;
+   time_t endtime = now + toffset;
 
    HistoryData  hsxxx;
    HistoryData* hsdata = &hsxxx;
@@ -10565,9 +10575,8 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
    } // loop over variables
 
    if (1) {
-      time_t now = ss_time();
-   
-      status = read_history(hDB, panel, index, runmarker, now-scale+toffset, now+toffset, scale/1000+1, hsdata);
+
+      status = read_history(hDB, panel, index, runmarker, starttime, endtime, scale/1000+1, hsdata);
       
       if (status != HS_SUCCESS) {
          sprintf(str, "Complete history failure, read_history() status %d, see messages", status);
@@ -10597,7 +10606,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
          }
 
          for (int j = n_vp = 0; j < hsdata->num_entries[k]; j++) {
-            x[i][n_vp] = (int)(hsdata->t[k][j] - now);
+            x[i][n_vp] = (int)(hsdata->t[k][j]);
             y[i][n_vp] = hsdata->v[k][j];
          
             /* skip NaNs */
@@ -10704,8 +10713,10 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
    }
 
    /* calculate X limits */
-   xmin = (float) (-scale / 3600.0 + toffset / 3600.0);
-   xmax = (float) (toffset / 3600.0);
+   //xmin = (double) (-scale / 3600.0 + toffset / 3600.0);
+   //xmax = (double) (toffset / 3600.0);
+   //xrange = xmax - xmin;
+   //xrange = scale/3600.0;
 
    /* caluclate required space for Y-axis */
    aoffset = vaxis(im, gdFontSmall, fgcol, gridcol, 0, 0, height, -3, -5, -7, -8, 0, ymin, ymax, logaxis);
@@ -10719,7 +10730,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
    gdImageFilledRectangle(im, x1, y2, x2, y1, bgcol);
 
    /* draw axis frame */
-   taxis(im, gdFontSmall, fgcol, gridcol, x1, y1, x2 - x1, width, 3, 5, 9, 10, 0, ss_time() - scale + toffset, ss_time() + toffset);
+   taxis(im, gdFontSmall, fgcol, gridcol, x1, y1, x2 - x1, width, 3, 5, 9, 10, 0, starttime, endtime);
 
    vaxis(im, gdFontSmall, fgcol, gridcol, x1, y1, y1 - y2, -3, -5, -7, -8, x2 - x1, ymin, ymax, logaxis);
    gdImageLine(im, x1, y2, x2, y2, fgcol);
@@ -10753,7 +10764,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
       num_entries[0] = 0;
       num_entries[1] = 0;
 
-      status = mh->hs_read(ss_time() - scale + toffset - scale, ss_time() + toffset, 0,
+      status = mh->hs_read(starttime - scale, endtime, 0,
                            2, event_names, tag_names, tag_indexes,
                            num_entries, tbuf, dbuf, st);
 
@@ -10767,9 +10778,18 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
          for (j = 0; j < (int) n_marker; j++) {
             int col;
 
-            x_marker = (int)(tbuf[1][j] - ss_time());
-            xs = (int) ((x_marker / 3600.0 - xmin) / (xmax - xmin) * (x2 - x1) + x1 +
-                        0.5);
+            // explicit algebra manipulation to clarify computations:
+
+            //xmin = (double) (-scale / 3600.0 + toffset / 3600.0);
+            //xrange = scale/3600.0;
+            //time_t starttime = now - scale + toffset;
+
+            //x_marker = (int)(tbuf[1][j] - now);
+            //xs = (int) ((x_marker / 3600.0 - xmin) / xrange * (x2 - x1) + x1 + 0.5);
+            //xs = (int) (((tbuf[1][j] - now) / 3600.0 - xmin) / xrange * (x2 - x1) + x1 + 0.5);
+            //xs = (int) (((tbuf[1][j] - now) / 3600.0 - (-scale / 3600.0 + toffset / 3600.0)) / (scale/3600.0) * (x2 - x1) + x1 + 0.5);
+            //xs = (int) (((tbuf[1][j] - now) - (-scale + toffset)) / (scale/1.0) * (x2 - x1) + x1 + 0.5);
+            xs = (int) ((tbuf[1][j] - starttime) / (scale/1.0) * (x2 - x1) + x1 + 0.5);
 
             if (xs < x1)
                continue;
@@ -10901,7 +10921,12 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
       }
 
       for (j = 0; j < (int) n_point[i]; j++) {
-         xs = (int) ((x[i][j] / 3600.0 - xmin) / (xmax - xmin) * (x2 - x1) + x1 + 0.5);
+         //xmin = (double) (-scale / 3600.0 + toffset / 3600.0);
+         //xrange = scale/3600.0;
+         //xs = (int) (((x[i][j]-now) / 3600.0 - xmin) / xrange * (x2 - x1) + x1 + 0.5);
+         //xs = (int) (((x[i][j] - now + scale - toffset) / 3600.0) / xrange * (x2 - x1) + x1 + 0.5);
+         //xs = (int) (((x[i][j] - starttime) / 3600.0) / xrange * (x2 - x1) + x1 + 0.5);
+         xs = (int) (((x[i][j] - starttime)/1.0) / (1.0*scale) * (x2 - x1) + x1 + 0.5);
 
          if (logaxis) {
             if (y[i][j] <= 0)
@@ -13007,6 +13032,8 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
          rsprintf("<input type=submit name=scale value=%s>\n", str);
       }
 
+      //rsprintf("<input type=submit name=shift value=\"<<<\">\n");
+      //rsprintf("<input type=submit name=shift value=\"<<\">\n");
       rsprintf("<input type=submit name=shift value=\"<\">\n");
       rsprintf("<input type=submit name=shift value=\" + \">\n");
       rsprintf("<input type=submit name=shift value=\" - \">\n");
