@@ -9950,11 +9950,16 @@ struct HistoryData
    time_t** t;
    double** v;
 
+   bool have_last_written;
+   time_t* last_written;
+
    time_t tstart;
    time_t tend;
    time_t scale;
 
    void Allocate(int xnvars) {
+      if (alloc_nvars > 0)
+         Free();
       nvars = 0;
       alloc_nvars = xnvars;
       event_names = ALLOC(char*, alloc_nvars);
@@ -9965,11 +9970,12 @@ struct HistoryData
       num_entries = ALLOC(int, alloc_nvars);
       t = ALLOC(time_t*, alloc_nvars);
       v = ALLOC(double*, alloc_nvars);
+      
+      have_last_written = false;
+      last_written = ALLOC(time_t, alloc_nvars);
    }
 
    void Free() {
-      nvars = 0;
-      alloc_nvars = 0;
       DELETEA(event_names, alloc_nvars);
       DELETEA(var_names, alloc_nvars);
       DELETE(var_index);
@@ -9978,6 +9984,10 @@ struct HistoryData
       DELETE(num_entries);
       DELETEA(t, alloc_nvars);
       DELETEA(v, alloc_nvars);
+      DELETE(last_written);
+      nvars = 0;
+      alloc_nvars = 0;
+      have_last_written = false;
    }
 
    void Print() const {
@@ -9985,15 +9995,20 @@ struct HistoryData
       for (int i=0; i<nvars; i++) {
          printf("var[%d]: [%s/%s][%d] %d entries, status %d", i, event_names[i], var_names[i], var_index[i], num_entries[i], status[i]);
          if (status[i]==HS_SUCCESS && num_entries[i]>0 && t[i] && v[i])
-            printf(", t %d:%d, v %g:%g\n", (int)t[i][0], (int)t[i][num_entries[i]-1], v[i][0], v[i][num_entries[i]-1]);
-         else
-            printf("\n");
+            printf(", t %d:%d, v %g:%g", (int)t[i][0], (int)t[i][num_entries[i]-1], v[i][0], v[i][num_entries[i]-1]);
+         printf(" last_written %d", (int)last_written[i]);
+         printf("\n");
       }
    }
 
    HistoryData() // ctor
    {
       nvars = 0;
+      alloc_nvars = 0;
+      have_last_written = false;
+      tstart = 0;
+      tend = 0;
+      scale = 0;
    }
 
    ~HistoryData() // dtor
@@ -10120,12 +10135,34 @@ int read_history(HNDLE hDB, const char *path, int index, int runmarker, time_t t
       return HS_FILE_ERROR;
    }
    
+   bool get_last_written = false;
+   for (int i=0; i<data->nvars; i++) {
+      if (data->status[i] != HS_SUCCESS || data->num_entries[i] < 1) {
+         get_last_written = true;
+         break;
+      }
+   }
+
+   if (0 && get_last_written) {
+      data->have_last_written = true;
+
+      status = mh->hs_get_last_written(
+                           data->nvars,
+                           data->event_names,
+                           data->var_names,
+                           data->var_index,
+                           data->last_written);
+
+      if (status != HS_SUCCESS)
+         data->have_last_written = false;
+   }
+   
    return SUCCESS;
 }
 
 void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
                          int width, int height, int scale, int toffset, int index,
-                         int labels, char *bgcolor, char *fgcolor, char *gridcolor)
+                         int labels, const char *bgcolor, const char *fgcolor, const char *gridcolor)
 {
    HNDLE hDB, hkey, hkeypanel, hkeyeq, hkeydvar, hkeyvars, hkeyroot, hkeynames;
    KEY key;
@@ -10167,6 +10204,9 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
       tbuffer = (DWORD*)malloc(hbuffer_size);
       ybuffer = (char*)malloc(hbuffer_size);
    }
+
+   HistoryData  hsxxx;
+   HistoryData* hsdata = &hsxxx;
 
    cm_get_experiment_database(&hDB, NULL);
 
@@ -10525,8 +10565,6 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
    } // loop over variables
 
    if (1) {
-      HistoryData  hsxxx;
-      HistoryData* hsdata = &hsxxx;
       time_t now = ss_time();
    
       status = read_history(hDB, panel, index, runmarker, now-scale+toffset, now+toffset, scale/1000+1, hsdata);
@@ -10596,131 +10634,6 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
 
          assert(n_point[i]<=MAX_POINTS);
       }
-      
-      // free arrays in history data
-      for (i=0 ; i<hsdata->nvars ; i++) {
-         free(hsdata->event_names[i]);
-         hsdata->event_names[i] = NULL;
-
-         free(hsdata->var_names[i]);
-         hsdata->var_names[i] = NULL;
-
-         free(hsdata->t[i]);
-         hsdata->t[i] = NULL;
-
-         free(hsdata->v[i]);
-         hsdata->v[i] = NULL;
-      }
-   }
-
-   if (0) {
-      time_t now = ss_time();
-
-      int num_entries[MAX_VARS];
-      time_t *times[MAX_VARS];
-      double *datas[MAX_VARS];
-      int st[MAX_VARS];
-
-      const char* xevent_name[MAX_VARS];
-      const char* xvar_name[MAX_VARS];
-
-      for (i = 0; i < n_vars; i++) {
-         if (index != -1 && index != i) {
-            var_status[i][0] = 0;
-            xevent_name[i] = NULL;
-            xvar_name[i] = NULL;
-            continue;
-         }
-
-         var_status[i][0] = 0;
-         xevent_name[i] = event_name[i];
-         xvar_name[i] = var_name[i];
-         
-         //printf("event [%s][%s] tag [%s][%s] index [%d]\n", event_name[i], xevent_name[i], var_name[i], xvar_name[i], var_index[i]);
-      }
-
-      for (i=0 ; i<MAX_VARS ; i++) {
-         times[i] = NULL;
-         datas[i] = NULL;
-      }
-
-      status = mh->hs_read(now - scale + toffset, now + toffset, scale / 1000 + 1,
-                           n_vars,
-                           xevent_name, xvar_name, var_index,
-                           num_entries,
-                           times, datas,
-                           st);
-     
-      if (status != HS_SUCCESS) {
-         sprintf(str, "Complete history failure, hs_read() status %d, see messages", status);
-         gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
-                       height / 2, str, red);
-         goto error;
-      }
-
-      for (i = 0; i < n_vars; i++) {
-         var_status[i][0] = 0;
-
-         if (st[i] == HS_UNDEFINED_VAR) {
-            sprintf(var_status[i], "not found in history");
-            num_entries[i] = 0;
-         } else if (st[i] != HS_SUCCESS) {
-            sprintf(var_status[i], "hs_read() error %d, see messages", st[i]);
-            num_entries[i] = 0;
-         }
-      }
-     
-      for (i = 0; i < n_vars; i++) {
-         if (index != -1 && index != i)
-            continue;
-       
-         for (j = n_vp = 0; j < num_entries[i]; j++) {
-            x[i][n_vp] = (int)(times[i][j] - now);
-            y[i][n_vp] = datas[i][j];
-         
-            /* skip NaNs */
-            if (ss_isnan(y[i][n_vp]))
-               continue;
-         
-            /* skip INFs */
-            if (!ss_isfin(y[i][n_vp]))
-               continue;
-         
-            /* avoid overflow */
-            if (y[i][n_vp] > 1E30)
-               y[i][n_vp] = 1E30f;
-         
-            /* apply factor and offset */
-            y[i][n_vp] = y[i][n_vp] * factor[i] + offset[i];
-         
-            /* calculate ymin and ymax */
-            if ((i == 0 || index != -1) && n_vp == 0)
-               ymin = ymax = y[i][0];
-            else {
-               if (y[i][n_vp] > ymax)
-                  ymax = y[i][n_vp];
-               if (y[i][n_vp] < ymin)
-                  ymin = y[i][n_vp];
-            }
-         
-            /* increment number of valid points */
-            n_vp++;
-
-         } // loop over data
-
-         n_point[i] = n_vp;
-
-         assert(n_point[i]<=MAX_POINTS);
-
-         if (times[i]) {
-            free(times[i]);
-            times[i] = NULL;
-         }
-         if (datas[i]) {
-            free(datas[i]);
-            datas[i] = NULL;
-         }
-      } // loop over variables
    }
 
    tend = ss_millitime();
@@ -10795,9 +10708,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
    xmax = (float) (toffset / 3600.0);
 
    /* caluclate required space for Y-axis */
-   aoffset =
-       vaxis(im, gdFontSmall, fgcol, gridcol, 0, 0, height, -3, -5, -7, -8, 0, ymin, ymax,
-             logaxis);
+   aoffset = vaxis(im, gdFontSmall, fgcol, gridcol, 0, 0, height, -3, -5, -7, -8, 0, ymin, ymax, logaxis);
    aoffset += 2;
 
    x1 = aoffset;
@@ -10808,11 +10719,9 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
    gdImageFilledRectangle(im, x1, y2, x2, y1, bgcol);
 
    /* draw axis frame */
-   taxis(im, gdFontSmall, fgcol, gridcol, x1, y1, x2 - x1, width, 3, 5, 9, 10, 0,
-         ss_time() - scale + toffset, ss_time() + toffset);
+   taxis(im, gdFontSmall, fgcol, gridcol, x1, y1, x2 - x1, width, 3, 5, 9, 10, 0, ss_time() - scale + toffset, ss_time() + toffset);
 
-   vaxis(im, gdFontSmall, fgcol, gridcol, x1, y1, y1 - y2, -3, -5, -7, -8, x2 - x1, ymin,
-         ymax, logaxis);
+   vaxis(im, gdFontSmall, fgcol, gridcol, x1, y1, y1 - y2, -3, -5, -7, -8, x2 - x1, ymin, ymax, logaxis);
    gdImageLine(im, x1, y2, x2, y2, fgcol);
    gdImageLine(im, x2, y2, x2, y1, fgcol);
 
@@ -11062,10 +10971,20 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
 
          if (show_values) {
             char xstr[256];
-            if (n_point[i] > 0)
+            if (n_point[i] > 0) {
                sprintf(xstr," = %g", y[i][n_point[i]-1]);
-            else
+            } else if (hsdata->have_last_written) {
+               if (hsdata->last_written[i]) {
+                  sprintf(xstr," = last data %s", ctime(&hsdata->last_written[i]));
+                  // kill trailing '\n'
+                  char*s = strchr(xstr, '\n');
+                  if (s) *s=0;
+               } else {
+                  sprintf(xstr," = no data ever");
+               }
+            } else {
                sprintf(xstr," = no data");
+            }
             strlcat(str, xstr, sizeof(str));
          }
 
