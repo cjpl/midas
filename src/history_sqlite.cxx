@@ -1527,10 +1527,10 @@ public:
 
    /*------------------------------------------------------------------*/
 
-   int hs_get_last_written(int num_var, const char* const event_name[], const char* const tag_name[], const int var_index[], time_t last_written[])
+   int hs_get_last_written(time_t start_time, int num_var, const char* const event_name[], const char* const tag_name[], const int var_index[], time_t last_written[])
    {
       if (fDebug) {
-         printf("hs_get_last_written: num_var %d\n", num_var);
+         printf("hs_get_last_written: start time %d, num_var %d\n", (int)start_time, num_var);
       }
 
       for (int i=0; i<num_var; i++) {

@@ -87,7 +87,9 @@ class MidasHistoryInterface
 
   virtual int hs_get_tags(const char* event_name, std::vector<TAG> *ptags) = 0; ///< use event names returned by hs_get_events_odbc(), see hs_get_tags(), returns HS_SUCCESS
 
-  virtual int hs_get_last_written(int num_var, const char* const event_name[], const char* const tag_name[], const int var_index[], time_t last_written[]) = 0;
+  virtual int hs_get_last_written(time_t start_time,
+                                  int num_var, const char* const event_name[], const char* const tag_name[], const int var_index[],
+                                  time_t last_written[]) = 0;
 
   virtual int hs_read_buffer(time_t start_time, time_t end_time,
                              int num_var, const char* const event_name[], const char* const tag_name[], const int var_index[],
