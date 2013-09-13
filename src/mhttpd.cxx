@@ -10147,6 +10147,7 @@ int read_history(HNDLE hDB, const char *path, int index, int runmarker, time_t t
       data->have_last_written = true;
 
       status = mh->hs_get_last_written(
+                           tstart,
                            data->nvars,
                            data->event_names,
                            data->var_names,
