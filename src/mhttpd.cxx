@@ -10143,7 +10143,7 @@ int read_history(HNDLE hDB, const char *path, int index, int runmarker, time_t t
       }
    }
 
-   if (0 && get_last_written) {
+   if (get_last_written) {
       data->have_last_written = true;
 
       status = mh->hs_get_last_written(
