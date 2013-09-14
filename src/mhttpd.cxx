@@ -10176,13 +10176,13 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
    //int x_marker;
    int length, aoffset;
    int flag, x1, y1, x2, y2, xs, xs_old, ys, xold, yold, xmaxm;
-   int white, black, grey, ltgrey, red, green, blue, fgcol, bgcol, gridcol,
-       curve_col[MAX_VARS], state_col[3];
+   int white, black, grey, ltgrey, red, green, blue;
+   int fgcol, bgcol, gridcol;
+   int curve_col[MAX_VARS], state_col[3];
    char str[256], panel[256], *p, odbpath[256];
    INT var_index[MAX_VARS];
    char event_name[MAX_VARS][NAME_LENGTH];
-   char tag_name[MAX_VARS][64], var_name[MAX_VARS][NAME_LENGTH], varname[64],
-       key_name[256];
+   char tag_name[MAX_VARS][64], var_name[MAX_VARS][NAME_LENGTH], varname[64], key_name[256];
 #define MAX_POINTS 1000
    DWORD n_point[MAX_VARS];
    int x[MAX_VARS][MAX_POINTS];
@@ -10264,8 +10264,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
    strlcpy(panel, path, sizeof(panel));
    if (strstr(panel, ".gif"))
       *strstr(panel, ".gif") = 0;
-   gdImageString(im, gdFontGiant, width / 2 - (strlen(panel) * gdFontGiant->w) / 2, 2,
-                 panel, fgcol);
+   gdImageString(im, gdFontGiant, width / 2 - (strlen(panel) * gdFontGiant->w) / 2, 2, panel, fgcol);
 
    /* connect to history */
    MidasHistoryInterface *mh = get_history();
@@ -10280,16 +10279,14 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
    db_find_key(hDB, 0, str, &hkeypanel);
    if (!hkeypanel) {
       sprintf(str, "Cannot find /History/Display/%s in ODB", panel);
-      gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
-                    height / 2, str, red);
+      gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2, height / 2, str, red);
       goto error;
    }
 
    db_find_key(hDB, hkeypanel, "Variables", &hkeydvar);
    if (!hkeydvar) {
       sprintf(str, "Cannot find /History/Display/%s/Variables in ODB", panel);
-      gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
-                    height / 2, str, red);
+      gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2, height / 2, str, red);
       goto error;
    }
 
@@ -10298,8 +10295,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
 
    if (n_vars > MAX_VARS) {
       sprintf(str, "Too many variables in panel %s", panel);
-      gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
-                    height / 2, str, red);
+      gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2, height / 2, str, red);
       goto error;
    }
 
@@ -10316,8 +10312,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
       status = db_get_data_index(hDB, hkeydvar, str, &size, i, TID_STRING);
       if (status != DB_SUCCESS) {
          sprintf(str, "Cannot read tag %d in panel %s, status %d", i, panel, status);
-         gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
-                       height / 2, str, red);
+         gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2, height / 2, str, red);
          goto error;
       }
 
@@ -10335,8 +10330,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
          }
       } else {
          sprintf(str, "Tag \"%s\" has wrong format in panel \"%s\"", tag_name[i], panel);
-         gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
-                       height / 2, str, red);
+         gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2, height / 2, str, red);
          goto error;
       }
 
@@ -10380,8 +10374,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
 
             strcpy(str, "1h");
             size = NAME_LENGTH;
-            status =
-                db_get_value(hDB, hkeypanel, "Timescale", str, &size, TID_STRING, TRUE);
+            status = db_get_value(hDB, hkeypanel, "Timescale", str, &size, TID_STRING, TRUE);
          }
 
          scale = time_to_sec(str);
@@ -10451,8 +10444,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
                sprintf(str, "Variables/%s", var_name[i]);
                db_find_key(hDB, hkeyeq, str, &hkey);
                if (hkey) {
-                  sprintf(odbpath, "/Equipment/%s/Variables/%s", event_name[i],
-                          var_name[i]);
+                  sprintf(odbpath, "/Equipment/%s/Variables/%s", event_name[i], var_name[i]);
                   break;
                }
 
@@ -10474,8 +10466,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
                      size = sizeof(str);
                      db_get_data_index(hDB, hkeynames, str, &size, k, TID_STRING);
                      if (equal_ustring(str, varname)) {
-                        sprintf(odbpath, "/Equipment/%s/Variables/%s[%d]", event_name[i],
-                                key_name, k);
+                        sprintf(odbpath, "/Equipment/%s/Variables/%s[%d]", event_name[i], key_name, k);
                         break;
                      }
                   }
@@ -10501,11 +10492,9 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
                            db_get_key(hDB, hkeynames, &key);
                            for (l = 0; l < key.num_values; l++) {
                               size = sizeof(str);
-                              db_get_data_index(hDB, hkeynames, str, &size, l,
-                                                TID_STRING);
+                              db_get_data_index(hDB, hkeynames, str, &size, l, TID_STRING);
                               if (equal_ustring(str, var_name[i])) {
-                                 sprintf(odbpath, "/Equipment/%s/Variables/%s[%d]",
-                                         event_name[i], key_name, l);
+                                 sprintf(odbpath, "/Equipment/%s/Variables/%s[%d]", event_name[i], key_name, l);
                                  break;
                               }
                            }
@@ -10575,75 +10564,71 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
       }
    } // loop over variables
 
-   if (1) {
-
-      status = read_history(hDB, panel, index, runmarker, starttime, endtime, scale/1000+1, hsdata);
+   status = read_history(hDB, panel, index, runmarker, starttime, endtime, scale/1000+1, hsdata);
       
-      if (status != HS_SUCCESS) {
-         sprintf(str, "Complete history failure, read_history() status %d, see messages", status);
-         gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
-                       height / 2, str, red);
-         goto error;
+   if (status != HS_SUCCESS) {
+      sprintf(str, "Complete history failure, read_history() status %d, see messages", status);
+      gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2, height / 2, str, red);
+      goto error;
+   }
+      
+   for (int k=0; k<hsdata->nvars; k++) {
+      int i = hsdata->odb_index[k];
+      
+      if (i<0)
+         continue;
+      
+      if (index != -1 && index != i)
+         continue;
+      
+      n_point[i] = 0;
+         
+      var_status[i][0] = 0;
+      if (hsdata->status[k] == HS_UNDEFINED_VAR) {
+         sprintf(var_status[i], "not found in history");
+         continue;
+      } else if (hsdata->status[k] != HS_SUCCESS) {
+         sprintf(var_status[i], "hs_read() error %d, see messages", hsdata->status[k]);
+         continue;
       }
       
-      for (int k=0; k<hsdata->nvars; k++) {
-         int i = hsdata->odb_index[k];
-
-         if (i<0)
+      for (int j = n_vp = 0; j < hsdata->num_entries[k]; j++) {
+         x[i][n_vp] = (int)(hsdata->t[k][j]);
+         y[i][n_vp] = hsdata->v[k][j];
+         
+         /* skip NaNs */
+         if (ss_isnan(y[i][n_vp]))
             continue;
-
-         if (index != -1 && index != i)
+         
+         /* skip INFs */
+         if (!ss_isfin(y[i][n_vp]))
             continue;
-
-         n_point[i] = 0;
-
-         var_status[i][0] = 0;
-         if (hsdata->status[k] == HS_UNDEFINED_VAR) {
-            sprintf(var_status[i], "not found in history");
-            continue;
-         } else if (hsdata->status[k] != HS_SUCCESS) {
-            sprintf(var_status[i], "hs_read() error %d, see messages", hsdata->status[k]);
-            continue;
+         
+         /* avoid overflow */
+         if (y[i][n_vp] > 1E30)
+            y[i][n_vp] = 1E30f;
+         
+         /* apply factor and offset */
+         y[i][n_vp] = y[i][n_vp] * factor[i] + offset[i];
+         
+         /* calculate ymin and ymax */
+         if ((i == 0 || index != -1) && n_vp == 0)
+            ymin = ymax = y[i][0];
+         else {
+            if (y[i][n_vp] > ymax)
+               ymax = y[i][n_vp];
+            if (y[i][n_vp] < ymin)
+               ymin = y[i][n_vp];
          }
-
-         for (int j = n_vp = 0; j < hsdata->num_entries[k]; j++) {
-            x[i][n_vp] = (int)(hsdata->t[k][j]);
-            y[i][n_vp] = hsdata->v[k][j];
          
-            /* skip NaNs */
-            if (ss_isnan(y[i][n_vp]))
-               continue;
+         /* increment number of valid points */
+         n_vp++;
          
-            /* skip INFs */
-            if (!ss_isfin(y[i][n_vp]))
-               continue;
-         
-            /* avoid overflow */
-            if (y[i][n_vp] > 1E30)
-               y[i][n_vp] = 1E30f;
-         
-            /* apply factor and offset */
-            y[i][n_vp] = y[i][n_vp] * factor[i] + offset[i];
-         
-            /* calculate ymin and ymax */
-            if ((i == 0 || index != -1) && n_vp == 0)
-               ymin = ymax = y[i][0];
-            else {
-               if (y[i][n_vp] > ymax)
-                  ymax = y[i][n_vp];
-               if (y[i][n_vp] < ymin)
-                  ymin = y[i][n_vp];
-            }
-         
-            /* increment number of valid points */
-            n_vp++;
-
-         } // loop over data
-
-         n_point[i] = n_vp;
-
-         assert(n_point[i]<=MAX_POINTS);
-      }
+      } // loop over data
+      
+      n_point[i] = n_vp;
+      
+      assert(n_point[i]<=MAX_POINTS);
    }
 
    tend = ss_millitime();
@@ -10818,14 +10803,12 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
 
             if (dbuf[0][j] == STATE_RUNNING) {
                if (xs > xmaxm) {
-                  gdImageStringUp(im, gdFontSmall, xs + 0,
-                                  y2 + 2 + gdFontSmall->w * strlen(str), str, fgcol);
+                  gdImageStringUp(im, gdFontSmall, xs + 0, y2 + 2 + gdFontSmall->w * strlen(str), str, fgcol);
                   xmaxm = xs - 2 + gdFontSmall->h;
                }
             } else if (dbuf[0][j] == STATE_STOPPED) {
                if (xs + 2 - gdFontSmall->h > xmaxm) {
-                  gdImageStringUp(im, gdFontSmall, xs + 2 - gdFontSmall->h,
-                                  y2 + 2 + gdFontSmall->w * strlen(str), str, fgcol);
+                  gdImageStringUp(im, gdFontSmall, xs + 2 - gdFontSmall->h, y2 + 2 + gdFontSmall->w * strlen(str), str, fgcol);
                   xmaxm = xs - 1;
                }
             }
@@ -10857,12 +10840,10 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
             if (lower_limit[i] <= 0)
                ys = y1;
             else
-               ys = (int) (y1 -
-                           (log(lower_limit[i]) - log(ymin)) / (log(ymax) -
-                                                                log(ymin)) * (y1 - y2) +
-                           0.5);
-         } else
+               ys = (int) (y1 - (log(lower_limit[i]) - log(ymin)) / (log(ymax) - log(ymin)) * (y1 - y2) + 0.5);
+         } else {
             ys = (int) (y1 - (lower_limit[i] - ymin) / (ymax - ymin) * (y1 - y2) + 0.5);
+         }
 
          if (xs < 0)
             xs = 0;
@@ -10891,12 +10872,10 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
             if (upper_limit[i] <= 0)
                ys = y1;
             else
-               ys = (int) (y1 -
-                           (log(upper_limit[i]) - log(ymin)) / (log(ymax) -
-                                                                log(ymin)) * (y1 - y2) +
-                           0.5);
-         } else
+               ys = (int) (y1 - (log(upper_limit[i]) - log(ymin)) / (log(ymax) - log(ymin)) * (y1 - y2) + 0.5);
+         } else {
             ys = (int) (y1 - (upper_limit[i] - ymin) / (ymax - ymin) * (y1 - y2) + 0.5);
+         }
 
          if (xs < 0)
             xs = 0;
@@ -10933,12 +10912,10 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
             if (y[i][j] <= 0)
                ys = y1;
             else
-               ys = (int) (y1 -
-                           (log(y[i][j]) - log(ymin)) / (log(ymax) - log(ymin)) * (y1 -
-                                                                                   y2) +
-                           0.5);
-         } else
+               ys = (int) (y1 - (log(y[i][j]) - log(ymin)) / (log(ymax) - log(ymin)) * (y1 - y2) + 0.5);
+         } else {
             ys = (int) (y1 - (y[i][j] - ymin) / (ymax - ymin) * (y1 - y2) + 0.5);
+         }
 
          if (xs < 0)
             xs = 0;
