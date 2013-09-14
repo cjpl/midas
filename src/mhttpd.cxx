@@ -11182,17 +11182,51 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
 
 /*------------------------------------------------------------------*/
 
+time_t mktime_with_dst(const struct tm* ptms)
+{
+   // this silly stuff is required to correctly handle daylight savings time (Summer time/Winter time)
+   // when we fill "struct tm" from user input, we cannot know if daylight savings time is in effect
+   // and we do not know how to initialize the value of tms->tm_isdst.
+   // This can cause the output of mktime() to be off by one hour.
+   // (Rules for daylight savings time are set by national and local govt and in some locations, changes yearly)
+   // (There are no locations with 2 hour or half-hour daylight savings that I know of)
+   // (Yes, "man mktime" talks about using "tms->tm_isdst = -1")
+   //
+   // We assume the user is using local time and we convert in two steps:
+   //
+   // first we convert "struct tm" to "time_t" using mktime() with unknown tm_isdst
+   // second we convert "time_t" back to "struct tm" using localtime_r()
+   // this fills "tm_isdst" with correct value from the system time zone database
+   // then we reset all the time fields (except for sub-minute fields not affected by daylight savings)
+   // and call mktime() again, now with the correct value of "tm_isdst".
+   // K.O. 2013-09-14
+
+   struct tm tms = *ptms;
+   struct tm tms2;
+   time_t t1 = mktime(&tms);
+   localtime_r(&t1, &tms2);
+   tms2.tm_year = ptms->tm_year;
+   tms2.tm_mon  = ptms->tm_mon;
+   tms2.tm_mday = ptms->tm_mday;
+   tms2.tm_hour = ptms->tm_hour;
+   tms2.tm_min  = ptms->tm_min;
+   time_t t2 = mktime(&tms2);
+   //printf("t1 %.0f, t2 %.0f, diff %d\n", (double)t1, (double)t2, (int)(t1-t2));
+   return t2;
+}
+
+/*------------------------------------------------------------------*/
+
 void show_query_page(const char *path)
 {
    int i;
-   time_t ltime_start, ltime_end;
    HNDLE hDB;
    char str[256], redir[256];
-   time_t now;
-   struct tm *ptms, tms;
 
    if (*getparam("m1")) {
+      struct tm tms;
       memset(&tms, 0, sizeof(struct tm));
+
       tms.tm_year = atoi(getparam("y1")) % 100;
 
       strlcpy(str, getparam("m1"), sizeof(str));
@@ -11204,12 +11238,13 @@ void show_query_page(const char *path)
 
       tms.tm_mon = i;
       tms.tm_mday = atoi(getparam("d1"));
-      tms.tm_hour = 0;
+      tms.tm_hour = atoi(getparam("h1"));
 
       if (tms.tm_year < 90)
          tms.tm_year += 100;
 
-      ltime_start = mktime(&tms);
+      time_t ltime_start = mktime_with_dst(&tms);
+
       memset(&tms, 0, sizeof(struct tm));
       tms.tm_year = atoi(getparam("y2")) % 100;
 
@@ -11222,12 +11257,15 @@ void show_query_page(const char *path)
 
       tms.tm_mon = i;
       tms.tm_mday = atoi(getparam("d2"));
-      tms.tm_hour = 0;
+      tms.tm_hour = atoi(getparam("h2"));
 
       if (tms.tm_year < 90)
          tms.tm_year += 100;
-      ltime_end = mktime(&tms);
-      ltime_end += 3600 * 24;
+
+      time_t ltime_end = mktime_with_dst(&tms);
+
+      if (ltime_end == ltime_start)
+         ltime_end += 3600 * 24;
 
       strcpy(str, path);
       if (strrchr(str, '/'))
@@ -11245,19 +11283,38 @@ void show_query_page(const char *path)
       strcpy(str, strrchr(str, '/')+1);
    show_header("History", "GET", str, 0);
 
+   /* set the times */
+
+   struct tm *ptms;
+
+   time_t now = time(NULL);
+
+   time_t starttime = now - 3600 * 24;
+   time_t endtime = now;
+   bool full_day = true;
+
+   if (isparam("htime")) {
+      endtime = string_to_time(getparam("htime"));
+
+      if (isparam("hscale")) {
+         starttime = endtime - atoi(getparam("hscale"));
+         full_day = false;
+      } else {
+         starttime = endtime - 3600 * 24;
+         full_day = false;
+      }
+   }
+
    /* menu buttons */
    rsprintf("<tr><td colspan=2>\n");
    rsprintf("<input type=submit name=cmd value=Query>\n");
-   rsprintf("<input type=submit name=cmd value=History>\n");
-   rsprintf("<input type=submit name=cmd value=Status></tr>\n");
+   rsprintf("<input type=submit name=cmd value=Cancel>\n");
    rsprintf("</tr>\n\n");
    rsprintf("</table>");  //end header
 
    rsprintf("<table class=\"dialogTable\">");  //main table
 
-   time(&now);
-   now -= 3600 * 24;
-   ptms = localtime(&now);
+   ptms = localtime(&starttime);
    ptms->tm_year += 1900;
 
    rsprintf("<tr><td nowrap>Start date:</td>", "Start date");
@@ -11280,12 +11337,18 @@ void show_query_page(const char *path)
          rsprintf("<option value=%d>%d\n", i + 1, i + 1);
    rsprintf("</select>\n");
 
+   int start_hour = ptms->tm_hour;
+   if (full_day)
+      start_hour = 0;
+
+   rsprintf("&nbsp;Hour: <input type=\"text\" size=5 maxlength=5 name=\"h1\" value=\"%d\">", start_hour);
+
    rsprintf("&nbsp;Year: <input type=\"text\" size=5 maxlength=5 name=\"y1\" value=\"%d\">", ptms->tm_year);
    rsprintf("</td></tr>\n");
 
    rsprintf("<tr><td nowrap>End date:</td>");
-   time(&now);
-   ptms = localtime(&now);
+
+   ptms = localtime(&endtime);
    ptms->tm_year += 1900;
 
    rsprintf("<td>Month: <select name=\"m2\">\n");
@@ -11305,6 +11368,12 @@ void show_query_page(const char *path)
       else
          rsprintf("<option value=%d>%d\n", i + 1, i + 1);
    rsprintf("</select>\n");
+
+   int end_hour = ptms->tm_hour;
+   if (full_day)
+      end_hour = 24;
+
+   rsprintf("&nbsp;Hour: <input type=\"text\" size=5 maxlength=5 name=\"h2\" value=\"%d\">", end_hour);
 
    rsprintf("&nbsp;Year: <input type=\"text\" size=5 maxlength=5 name=\"y2\" value=\"%d\">", ptms->tm_year);
    rsprintf("</td></tr>\n");
