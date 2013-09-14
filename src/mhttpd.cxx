@@ -10895,7 +10895,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
                xs = xs_old + 1;
             xs_old = xs;
 
-            int state = hsdata->v[index_state][j];
+            int state = (int)hsdata->v[index_state][j];
 
             if (state == 1)
                col = state_col[0];
