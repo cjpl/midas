@@ -10724,8 +10724,10 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
 
    xs = ys = xold = yold = 0;
 
+   /* old code for run markers, new code is below */
+
    /* write run markes if selected */
-   if (runmarker) {
+   if (0 && runmarker) {
 
       const char* event_names[] = {
          "Run transitions", 
@@ -10827,6 +10829,99 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
          free(dbuf[1]);
          tbuf[1] = NULL;
          dbuf[1] = NULL;
+      }
+   }
+
+   /* write run markes if selected */
+   if (runmarker) {
+
+      int index_state = -1;
+      int index_run_number = -1;
+
+      for (int k=0; k<hsdata->nvars; k++) {
+         if (hsdata->odb_index[k] == -1)
+            index_state = k;
+
+         if (hsdata->odb_index[k] == -2)
+            index_run_number = k;
+      }
+
+      bool ok = true;
+
+      if (ok)
+         ok = (index_state >= 0) && (index_run_number >= 0);
+
+      if (ok)
+         ok = (hsdata->status[index_state] == HS_SUCCESS);
+
+      if (ok)
+         ok = (hsdata->status[index_run_number] == HS_SUCCESS);
+
+      if (0 && ok)
+         printf("read run info: indexes: %d, %d, status: %d, %d, entries: %d, %d\n", index_state, index_run_number, hsdata->status[index_state], hsdata->status[index_run_number], hsdata->num_entries[index_state], hsdata->num_entries[index_run_number]);
+
+      if (ok)
+         ok = (hsdata->num_entries[index_state] == hsdata->num_entries[index_run_number]);
+
+      int n_marker = hsdata->num_entries[index_state];
+
+      if (ok && n_marker > 0 && n_marker < 100) {
+         xs_old = -1;
+         xmaxm = x1;
+         for (j = 0; j < (int) n_marker; j++) {
+            int col;
+
+            // explicit algebra manipulation to clarify computations:
+
+            //xmin = (double) (-scale / 3600.0 + toffset / 3600.0);
+            //xrange = scale/3600.0;
+            //time_t starttime = now - scale + toffset;
+
+            //x_marker = (int)(tbuf[1][j] - now);
+            //xs = (int) ((x_marker / 3600.0 - xmin) / xrange * (x2 - x1) + x1 + 0.5);
+            //xs = (int) (((tbuf[1][j] - now) / 3600.0 - xmin) / xrange * (x2 - x1) + x1 + 0.5);
+            //xs = (int) (((tbuf[1][j] - now) / 3600.0 - (-scale / 3600.0 + toffset / 3600.0)) / (scale/3600.0) * (x2 - x1) + x1 + 0.5);
+            //xs = (int) (((tbuf[1][j] - now) - (-scale + toffset)) / (scale/1.0) * (x2 - x1) + x1 + 0.5);
+            xs = (int) ((hsdata->t[index_state][j] - starttime) / (scale/1.0) * (x2 - x1) + x1 + 0.5);
+
+            if (xs < x1)
+               continue;
+            if (xs >= x2)
+               continue;
+
+            double run_number = hsdata->v[index_run_number][j];
+
+            if (xs <= xs_old)
+               xs = xs_old + 1;
+            xs_old = xs;
+
+            int state = hsdata->v[index_state][j];
+
+            if (state == 1)
+               col = state_col[0];
+            else if (state == 2)
+               col = state_col[1];
+            else if (state == 3)
+               col = state_col[2];
+            else
+               col = state_col[0];
+
+            gdImageDashedLine(im, xs, y1, xs, y2, col);
+
+            sprintf(str, "%.0f", run_number);
+
+            if (state == STATE_RUNNING) {
+               if (xs > xmaxm) {
+                  gdImageStringUp(im, gdFontSmall, xs + 0, y2 + 2 + gdFontSmall->w * strlen(str), str, fgcol);
+                  xmaxm = xs - 2 + gdFontSmall->h;
+               }
+            } else if (state == STATE_STOPPED) {
+               if (xs + 2 - gdFontSmall->h > xmaxm) {
+                  gdImageStringUp(im, gdFontSmall, xs + 2 - gdFontSmall->h, y2 + 2 + gdFontSmall->w * strlen(str), str, fgcol);
+                  xmaxm = xs - 1;
+               }
+            }
+         }
       }
    }
 
