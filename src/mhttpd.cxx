@@ -9896,6 +9896,31 @@ int time_to_sec(const char *str)
 
 /*------------------------------------------------------------------*/
 
+time_t string_to_time(const char *str)
+{
+   time_t t = 0;
+   for (; *str != 0; str++) {
+      if (*str < '0')
+         break;
+      if (*str > '9')
+         break;
+      t *= 10;
+      t += *str - '0';
+   }
+   return t;
+}
+
+/*------------------------------------------------------------------*/
+
+const char* time_to_string(time_t t)
+{
+   static char buf[256];
+   sprintf(buf, "%.0f", (double)t);
+   return buf;
+}
+
+/*------------------------------------------------------------------*/
+
 static MidasHistoryInterface* get_history(bool reset = false)
 {
    int status;
@@ -10163,8 +10188,9 @@ int read_history(HNDLE hDB, const char *path, int index, int runmarker, time_t t
 
 void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
                          int width, int height,
-                         int scale, int toffset,
-                         //time_t starttime, time_t endtime,
+                         time_t xendtime,
+                         int scale,
+                         int xtoffset,
                          int index,
                          int labels, const char *bgcolor, const char *fgcolor, const char *gridcolor)
 {
@@ -10213,8 +10239,14 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
 
    time_t now = ss_time();
 
-   time_t starttime = now - scale + toffset;
-   time_t endtime = now + toffset;
+   if (xendtime == 0)
+      xendtime = now;
+
+   //time_t starttime = now - scale + toffset;
+   //time_t endtime = now + toffset;
+
+   time_t starttime = xendtime - scale;
+   time_t endtime = xendtime;
 
    HistoryData  hsxxx;
    HistoryData* hsdata = &hsxxx;
@@ -11200,8 +11232,8 @@ void show_query_page(const char *path)
       strcpy(str, path);
       if (strrchr(str, '/'))
          strcpy(str, strrchr(str, '/')+1);
-      sprintf(redir, "%s?scale=%d&offset=%d", str, (int) (ltime_end - ltime_start),
-              MIN((int) (ltime_end - ss_time()), 0));
+      //sprintf(redir, "%s?scale=%d&offset=%d", str, (int) (ltime_end - ltime_start), MIN((int) (ltime_end - ss_time()), 0));
+      sprintf(redir, "%s?scale=%d&time=%s", str, (int) (ltime_end - ltime_start), time_to_string(ltime_end));
       redirect(redir);
       return;
    }
@@ -11248,9 +11280,7 @@ void show_query_page(const char *path)
          rsprintf("<option value=%d>%d\n", i + 1, i + 1);
    rsprintf("</select>\n");
 
-   rsprintf
-       ("&nbsp;Year: <input type=\"text\" size=5 maxlength=5 name=\"y1\" value=\"%d\">",
-        ptms->tm_year);
+   rsprintf("&nbsp;Year: <input type=\"text\" size=5 maxlength=5 name=\"y1\" value=\"%d\">", ptms->tm_year);
    rsprintf("</td></tr>\n");
 
    rsprintf("<tr><td nowrap>End date:</td>");
@@ -11276,9 +11306,7 @@ void show_query_page(const char *path)
          rsprintf("<option value=%d>%d\n", i + 1, i + 1);
    rsprintf("</select>\n");
 
-   rsprintf
-       ("&nbsp;Year: <input type=\"text\" size=5 maxlength=5 name=\"y2\" value=\"%d\">",
-        ptms->tm_year);
+   rsprintf("&nbsp;Year: <input type=\"text\" size=5 maxlength=5 name=\"y2\" value=\"%d\">", ptms->tm_year);
    rsprintf("</td></tr>\n");
 
    rsprintf("</table>\n");
@@ -12223,7 +12251,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
 
 /*------------------------------------------------------------------*/
 
-void export_hist(const char *path, int scale, int toffset, int index, int labels)
+void export_hist(const char *path, time_t xendtime, int scale, int toffset, int index, int labels)
 {
    HNDLE hDB, hkey, hkeypanel;
    int size, status;
@@ -12430,10 +12458,9 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    const char *p;
    HNDLE hDB, hkey, hikeyp, hkeyp, hkeybutton;
    KEY key, ikey;
-   int i, j, k, scale, offset, index, width, size, status, labels, fh, fsize;
+   int i, j, k, scale, xoffset, index, width, size, status, labels, fh, fsize;
    float factor[2];
    char def_button[][NAME_LENGTH] = { "10m", "1h", "3h", "12h", "24h", "3d", "7d" };
-   time_t now;
    struct tm *tms;
 
    cm_get_experiment_database(&hDB, NULL);
@@ -12604,9 +12631,9 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    const char* pscale = getparam("scale");
    if (pscale == NULL || *pscale == 0)
       pscale = getparam("hscale");
-   const char* poffset = getparam("offset");
-   if (poffset == NULL || *poffset == 0)
-      poffset = getparam("hoffset");
+   //const char* poffset = getparam("offset");
+   //if (poffset == NULL || *poffset == 0)
+   //   poffset = getparam("hoffset");
    const char* pmag = getparam("width");
    if (pmag == NULL || *pmag == 0)
       pmag = getparam("hwidth");
@@ -12635,10 +12662,16 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
 
    /* evaluate scale and offset */
 
-   if (poffset && *poffset)
-      offset = time_to_sec(poffset);
-   else
-      offset = 0;
+   time_t endtime = 0;
+   if (isparam("time"))
+      endtime = string_to_time(getparam("time"));
+   else if (isparam("htime"))
+      endtime = string_to_time(getparam("htime"));
+
+   //if (poffset && *poffset)
+   //   offset = time_to_sec(poffset);
+   //else
+   //   offset = 0;
 
    if (pscale && *pscale)
       scale = time_to_sec(pscale);
@@ -12668,18 +12701,21 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
          char* fbuffer = (char*)M_MALLOC(fsize);
          assert(fbuffer != NULL);
 
-         if (equal_ustring(pmag, "Large"))
-            generate_hist_graph(path, fbuffer, &fsize, 1024, 768, scale, offset, index,
-                              labels, bgcolor, fgcolor, gridcolor);
-         else if (equal_ustring(pmag, "Small"))
-            generate_hist_graph(path, fbuffer, &fsize, 320, 200, scale, offset, index,
-                              labels, bgcolor, fgcolor, gridcolor);
-         else if (atoi(pmag) > 0)
-            generate_hist_graph(path, fbuffer, &fsize, atoi(pmag), 200, scale, offset, index,
-                              labels, bgcolor, fgcolor, gridcolor);
-         else
-            generate_hist_graph(path, fbuffer, &fsize, 640, 400, scale, offset, index,
-                              labels, bgcolor, fgcolor, gridcolor);
+         int width = 640;
+         int height = 400;
+
+         if (equal_ustring(pmag, "Large")) {
+            width = 1024;
+            height = 768;
+         } else if (equal_ustring(pmag, "Small")) {
+            width = 320;
+            height = 200;
+         } else if (atoi(pmag) > 0) {
+            width = atoi(pmag);
+            height = 200;
+         }
+
+         generate_hist_graph(path, fbuffer, &fsize, width, height, endtime, scale, xoffset, index, labels, bgcolor, fgcolor, gridcolor);
 
          /* save temporary file */
          size = sizeof(dir);
@@ -12688,7 +12724,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
          if (strlen(dir) > 0 && dir[strlen(dir)-1] != DIR_SEPARATOR)
             strlcat(dir, DIR_SEPARATOR_STR, sizeof(dir));
 
-         time(&now);
+         time_t now = time(NULL);
          tms = localtime(&now);
 
          if (strchr(path, '/'))
@@ -12725,13 +12761,20 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
          sprintf(str, "\\HS\\%s.gif", path);
          if (getparam("hscale") && *getparam("hscale"))
             sprintf(str + strlen(str), "?scale=%s", getparam("hscale"));
-         if (getparam("hoffset") && *getparam("hoffset")) {
+         if (getparam("htime") && *getparam("htime")) {
             if (strchr(str, '?'))
                strlcat(str, "&", sizeof(str));
             else
                strlcat(str, "?", sizeof(str));
-            sprintf(str + strlen(str), "offset=%s", getparam("hoffset"));
+            sprintf(str + strlen(str), "time=%s", getparam("htime"));
          }
+         //if (getparam("hoffset") && *getparam("hoffset")) {
+         //   if (strchr(str, '?'))
+         //      strlcat(str, "&", sizeof(str));
+         //   else
+         //      strlcat(str, "?", sizeof(str));
+         //   sprintf(str + strlen(str), "offset=%s", getparam("hoffset"));
+         //}
          if (getparam("hwidth") && *getparam("hwidth")) {
             if (strchr(str, '?'))
                strlcat(str, "&", sizeof(str));
@@ -12753,24 +12796,25 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    }
 
    if (equal_ustring(getparam("cmd"), "Export")) {
-      export_hist(path, scale, offset, index, labels);
+      export_hist(path, endtime, scale, xoffset, index, labels);
       return;
    }
 
    if (strstr(path, ".gif")) {
-      if (equal_ustring(pmag, "Large"))
-         generate_hist_graph(path, buffer, buffer_size, 1024, 768, scale, offset, index,
-                             labels, bgcolor, fgcolor, gridcolor);
-      else if (equal_ustring(pmag, "Small"))
-         generate_hist_graph(path, buffer, buffer_size, 320, 200, scale, offset, index,
-                             labels, bgcolor, fgcolor, gridcolor);
-      else if (atoi(pmag) > 0)
-         generate_hist_graph(path, buffer, buffer_size, atoi(pmag),
-                             (int) (atoi(pmag) * 0.625), scale, offset, index, labels,
-                             bgcolor, fgcolor, gridcolor);
-      else
-         generate_hist_graph(path, buffer, buffer_size, 640, 400, scale, offset, index,
-                             labels, bgcolor, fgcolor, gridcolor);
+      int width =  640;
+      int height = 400;
+      if (equal_ustring(pmag, "Large")) {
+         width = 1024;
+         height = 768;
+      } else if (equal_ustring(pmag, "Small")) {
+         width = 320;
+         height = 200;
+      } else if (atoi(pmag) > 0) {
+         width = atoi(pmag);
+         height = 0.625 * width;
+      }
+
+      generate_hist_graph(path, buffer, buffer_size, width, height, endtime, scale, xoffset, index, labels, bgcolor, fgcolor, gridcolor);
 
       return;
    }
@@ -12778,34 +12822,62 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    if (history_mode && index < 0)
       return;
 
+   time_t now = time(NULL);
+
    /* evaluate offset shift */
-   if (equal_ustring(getparam("shift"), "<"))
-      offset -= scale / 2;
+   if (equal_ustring(getparam("shift"), "<")) {
+      if (endtime == 0)
+         endtime = now;
+      endtime -= scale/2;
+      //offset -= scale / 2;
+   }
 
    if (equal_ustring(getparam("shift"), ">")) {
-      offset += scale / 2;
-      if (offset > 0)
-         offset = 0;
+      if (endtime == 0)
+         endtime = now;
+      endtime += scale/2;
+      if (endtime > now)
+         endtime = now;
+
+      //offset += scale / 2;
+      //if (offset > 0)
+      //   offset = 0;
    }
-   if (equal_ustring(getparam("shift"), ">>"))
-      offset = 0;
+
+   if (equal_ustring(getparam("shift"), ">>")) {
+      endtime = 0;
+      //offset = 0;
+   }
 
    if (equal_ustring(getparam("shift"), " + ")) {
-      offset -= scale / 4;
+      if (endtime == 0)
+         endtime = now;
+      endtime -= scale / 4;
+      //offset -= scale / 4;
       scale /= 2;
    }
 
    if (equal_ustring(getparam("shift"), " - ")) {
-      offset += scale / 2;
-      if (offset > 0)
-         offset = 0;
+      if (endtime == 0)
+         endtime = now;
+      endtime += scale / 2;
+      if (endtime > now)
+         endtime = now;
+      //offset += scale / 2;
+      //if (offset > 0)
+      //   offset = 0;
       scale *= 2;
    }
 
    strlcpy(str, path, sizeof(str));
    if (strrchr(str, '/'))
       strlcpy(str, strrchr(str, '/')+1, sizeof(str));
-   show_header(str, "GET", str, offset == 0 ? refresh : 0);
+   int xrefresh = refresh;
+   if (endtime != 0)
+      xrefresh = 0;
+   //if (offset != 0)
+   //   xrefresh = 0;
+   show_header(str, "GET", str, xrefresh);
    show_navigation_bar("History");
    
    rsprintf("<table class=\"genericTable\">");
@@ -12848,8 +12920,10 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
       }
    }
 
-   if (offset != 0)
-      rsprintf("<input type=hidden name=hoffset value=%d>\n", offset);
+   if (endtime != 0)
+      rsprintf("<input type=hidden name=htime value=%s>\n", time_to_string(endtime));
+   //if (offset != 0)
+   //   rsprintf("<input type=hidden name=hoffset value=%d>\n", offset);
    if (pmag && *pmag)
       rsprintf("<input type=hidden name=hwidth value=%s>\n", pmag);
    if (pindex && *pindex)
@@ -13110,7 +13184,11 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
       rsprintf("<input type=submit name=shift value=\"<\">\n");
       rsprintf("<input type=submit name=shift value=\" + \">\n");
       rsprintf("<input type=submit name=shift value=\" - \">\n");
-      if (offset != 0) {
+      //if (offset != 0) {
+      //   rsprintf("<input type=submit name=shift value=\">\">\n");
+      //   rsprintf("<input type=submit name=shift value=\">>\">\n");
+      //}
+      if (endtime != 0) {
          rsprintf("<input type=submit name=shift value=\">\">\n");
          rsprintf("<input type=submit name=shift value=\">>\">\n");
       }
@@ -13127,8 +13205,10 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
 
       paramstr[0] = 0;
       sprintf(paramstr + strlen(paramstr), "&scale=%d", scale);
-      if (offset != 0)
-         sprintf(paramstr + strlen(paramstr), "&offset=%d", offset);
+      //if (offset != 0)
+      //   sprintf(paramstr + strlen(paramstr), "&offset=%d", offset);
+      if (endtime != 0)
+         sprintf(paramstr + strlen(paramstr), "&time=%s", time_to_string(endtime));
       if (pmag && *pmag)
          sprintf(paramstr + strlen(paramstr), "&width=%s", pmag);
       else {
