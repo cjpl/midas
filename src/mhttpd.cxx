@@ -896,7 +896,7 @@ void page_footer()  //wraps up body wrapper and inserts page footer
    rsprintf("</div>\n"); //ends body wrapper
 
    /*---- footer div ----*/
-   rsprintf("<div class=\"footerDiv\">\n");
+   rsprintf("<div id=\"footerDiv\" class=\"footerDiv\">\n");
    size = sizeof(str);
    str[0] = 0;
    cm_get_experiment_database(&hDB, NULL);
@@ -906,10 +906,8 @@ void page_footer()  //wraps up body wrapper and inserts page footer
    time(&now);
    rsprintf("<div style=\"display:inline; float:right;\">%s</div>", ctime(&now));
    rsprintf("</div>\n");
-
    /*---- top level form ----*/
    rsprintf("</form>\n");
-
    rsprintf("</body></html>\r\n");   
 }
 
@@ -9038,7 +9036,7 @@ void show_alarm_page()
    rsprintf("<input type=submit name=cmd value=\"Reset all alarms\">\n");
    rsprintf("<input type=submit name=cmd value=\"Alarms on/off\">\n");
 
-   rsprintf("</tr></table></form>\n\n");
+   rsprintf("</tr></table>\n\n");  //used to end with an extra form closure tag, messes up the footer.
 
    /*---- global flag ----*/
    active = TRUE;
@@ -9194,6 +9192,13 @@ void show_alarm_page()
 
    rsprintf("</table>\n"); //closes main table
    page_footer();
+
+   //something is closing the top level form with the footer div outside of it; force it back in for now,
+   //until the proper closing tag can be chased down:
+   //rsprintf("<script>\n");
+   //   rsprintf("document.getElementById('wrapper').parentNode.insertBefore(document.getElementsByName('footerDiv'), document.getElementById('wrapper').nextSibling)");
+   //rsprintf("</script>\n");
+
 }
 
 /*------------------------------------------------------------------*/
