@@ -454,6 +454,15 @@ void freeparam()
       }
 }
 
+void printparam()
+{
+   int i;
+
+   for (i = 0; i < MAX_PARAM && _param[i][0]; i++) {
+      printf("param %d name [%s] value [%s]\n", i, _param[i], _value[i]);;
+   }
+}
+
 const char *getparam(const char *param)
 {
    int i;
@@ -11217,6 +11226,19 @@ time_t mktime_with_dst(const struct tm* ptms)
 
 /*------------------------------------------------------------------*/
 
+void add_param_to_url(char* buf, int bufsize, const char* name, const char* value)
+{
+   if (strstr(buf, "?"))
+      strlcat(buf, "&", bufsize);
+   else
+      strlcat(buf, "?", bufsize);
+   strlcat(buf, name, bufsize); // FIXME: should be URI-encoded
+   strlcat(buf, "=", bufsize);
+   strlcat(buf, value, bufsize); // FIXME: should be URI-encoded
+}
+
+/*------------------------------------------------------------------*/
+
 void show_query_page(const char *path)
 {
    int i;
@@ -11272,6 +11294,8 @@ void show_query_page(const char *path)
          strcpy(str, strrchr(str, '/')+1);
       //sprintf(redir, "%s?scale=%d&offset=%d", str, (int) (ltime_end - ltime_start), MIN((int) (ltime_end - ss_time()), 0));
       sprintf(redir, "%s?scale=%d&time=%s", str, (int) (ltime_end - ltime_start), time_to_string(ltime_end));
+      if (isparam("hindex"))
+         add_param_to_url(redir, sizeof(redir), "index", getparam("hindex"));
       redirect(redir);
       return;
    }
@@ -11309,6 +11333,12 @@ void show_query_page(const char *path)
    rsprintf("<tr><td colspan=2>\n");
    rsprintf("<input type=submit name=cmd value=Query>\n");
    rsprintf("<input type=submit name=cmd value=Cancel>\n");
+   if (isparam("htime"))
+      rsprintf("<input type=hidden name=htime value=%s>\n", getparam("htime"));
+   if (isparam("hscale"))
+      rsprintf("<input type=hidden name=hscale value=%s>\n", getparam("hscale"));
+   if (isparam("hindex"))
+      rsprintf("<input type=hidden name=hindex value=%s>\n", getparam("hindex"));
    rsprintf("</tr>\n\n");
    rsprintf("</table>");  //end header
 
@@ -12517,8 +12547,7 @@ void export_hist(const char *path, time_t xendtime, int scale, int toffset, int 
 
 /*------------------------------------------------------------------*/
 
-void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_size,
-                    int refresh)
+void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_size, int refresh)
 {
    char str[256], ref[256], ref2[256], paramstr[256], scalestr[256], hgroup[256],
        bgcolor[32], fgcolor[32], gridcolor[32], url[256], dir[256], file_name[256],
@@ -12532,17 +12561,34 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    char def_button[][NAME_LENGTH] = { "10m", "1h", "3h", "12h", "24h", "3d", "7d" };
    struct tm *tms;
 
+   //printf("show_hist_page: path [%s]\n", path);
+   //printparam();
+
    cm_get_experiment_database(&hDB, NULL);
+
+   if (equal_ustring(getparam("cmd"), "Reset")) {
+      strlcpy(str, path, sizeof(str));
+      if (strrchr(str, '/'))
+         strlcpy(str, strrchr(str, '/')+1, sizeof(str));
+      redirect(str);
+      return;
+   }
 
    if (equal_ustring(getparam("cmd"), "Query")) {
       show_query_page(path);
       return;
    }
 
-   if (equal_ustring(getparam("cmd"), "cancel")) {
+   if (equal_ustring(getparam("cmd"), "Cancel")) {
       strlcpy(str, path, sizeof(str));
       if (strrchr(str, '/'))
          strlcpy(str, strrchr(str, '/')+1, sizeof(str));
+      if (isparam("hscale"))
+         add_param_to_url(str, sizeof(str), "scale", getparam("hscale"));
+      if (isparam("htime"))
+         add_param_to_url(str, sizeof(str), "time", getparam("htime"));
+      if (isparam("hindex"))
+         add_param_to_url(str, sizeof(str), "index", getparam("hindex"));
       redirect(str);
       return;
    }
@@ -12597,6 +12643,11 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
          sprintf(path, "%s%s/%s", back_path, getparam("fgroup"), getparam("fpanel"));
       else
          sprintf(path, "%s%s", back_path, getparam("fgroup"));
+
+      if (isparam("hscale"))
+         add_param_to_url(path, sizeof(path), "scale", getparam("hscale"));
+      if (isparam("htime"))
+         add_param_to_url(path, sizeof(path), "time", getparam("htime"));
 
       redirect(path);
       return;
@@ -13141,6 +13192,12 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
                rsprintf("<option value=\"%s\">%s\n", key.name, key.name);
          }
 
+         if (equal_ustring("ALL", hgroup)) {
+            rsprintf("<option selected value=\"%s\">%s\n", "ALL", "ALL");
+         } else {
+            rsprintf("<option value=\"%s\">%s\n", "ALL", "ALL");
+         }
+
          rsprintf("</select>\n");
          rsprintf("&nbsp;&nbsp;Panel:\n");
          rsprintf("<select title=\"Select panel\" name=\"fpanel\" onChange=\"document.form1.submit()\">\n");
@@ -13189,6 +13246,10 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
       else
          rsprintf("onClick=\"window.location.href='?cmd=New'\">\n");
 
+      rsprintf("<input type=\"submit\" name=\"Cmd\" value=\"Reset\" onClick=\"document.form1.submit()\">\n");
+
+      rsprintf("<input type=\"submit\" name=\"Cmd\" value=\"Query\" onClick=\"document.form1.submit()\">\n");
+
       rsprintf("</td></tr>\n");
    }
 
@@ -13211,6 +13272,15 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
             db_get_key(hDB, hikeyp, &key);
             sprintf(ref, "%s%s/%s.gif?width=%s", hurl, path, key.name, strwidth);
             sprintf(ref2, "%s/%s", path, key.name);
+
+            if (endtime != 0) {
+               char tmp[256];
+               sprintf(tmp, "time=%s&scale=%d", time_to_string(endtime), scale);
+               strlcat(ref, "&", sizeof(ref));
+               strlcat(ref, tmp, sizeof(ref));
+               strlcat(ref2, "?", sizeof(ref2));
+               strlcat(ref2, tmp, sizeof(ref2));
+            }
 
             if (i % 2 == 0)
                rsprintf("<tr><td><a href=\"%s%s\"><img src=\"%s\" alt=\"%s.gif\"></a>\n",
@@ -13268,7 +13338,8 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
       rsprintf("<input type=submit name=cmd value=\"Create ELog\">\n");
       rsprintf("<input type=submit name=cmd value=Config>\n");
       rsprintf("<input type=submit name=cmd value=Export>\n");
-      rsprintf("<input type=submit name=cmd value=Query>\n");
+      //rsprintf("<input type=submit name=cmd value=Query>\n");
+      //rsprintf("<input type=submit name=cmd value=Reset>\n");
 
       rsprintf("</tr>\n");
 
@@ -13362,6 +13433,15 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
                db_get_key(hDB, hikeyp, &ikey);
                sprintf(ref, "%s%s/%s.gif?width=Small", hurl, key.name, ikey.name);
                sprintf(ref2, "%s/%s", key.name, ikey.name);
+
+               if (endtime != 0) {
+                  char tmp[256];
+                  sprintf(tmp, "time=%s&scale=%d", time_to_string(endtime), scale);
+                  strlcat(ref, "&", sizeof(ref));
+                  strlcat(ref, tmp, sizeof(ref));
+                  strlcat(ref2, "?", sizeof(ref2));
+                  strlcat(ref2, tmp, sizeof(ref2));
+               }
 
                if (k % 2 == 0)
                   rsprintf("<tr><td><a href=\"%s%s\"><img src=\"%s\" alt=\"%s.gif\"></a>\n",
