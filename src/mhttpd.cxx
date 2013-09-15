@@ -10235,6 +10235,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
    int sort_vars = 0;
    char var_status[MAX_VARS][256];
    double tstart, tend;
+   time_t starttime, endtime;
 
    static char *ybuffer;
    static DWORD *tbuffer;
@@ -10250,12 +10251,6 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
 
    if (xendtime == 0)
       xendtime = now;
-
-   //time_t starttime = now - scale + toffset;
-   //time_t endtime = now + toffset;
-
-   time_t starttime = xendtime - scale;
-   time_t endtime = xendtime;
 
    HistoryData  hsxxx;
    HistoryData* hsdata = &hsxxx;
@@ -10604,6 +10599,14 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
          }
       }
    } // loop over variables
+
+   //starttime = now - scale + toffset;
+   //endtime = now + toffset;
+
+   starttime = xendtime - scale;
+   endtime = xendtime;
+
+   //printf("now %d, scale %d, xendtime %d, starttime %d, endtime %d\n", now, scale, xendtime, starttime, endtime);
 
    status = read_history(hDB, panel, index, runmarker, starttime, endtime, scale/1000+1, hsdata);
       
