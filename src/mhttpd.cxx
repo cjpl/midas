@@ -10058,7 +10058,11 @@ struct HistoryData
    }
 };
 
-int read_history(HNDLE hDB, const char *path, int index, int runmarker, time_t tstart, time_t tend, time_t scale, HistoryData *data)
+#define READ_HISTORY_DATA         0x1
+#define READ_HISTORY_RUNMARKER    0x2
+#define READ_HISTORY_LAST_WRITTEN 0x4
+
+int read_history(HNDLE hDB, const char *path, int index, int flags, time_t tstart, time_t tend, time_t scale, HistoryData *data)
 {
    HNDLE hkeypanel, hkeydvar, hkey;
    KEY key;
@@ -10143,7 +10147,7 @@ int read_history(HNDLE hDB, const char *path, int index, int runmarker, time_t t
    } // loop over variables
 
    /* write run markes if selected */
-   if (runmarker) {
+   if (flags & READ_HISTORY_RUNMARKER) {
 
       data->event_names[data->nvars+0] = STRDUP("Run transitions");
       data->event_names[data->nvars+1] = STRDUP("Run transitions");
@@ -10160,29 +10164,35 @@ int read_history(HNDLE hDB, const char *path, int index, int runmarker, time_t t
       data->nvars += 2;
    }
 
-   status = mh->hs_read(tstart, tend, scale,
-                        data->nvars,
-                        data->event_names,
-                        data->var_names,
-                        data->var_index,
-                        data->num_entries,
-                        data->t,
-                        data->v,
-                        data->status);
-   
-   if (status != HS_SUCCESS) {
-      cm_msg(MERROR, "read_history", "Complete history failure, hs_read() status %d, see messages", status);
-      return HS_FILE_ERROR;
-   }
-   
    bool get_last_written = false;
-   for (int i=0; i<data->nvars; i++) {
-      if (data->status[i] != HS_SUCCESS || data->num_entries[i] < 1) {
-         get_last_written = true;
-         break;
+
+   if (flags & READ_HISTORY_DATA) {
+      status = mh->hs_read(tstart, tend, scale,
+                           data->nvars,
+                           data->event_names,
+                           data->var_names,
+                           data->var_index,
+                           data->num_entries,
+                           data->t,
+                           data->v,
+                           data->status);
+   
+      if (status != HS_SUCCESS) {
+         cm_msg(MERROR, "read_history", "Complete history failure, hs_read() status %d, see messages", status);
+         return HS_FILE_ERROR;
+      }
+
+      for (int i=0; i<data->nvars; i++) {
+         if (data->status[i] != HS_SUCCESS || data->num_entries[i] < 1) {
+            get_last_written = true;
+            break;
+         }
       }
    }
 
+   if (flags & READ_HISTORY_LAST_WRITTEN)
+      get_last_written = true;
+   
    if (get_last_written) {
       data->have_last_written = true;
 
@@ -10194,11 +10204,84 @@ int read_history(HNDLE hDB, const char *path, int index, int runmarker, time_t t
                            data->var_index,
                            data->last_written);
 
-      if (status != HS_SUCCESS)
+      if (status != HS_SUCCESS) {
          data->have_last_written = false;
+      }
    }
    
    return SUCCESS;
+}
+
+int get_hist_last_written(const char *path, time_t endtime, int index, int want_all, time_t *plastwritten)
+{
+   HNDLE hDB;
+   int status;
+
+   time_t now = ss_time();
+
+   if (endtime == 0)
+      endtime = now;
+
+   HistoryData  hsxxx;
+   HistoryData* hsdata = &hsxxx;
+
+   cm_get_experiment_database(&hDB, NULL);
+
+   char panel[256];
+   strlcpy(panel, path, sizeof(panel));
+   if (strstr(panel, ".gif"))
+      *strstr(panel, ".gif") = 0;
+
+   double tstart = ss_millitime();
+
+   int flags = READ_HISTORY_LAST_WRITTEN;
+
+   status = read_history(hDB, panel, index, flags, endtime, endtime, 0, hsdata);
+      
+   if (status != HS_SUCCESS) {
+      //sprintf(str, "Complete history failure, read_history() status %d, see messages", status);
+      return status;
+   }
+      
+   time_t tmin = endtime;
+   time_t tmax = 0;
+
+   for (int k=0; k<hsdata->nvars; k++) {
+      int i = hsdata->odb_index[k];
+      
+      if (i<0)
+         continue;
+      if (index != -1 && index != i)
+         continue;
+
+      time_t lw = hsdata->last_written[k];
+
+      if (lw==0) // no last_written for this variable, skip it.
+         continue;
+
+      if (lw > endtime)
+         lw = endtime; // just in case hs_get_last_written() returns dates in the "future" for this plot
+
+      if (lw > tmax)
+         tmax = lw;
+
+      if (lw < tmin)
+         tmin = lw;
+
+      //printf("odb index %d, last_written[%d] = %.0f, tmin %.0f, tmax %.0f, endtime %.0f\n", i, k, (double)lw, (double)tmin, (double)tmax, (double)endtime);
+   }
+
+   if (want_all)
+      *plastwritten = tmin; // all variables have data
+   else
+      *plastwritten = tmax; // at least one variable has data
+
+   double tend = ss_millitime();
+
+   if (0)
+      printf("get_hist_last_written: elapsed time %f ms\n", tend-tstart);
+
+   return HS_SUCCESS;
 }
 
 void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
@@ -10242,6 +10325,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
    char var_status[MAX_VARS][256];
    double tstart, tend;
    time_t starttime, endtime;
+   int flags;
 
    static char *ybuffer;
    static DWORD *tbuffer;
@@ -10614,7 +10698,11 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
 
    //printf("now %d, scale %d, xendtime %d, starttime %d, endtime %d\n", now, scale, xendtime, starttime, endtime);
 
-   status = read_history(hDB, panel, index, runmarker, starttime, endtime, scale/1000+1, hsdata);
+   flags = READ_HISTORY_DATA;
+   if (runmarker)
+      flags |= READ_HISTORY_RUNMARKER;
+
+   status = read_history(hDB, panel, index, flags, starttime, endtime, scale/1000+1, hsdata);
       
    if (status != HS_SUCCESS) {
       sprintf(str, "Complete history failure, read_history() status %d, see messages", status);
@@ -12954,6 +13042,25 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    time_t now = time(NULL);
 
    /* evaluate offset shift */
+   if (equal_ustring(getparam("shift"), "<<<")) {
+      if (endtime == 0)
+         endtime = now;
+      time_t last_written = 0;
+      status = get_hist_last_written(path, endtime, index, 1, &last_written);
+      if (status == HS_SUCCESS)
+         endtime = last_written + scale/2;
+   }
+
+   if (equal_ustring(getparam("shift"), "<<")) {
+      if (endtime == 0)
+         endtime = now;
+      time_t last_written = 0;
+      status = get_hist_last_written(path, endtime, index, 0, &last_written);
+      if (status == HS_SUCCESS)
+         if (last_written != endtime)
+            endtime = last_written + scale/2;
+   }
+
    if (equal_ustring(getparam("shift"), "<")) {
       if (endtime == 0)
          endtime = now;
@@ -13327,8 +13434,8 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
          rsprintf("<input type=submit name=scale value=%s>\n", str);
       }
 
-      //rsprintf("<input type=submit name=shift value=\"<<<\">\n");
-      //rsprintf("<input type=submit name=shift value=\"<<\">\n");
+      rsprintf("<input type=submit name=shift value=\"<<<\">\n");
+      rsprintf("<input type=submit name=shift value=\"<<\">\n");
       rsprintf("<input type=submit name=shift value=\"<\">\n");
       rsprintf("<input type=submit name=shift value=\" + \">\n");
       rsprintf("<input type=submit name=shift value=\" - \">\n");
