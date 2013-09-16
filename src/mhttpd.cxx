@@ -1610,6 +1610,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
          rsprintf("Paused");
       else if (runinfo.state == STATE_RUNNING)
          rsprintf("Running");
+      rsprintf("<br>");
    }
 
    flag = TRUE;
