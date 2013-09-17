@@ -10243,6 +10243,12 @@ int get_hist_last_written(const char *path, time_t endtime, int index, int want_
       return status;
    }
       
+   if (!hsdata->have_last_written) {
+      //sprintf(str, "Complete history failure, read_history() status %d, see messages", status);
+      return HS_FILE_ERROR;
+   }
+
+   int count = 0;
    time_t tmin = endtime;
    time_t tmax = 0;
 
@@ -10268,13 +10274,20 @@ int get_hist_last_written(const char *path, time_t endtime, int index, int want_
       if (lw < tmin)
          tmin = lw;
 
+      count++;
+
       //printf("odb index %d, last_written[%d] = %.0f, tmin %.0f, tmax %.0f, endtime %.0f\n", i, k, (double)lw, (double)tmin, (double)tmax, (double)endtime);
    }
+
+   if (count == 0) // all variables have no last_written 
+      return HS_FILE_ERROR; 
 
    if (want_all)
       *plastwritten = tmin; // all variables have data
    else
       *plastwritten = tmax; // at least one variable has data
+
+   //printf("tmin %.0f, tmax %.0f, endtime %.0f, last written %.0f\n", (double)tmin, (double)tmax, (double)endtime, (double)*plastwritten); 
 
    double tend = ss_millitime();
 
@@ -13028,7 +13041,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
          height = 200;
       } else if (atoi(pmag) > 0) {
          width = atoi(pmag);
-         height = 0.625 * width;
+         height = (int)(0.625 * width);
       }
 
       generate_hist_graph(path, buffer, buffer_size, width, height, endtime, scale, xoffset, index, labels, bgcolor, fgcolor, gridcolor);
@@ -15613,3 +15626,11 @@ int main(int argc, char *argv[])
 
    return 0;
 }
+
+/* emacs
+ * Local Variables:
+ * tab-width: 8
+ * c-basic-offset: 3
+ * indent-tabs-mode: nil
+ * End:
+ */
