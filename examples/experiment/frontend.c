@@ -72,7 +72,8 @@ INT frontend_loop();
 INT read_trigger_event(char *pevent, INT off);
 INT read_scaler_event(char *pevent, INT off);
 
-void register_cnaf_callback(int debug);
+INT poll_event(INT source, INT count, BOOL test);
+INT interrupt_configure(INT cmd, INT source, POINTER_T adr);
 
 /*-- Equipment list ------------------------------------------------*/
 
