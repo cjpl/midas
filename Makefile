@@ -333,7 +333,7 @@ dox:
 	cd doc; make
 
 linux32:
-	$(MAKE) ROOTSYS= OS_DIR=linux-m32 USERFLAGS=-m32
+	$(MAKE) ROOTSYS= HAVE_MYSQL= HAVE_ODBC= HAVE_SQLITE= OS_DIR=linux-m32 USERFLAGS=-m32
 
 linux64:
 	$(MAKE) ROOTSYS= OS_DIR=linux-m64 USERFLAGS=-m64
