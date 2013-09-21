@@ -647,6 +647,17 @@ static void db_validate_sizes()
       S(CHN_STATISTICS);
 #undef S
    }
+
+   if (0) {
+      EQUIPMENT_INFO eq;
+      printf("EQUIPMENT_INFO offset of event_id: %d\n", (int)((char*)&eq.event_id - (char*)&eq));
+      printf("EQUIPMENT_INFO offset of eq_type: %d\n", (int)((char*)&eq.eq_type - (char*)&eq));
+      printf("EQUIPMENT_INFO offset of event_limit: %d\n", (int)((char*)&eq.event_limit - (char*)&eq));
+      printf("EQUIPMENT_INFO offset of num_subevents: %d\n", (int)((char*)&eq.num_subevents - (char*)&eq));
+      printf("EQUIPMENT_INFO offset of status: %d\n", (int)((char*)&eq.status - (char*)&eq));
+      printf("EQUIPMENT_INFO offset of hidden: %d\n", (int)((char*)&eq.hidden - (char*)&eq));
+   }
+
 #ifdef OS_LINUX
    assert(sizeof(EVENT_REQUEST) == 16); // ODB v3
    assert(sizeof(BUFFER_CLIENT) == 256);
@@ -663,7 +674,8 @@ static void db_validate_sizes()
    assert(sizeof(EVENT_HEADER) == 16);
    //assert(sizeof(EQUIPMENT_INFO) == 400); // ODB v3, midas.h before rev 4558
    //assert(sizeof(EQUIPMENT_INFO) == 688); // ODB v3, midas.h after rev 4558
-   assert(sizeof(EQUIPMENT_INFO) == 696 || sizeof(EQUIPMENT_INFO) == 692 ); // ODB v3, midas.h after cd7abae for 32 & 64bit
+   //assert(sizeof(EQUIPMENT_INFO) == 696 || sizeof(EQUIPMENT_INFO) == 692 ); // ODB v3, midas.h after cd7abae for 32 & 64bit
+   assert(sizeof(EQUIPMENT_INFO) == 696); // ODB v3, restored compatibility with 32-bit
    assert(sizeof(EQUIPMENT_STATS) == 24);
    assert(sizeof(BANK_HEADER) == 8);
    assert(sizeof(BANK) == 8);
@@ -9039,7 +9051,7 @@ INT db_open_record(HNDLE hDB, HNDLE hKey, void *ptr, INT rec_size,
    if (size != rec_size && ptr != NULL) {
       _record_list_entries--;
       db_get_path(hDB, hKey, str, sizeof(str));
-      cm_msg(MERROR, "db_open_record", "struct size mismatch for \"%s\" (%d instead of %d)", str, rec_size, size);
+      cm_msg(MERROR, "db_open_record", "struct size mismatch for \"%s\" (expected size: %d, size in ODB: %d)", str, rec_size, size);
       return DB_STRUCT_SIZE_MISMATCH;
    }
 

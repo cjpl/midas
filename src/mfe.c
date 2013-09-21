@@ -119,6 +119,7 @@ Frontend file name = STRING : [256] \n\
 Status = STRING : [256] \n\
 Status color = STRING : [32] \n\
 Hidden = BOOL : 0\n\
+Pad = INT : 0\n\
 "
 
 #define EQUIPMENT_STATISTICS_STR "\

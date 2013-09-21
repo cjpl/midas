@@ -992,6 +992,7 @@ typedef struct {
    char status[256];                  /**< Current status of equipment       */
    char status_color[NAME_LENGTH];    /**< Color to be used by mhttpd for status */
    BOOL hidden;                       /**< Hidden flag                       */
+   INT  pad;                          /**< Padding for 32-bit compilers      */
 } EQUIPMENT_INFO;
 
 typedef struct {
