@@ -8319,7 +8319,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
       if(scan==1 && keyPresent==1) {
          rsprintf("<tr class=\"titleRow\">\n");
          rsprintf("<th class=\"ODBkey\">Key</th>\n");
-         rsprintf("<th class=\"ODBvalue\">Value");
+         rsprintf("<th class=\"ODBvalue\">Value&nbsp;");
          rsprintf("<script type=\"text/javascript\">\n");
          rsprintf("function expand()\n");
          rsprintf("{\n");
@@ -8335,7 +8335,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
          rsprintf("  else\n");
          rsprintf("    document.getElementById('expp').innerHTML = '-';\n");
          rsprintf("}\n");
-         rsprintf("</script>\n");
+         rsprintf("</script>");
          rsprintf("<div style=\"display:inline;float:right\"><a id=\"expp\"href=\"#\" onClick=\"expand();return false;\">+</div>");
          rsprintf("</th>\n");
          rsprintf("<th class=\"ODBvalue\" name=\"ext\" style=\"display:none\">Type</th>\n");
