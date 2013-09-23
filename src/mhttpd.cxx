@@ -1164,10 +1164,38 @@ void exec_script(HNDLE hkey)
 void show_navigation_bar(const char *cur_page)
 {
    HNDLE hDB;
-   char str[1000], dec_path[256], path[256], *p;
-   int size;
+   char str[1000], dec_path[256], path[256], filename[256], *p;
+   int fh, size;
    
    cm_get_experiment_database(&hDB, NULL);
+   
+   /*---- display optional custom header ----*/
+   size = sizeof(str);
+   if (db_get_value(hDB, 0, "/Custom/Header", str, &size, TID_STRING, FALSE) == DB_SUCCESS) {
+      size = sizeof(path);
+      path[0] = 0;
+      db_get_value(hDB, 0, "/Custom/Path", path, &size, TID_STRING, FALSE);
+      if (path[0] && path[strlen(path)-1] != DIR_SEPARATOR)
+         strlcat(path, DIR_SEPARATOR_STR, sizeof(path));
+      strlcpy(filename, path, sizeof(filename));
+      strlcat(filename, str, sizeof(filename));
+      fh = open(filename, O_RDONLY | O_BINARY);
+      if (fh > 0) {
+         // show file contents
+         p = NULL;
+         size = lseek(fh, 0, SEEK_END) + 1;
+         lseek(fh, 0, SEEK_SET);
+         p = (char*)malloc(size);
+         memset(p, 0, size);
+         read(fh, p, size);
+         close(fh);
+         rsputs(p);
+         free(p);
+      } else {
+         // show HTML text directly
+         rsputs(filename);
+      }
+   }
    
    rsprintf("<table class=\"navigationTable\">\n");
    rsprintf("<tr><td>\n");
@@ -1469,6 +1497,10 @@ void show_status_page(int refresh, const char *cookie_wpwd)
 
          /* skip "Path" */
          if (equal_ustring(key.name, "Path"))
+            continue;
+
+         /* skip "Header" */
+         if (equal_ustring(key.name, "Header"))
             continue;
 
          strlcpy(name, key.name, sizeof(name));
@@ -6659,7 +6691,7 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
    if (equal_ustring(getparam("cmd"), "jgenmsg")) {
       
       if (*getparam("msg")) {
-         cm_msg(MINFO, "show_custom_page", getparam("msg"));
+         cm_msg(MINFO, "java_script_commands", getparam("msg"));
       }
       
       show_text_header();
