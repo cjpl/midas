@@ -454,6 +454,15 @@ void freeparam()
       }
 }
 
+void printparam()
+{
+   int i;
+
+   for (i = 0; i < MAX_PARAM && _param[i][0]; i++) {
+      printf("param %d name [%s] value [%s]\n", i, _param[i], _value[i]);;
+   }
+}
+
 const char *getparam(const char *param)
 {
    int i;
@@ -9936,6 +9945,31 @@ int time_to_sec(const char *str)
 
 /*------------------------------------------------------------------*/
 
+time_t string_to_time(const char *str)
+{
+   time_t t = 0;
+   for (; *str != 0; str++) {
+      if (*str < '0')
+         break;
+      if (*str > '9')
+         break;
+      t *= 10;
+      t += *str - '0';
+   }
+   return t;
+}
+
+/*------------------------------------------------------------------*/
+
+const char* time_to_string(time_t t)
+{
+   static char buf[256];
+   sprintf(buf, "%.0f", (double)t);
+   return buf;
+}
+
+/*------------------------------------------------------------------*/
+
 static MidasHistoryInterface* get_history(bool reset = false)
 {
    int status;
@@ -10058,7 +10092,11 @@ struct HistoryData
    }
 };
 
-int read_history(HNDLE hDB, const char *path, int index, int runmarker, time_t tstart, time_t tend, time_t scale, HistoryData *data)
+#define READ_HISTORY_DATA         0x1
+#define READ_HISTORY_RUNMARKER    0x2
+#define READ_HISTORY_LAST_WRITTEN 0x4
+
+int read_history(HNDLE hDB, const char *path, int index, int flags, time_t tstart, time_t tend, time_t scale, HistoryData *data)
 {
    HNDLE hkeypanel, hkeydvar, hkey;
    KEY key;
@@ -10143,7 +10181,7 @@ int read_history(HNDLE hDB, const char *path, int index, int runmarker, time_t t
    } // loop over variables
 
    /* write run markes if selected */
-   if (runmarker) {
+   if (flags & READ_HISTORY_RUNMARKER) {
 
       data->event_names[data->nvars+0] = STRDUP("Run transitions");
       data->event_names[data->nvars+1] = STRDUP("Run transitions");
@@ -10160,30 +10198,36 @@ int read_history(HNDLE hDB, const char *path, int index, int runmarker, time_t t
       data->nvars += 2;
    }
 
-   status = mh->hs_read(tstart, tend, scale,
-                        data->nvars,
-                        data->event_names,
-                        data->var_names,
-                        data->var_index,
-                        data->num_entries,
-                        data->t,
-                        data->v,
-                        data->status);
-   
-   if (status != HS_SUCCESS) {
-      cm_msg(MERROR, "read_history", "Complete history failure, hs_read() status %d, see messages", status);
-      return HS_FILE_ERROR;
-   }
-   
    bool get_last_written = false;
-   for (int i=0; i<data->nvars; i++) {
-      if (data->status[i] != HS_SUCCESS || data->num_entries[i] < 1) {
-         get_last_written = true;
-         break;
+
+   if (flags & READ_HISTORY_DATA) {
+      status = mh->hs_read(tstart, tend, scale,
+                           data->nvars,
+                           data->event_names,
+                           data->var_names,
+                           data->var_index,
+                           data->num_entries,
+                           data->t,
+                           data->v,
+                           data->status);
+   
+      if (status != HS_SUCCESS) {
+         cm_msg(MERROR, "read_history", "Complete history failure, hs_read() status %d, see messages", status);
+         return HS_FILE_ERROR;
+      }
+
+      for (int i=0; i<data->nvars; i++) {
+         if (data->status[i] != HS_SUCCESS || data->num_entries[i] < 1) {
+            get_last_written = true;
+            break;
+         }
       }
    }
 
-   if (0 && get_last_written) {
+   if (flags & READ_HISTORY_LAST_WRITTEN)
+      get_last_written = true;
+   
+   if (get_last_written) {
       data->have_last_written = true;
 
       status = mh->hs_get_last_written(
@@ -10194,38 +10238,130 @@ int read_history(HNDLE hDB, const char *path, int index, int runmarker, time_t t
                            data->var_index,
                            data->last_written);
 
-      if (status != HS_SUCCESS)
+      if (status != HS_SUCCESS) {
          data->have_last_written = false;
+      }
    }
    
    return SUCCESS;
 }
 
+int get_hist_last_written(const char *path, time_t endtime, int index, int want_all, time_t *plastwritten)
+{
+   HNDLE hDB;
+   int status;
+
+   time_t now = ss_time();
+
+   if (endtime == 0)
+      endtime = now;
+
+   HistoryData  hsxxx;
+   HistoryData* hsdata = &hsxxx;
+
+   cm_get_experiment_database(&hDB, NULL);
+
+   char panel[256];
+   strlcpy(panel, path, sizeof(panel));
+   if (strstr(panel, ".gif"))
+      *strstr(panel, ".gif") = 0;
+
+   double tstart = ss_millitime();
+
+   int flags = READ_HISTORY_LAST_WRITTEN;
+
+   status = read_history(hDB, panel, index, flags, endtime, endtime, 0, hsdata);
+      
+   if (status != HS_SUCCESS) {
+      //sprintf(str, "Complete history failure, read_history() status %d, see messages", status);
+      return status;
+   }
+      
+   if (!hsdata->have_last_written) {
+      //sprintf(str, "Complete history failure, read_history() status %d, see messages", status);
+      return HS_FILE_ERROR;
+   }
+
+   int count = 0;
+   time_t tmin = endtime;
+   time_t tmax = 0;
+
+   for (int k=0; k<hsdata->nvars; k++) {
+      int i = hsdata->odb_index[k];
+      
+      if (i<0)
+         continue;
+      if (index != -1 && index != i)
+         continue;
+
+      time_t lw = hsdata->last_written[k];
+
+      if (lw==0) // no last_written for this variable, skip it.
+         continue;
+
+      if (lw > endtime)
+         lw = endtime; // just in case hs_get_last_written() returns dates in the "future" for this plot
+
+      if (lw > tmax)
+         tmax = lw;
+
+      if (lw < tmin)
+         tmin = lw;
+
+      count++;
+
+      //printf("odb index %d, last_written[%d] = %.0f, tmin %.0f, tmax %.0f, endtime %.0f\n", i, k, (double)lw, (double)tmin, (double)tmax, (double)endtime);
+   }
+
+   if (count == 0) // all variables have no last_written 
+      return HS_FILE_ERROR; 
+
+   if (want_all)
+      *plastwritten = tmin; // all variables have data
+   else
+      *plastwritten = tmax; // at least one variable has data
+
+   //printf("tmin %.0f, tmax %.0f, endtime %.0f, last written %.0f\n", (double)tmin, (double)tmax, (double)endtime, (double)*plastwritten); 
+
+   double tend = ss_millitime();
+
+   if (0)
+      printf("get_hist_last_written: elapsed time %f ms\n", tend-tstart);
+
+   return HS_SUCCESS;
+}
+
 void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
-                         int width, int height, int scale, int toffset, int index,
+                         int width, int height,
+                         time_t xendtime,
+                         int scale,
+                         int xtoffset,
+                         int index,
                          int labels, const char *bgcolor, const char *fgcolor, const char *gridcolor)
 {
    HNDLE hDB, hkey, hkeypanel, hkeyeq, hkeydvar, hkeyvars, hkeyroot, hkeynames;
    KEY key;
    gdImagePtr im;
    gdGifBuffer gb;
-   int i, j, k, l, n_vars, size, status, row, x_marker, n_vp, r, g, b;
+   int i, j, k, l, n_vars, size, status, row, n_vp, r, g, b;
+   //int x_marker;
    int length, aoffset;
    int flag, x1, y1, x2, y2, xs, xs_old, ys, xold, yold, xmaxm;
-   int white, black, grey, ltgrey, red, green, blue, fgcol, bgcol, gridcol,
-       curve_col[MAX_VARS], state_col[3];
+   int white, black, grey, ltgrey, red, green, blue;
+   int fgcol, bgcol, gridcol;
+   int curve_col[MAX_VARS], state_col[3];
    char str[256], panel[256], *p, odbpath[256];
    INT var_index[MAX_VARS];
    char event_name[MAX_VARS][NAME_LENGTH];
-   char tag_name[MAX_VARS][64], var_name[MAX_VARS][NAME_LENGTH], varname[64],
-       key_name[256];
+   char tag_name[MAX_VARS][64], var_name[MAX_VARS][NAME_LENGTH], varname[64], key_name[256];
 #define MAX_POINTS 1000
    DWORD n_point[MAX_VARS];
    int x[MAX_VARS][MAX_POINTS];
    double y[MAX_VARS][MAX_POINTS];
    float factor[MAX_VARS], offset[MAX_VARS];
    BOOL logaxis, runmarker;
-   double xmin, xmax, ymin, ymax;
+   //double xmin, xrange;
+   double ymin, ymax;
    gdPoint poly[3];
    double upper_limit[MAX_VARS], lower_limit[MAX_VARS];
    double yb1, yb2, yf1, yf2, ybase;
@@ -10235,6 +10371,8 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
    int sort_vars = 0;
    char var_status[MAX_VARS][256];
    double tstart, tend;
+   time_t starttime, endtime;
+   int flags;
 
    static char *ybuffer;
    static DWORD *tbuffer;
@@ -10245,6 +10383,11 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
       tbuffer = (DWORD*)malloc(hbuffer_size);
       ybuffer = (char*)malloc(hbuffer_size);
    }
+
+   time_t now = ss_time();
+
+   if (xendtime == 0)
+      xendtime = now;
 
    HistoryData  hsxxx;
    HistoryData* hsdata = &hsxxx;
@@ -10294,8 +10437,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
    strlcpy(panel, path, sizeof(panel));
    if (strstr(panel, ".gif"))
       *strstr(panel, ".gif") = 0;
-   gdImageString(im, gdFontGiant, width / 2 - (strlen(panel) * gdFontGiant->w) / 2, 2,
-                 panel, fgcol);
+   gdImageString(im, gdFontGiant, width / 2 - (strlen(panel) * gdFontGiant->w) / 2, 2, panel, fgcol);
 
    /* connect to history */
    MidasHistoryInterface *mh = get_history();
@@ -10310,16 +10452,14 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
    db_find_key(hDB, 0, str, &hkeypanel);
    if (!hkeypanel) {
       sprintf(str, "Cannot find /History/Display/%s in ODB", panel);
-      gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
-                    height / 2, str, red);
+      gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2, height / 2, str, red);
       goto error;
    }
 
    db_find_key(hDB, hkeypanel, "Variables", &hkeydvar);
    if (!hkeydvar) {
       sprintf(str, "Cannot find /History/Display/%s/Variables in ODB", panel);
-      gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
-                    height / 2, str, red);
+      gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2, height / 2, str, red);
       goto error;
    }
 
@@ -10328,8 +10468,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
 
    if (n_vars > MAX_VARS) {
       sprintf(str, "Too many variables in panel %s", panel);
-      gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
-                    height / 2, str, red);
+      gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2, height / 2, str, red);
       goto error;
    }
 
@@ -10346,8 +10485,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
       status = db_get_data_index(hDB, hkeydvar, str, &size, i, TID_STRING);
       if (status != DB_SUCCESS) {
          sprintf(str, "Cannot read tag %d in panel %s, status %d", i, panel, status);
-         gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
-                       height / 2, str, red);
+         gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2, height / 2, str, red);
          goto error;
       }
 
@@ -10365,8 +10503,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
          }
       } else {
          sprintf(str, "Tag \"%s\" has wrong format in panel \"%s\"", tag_name[i], panel);
-         gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
-                       height / 2, str, red);
+         gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2, height / 2, str, red);
          goto error;
       }
 
@@ -10410,8 +10547,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
 
             strcpy(str, "1h");
             size = NAME_LENGTH;
-            status =
-                db_get_value(hDB, hkeypanel, "Timescale", str, &size, TID_STRING, TRUE);
+            status = db_get_value(hDB, hkeypanel, "Timescale", str, &size, TID_STRING, TRUE);
          }
 
          scale = time_to_sec(str);
@@ -10481,8 +10617,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
                sprintf(str, "Variables/%s", var_name[i]);
                db_find_key(hDB, hkeyeq, str, &hkey);
                if (hkey) {
-                  sprintf(odbpath, "/Equipment/%s/Variables/%s", event_name[i],
-                          var_name[i]);
+                  sprintf(odbpath, "/Equipment/%s/Variables/%s", event_name[i], var_name[i]);
                   break;
                }
 
@@ -10504,8 +10639,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
                      size = sizeof(str);
                      db_get_data_index(hDB, hkeynames, str, &size, k, TID_STRING);
                      if (equal_ustring(str, varname)) {
-                        sprintf(odbpath, "/Equipment/%s/Variables/%s[%d]", event_name[i],
-                                key_name, k);
+                        sprintf(odbpath, "/Equipment/%s/Variables/%s[%d]", event_name[i], key_name, k);
                         break;
                      }
                   }
@@ -10531,11 +10665,9 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
                            db_get_key(hDB, hkeynames, &key);
                            for (l = 0; l < key.num_values; l++) {
                               size = sizeof(str);
-                              db_get_data_index(hDB, hkeynames, str, &size, l,
-                                                TID_STRING);
+                              db_get_data_index(hDB, hkeynames, str, &size, l, TID_STRING);
                               if (equal_ustring(str, var_name[i])) {
-                                 sprintf(odbpath, "/Equipment/%s/Variables/%s[%d]",
-                                         event_name[i], key_name, l);
+                                 sprintf(odbpath, "/Equipment/%s/Variables/%s[%d]", event_name[i], key_name, l);
                                  break;
                               }
                            }
@@ -10605,76 +10737,83 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
       }
    } // loop over variables
 
-   if (1) {
-      time_t now = ss_time();
-   
-      status = read_history(hDB, panel, index, runmarker, now-scale+toffset, now+toffset, scale/1000+1, hsdata);
+   //starttime = now - scale + toffset;
+   //endtime = now + toffset;
+
+   starttime = xendtime - scale;
+   endtime = xendtime;
+
+   //printf("now %d, scale %d, xendtime %d, starttime %d, endtime %d\n", now, scale, xendtime, starttime, endtime);
+
+   flags = READ_HISTORY_DATA;
+   if (runmarker)
+      flags |= READ_HISTORY_RUNMARKER;
+
+   status = read_history(hDB, panel, index, flags, starttime, endtime, scale/1000+1, hsdata);
       
-      if (status != HS_SUCCESS) {
-         sprintf(str, "Complete history failure, read_history() status %d, see messages", status);
-         gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2,
-                       height / 2, str, red);
-         goto error;
+   if (status != HS_SUCCESS) {
+      sprintf(str, "Complete history failure, read_history() status %d, see messages", status);
+      gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2, height / 2, str, red);
+      goto error;
+   }
+      
+   for (int k=0; k<hsdata->nvars; k++) {
+      int i = hsdata->odb_index[k];
+      
+      if (i<0)
+         continue;
+      
+      if (index != -1 && index != i)
+         continue;
+      
+      n_point[i] = 0;
+         
+      var_status[i][0] = 0;
+      if (hsdata->status[k] == HS_UNDEFINED_VAR) {
+         sprintf(var_status[i], "not found in history");
+         continue;
+      } else if (hsdata->status[k] != HS_SUCCESS) {
+         sprintf(var_status[i], "hs_read() error %d, see messages", hsdata->status[k]);
+         continue;
       }
       
-      for (int k=0; k<hsdata->nvars; k++) {
-         int i = hsdata->odb_index[k];
-
-         if (i<0)
+      for (int j = n_vp = 0; j < hsdata->num_entries[k]; j++) {
+         x[i][n_vp] = (int)(hsdata->t[k][j]);
+         y[i][n_vp] = hsdata->v[k][j];
+         
+         /* skip NaNs */
+         if (ss_isnan(y[i][n_vp]))
             continue;
-
-         if (index != -1 && index != i)
+         
+         /* skip INFs */
+         if (!ss_isfin(y[i][n_vp]))
             continue;
-
-         n_point[i] = 0;
-
-         var_status[i][0] = 0;
-         if (hsdata->status[k] == HS_UNDEFINED_VAR) {
-            sprintf(var_status[i], "not found in history");
-            continue;
-         } else if (hsdata->status[k] != HS_SUCCESS) {
-            sprintf(var_status[i], "hs_read() error %d, see messages", hsdata->status[k]);
-            continue;
+         
+         /* avoid overflow */
+         if (y[i][n_vp] > 1E30)
+            y[i][n_vp] = 1E30f;
+         
+         /* apply factor and offset */
+         y[i][n_vp] = y[i][n_vp] * factor[i] + offset[i];
+         
+         /* calculate ymin and ymax */
+         if ((i == 0 || index != -1) && n_vp == 0)
+            ymin = ymax = y[i][0];
+         else {
+            if (y[i][n_vp] > ymax)
+               ymax = y[i][n_vp];
+            if (y[i][n_vp] < ymin)
+               ymin = y[i][n_vp];
          }
-
-         for (int j = n_vp = 0; j < hsdata->num_entries[k]; j++) {
-            x[i][n_vp] = (int)(hsdata->t[k][j] - now);
-            y[i][n_vp] = hsdata->v[k][j];
          
-            /* skip NaNs */
-            if (ss_isnan(y[i][n_vp]))
-               continue;
+         /* increment number of valid points */
+         n_vp++;
          
-            /* skip INFs */
-            if (!ss_isfin(y[i][n_vp]))
-               continue;
-         
-            /* avoid overflow */
-            if (y[i][n_vp] > 1E30)
-               y[i][n_vp] = 1E30f;
-         
-            /* apply factor and offset */
-            y[i][n_vp] = y[i][n_vp] * factor[i] + offset[i];
-         
-            /* calculate ymin and ymax */
-            if ((i == 0 || index != -1) && n_vp == 0)
-               ymin = ymax = y[i][0];
-            else {
-               if (y[i][n_vp] > ymax)
-                  ymax = y[i][n_vp];
-               if (y[i][n_vp] < ymin)
-                  ymin = y[i][n_vp];
-            }
-         
-            /* increment number of valid points */
-            n_vp++;
-
-         } // loop over data
-
-         n_point[i] = n_vp;
-
-         assert(n_point[i]<=MAX_POINTS);
-      }
+      } // loop over data
+      
+      n_point[i] = n_vp;
+      
+      assert(n_point[i]<=MAX_POINTS);
    }
 
    tend = ss_millitime();
@@ -10745,8 +10884,10 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
    }
 
    /* calculate X limits */
-   xmin = (float) (-scale / 3600.0 + toffset / 3600.0);
-   xmax = (float) (toffset / 3600.0);
+   //xmin = (double) (-scale / 3600.0 + toffset / 3600.0);
+   //xmax = (double) (toffset / 3600.0);
+   //xrange = xmax - xmin;
+   //xrange = scale/3600.0;
 
    /* caluclate required space for Y-axis */
    aoffset = vaxis(im, gdFontSmall, fgcol, gridcol, 0, 0, height, -3, -5, -7, -8, 0, ymin, ymax, logaxis);
@@ -10760,7 +10901,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
    gdImageFilledRectangle(im, x1, y2, x2, y1, bgcol);
 
    /* draw axis frame */
-   taxis(im, gdFontSmall, fgcol, gridcol, x1, y1, x2 - x1, width, 3, 5, 9, 10, 0, ss_time() - scale + toffset, ss_time() + toffset);
+   taxis(im, gdFontSmall, fgcol, gridcol, x1, y1, x2 - x1, width, 3, 5, 9, 10, 0, starttime, endtime);
 
    vaxis(im, gdFontSmall, fgcol, gridcol, x1, y1, y1 - y2, -3, -5, -7, -8, x2 - x1, ymin, ymax, logaxis);
    gdImageLine(im, x1, y2, x2, y2, fgcol);
@@ -10768,8 +10909,10 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
 
    xs = ys = xold = yold = 0;
 
+   /* old code for run markers, new code is below */
+
    /* write run markes if selected */
-   if (runmarker) {
+   if (0 && runmarker) {
 
       const char* event_names[] = {
          "Run transitions", 
@@ -10794,7 +10937,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
       num_entries[0] = 0;
       num_entries[1] = 0;
 
-      status = mh->hs_read(ss_time() - scale + toffset - scale, ss_time() + toffset, 0,
+      status = mh->hs_read(starttime - scale, endtime, 0,
                            2, event_names, tag_names, tag_indexes,
                            num_entries, tbuf, dbuf, st);
 
@@ -10808,9 +10951,18 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
          for (j = 0; j < (int) n_marker; j++) {
             int col;
 
-            x_marker = (int)(tbuf[1][j] - ss_time());
-            xs = (int) ((x_marker / 3600.0 - xmin) / (xmax - xmin) * (x2 - x1) + x1 +
-                        0.5);
+            // explicit algebra manipulation to clarify computations:
+
+            //xmin = (double) (-scale / 3600.0 + toffset / 3600.0);
+            //xrange = scale/3600.0;
+            //time_t starttime = now - scale + toffset;
+
+            //x_marker = (int)(tbuf[1][j] - now);
+            //xs = (int) ((x_marker / 3600.0 - xmin) / xrange * (x2 - x1) + x1 + 0.5);
+            //xs = (int) (((tbuf[1][j] - now) / 3600.0 - xmin) / xrange * (x2 - x1) + x1 + 0.5);
+            //xs = (int) (((tbuf[1][j] - now) / 3600.0 - (-scale / 3600.0 + toffset / 3600.0)) / (scale/3600.0) * (x2 - x1) + x1 + 0.5);
+            //xs = (int) (((tbuf[1][j] - now) - (-scale + toffset)) / (scale/1.0) * (x2 - x1) + x1 + 0.5);
+            xs = (int) ((tbuf[1][j] - starttime) / (scale/1.0) * (x2 - x1) + x1 + 0.5);
 
             if (xs < x1)
                continue;
@@ -10838,14 +10990,12 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
 
             if (dbuf[0][j] == STATE_RUNNING) {
                if (xs > xmaxm) {
-                  gdImageStringUp(im, gdFontSmall, xs + 0,
-                                  y2 + 2 + gdFontSmall->w * strlen(str), str, fgcol);
+                  gdImageStringUp(im, gdFontSmall, xs + 0, y2 + 2 + gdFontSmall->w * strlen(str), str, fgcol);
                   xmaxm = xs - 2 + gdFontSmall->h;
                }
             } else if (dbuf[0][j] == STATE_STOPPED) {
                if (xs + 2 - gdFontSmall->h > xmaxm) {
-                  gdImageStringUp(im, gdFontSmall, xs + 2 - gdFontSmall->h,
-                                  y2 + 2 + gdFontSmall->w * strlen(str), str, fgcol);
+                  gdImageStringUp(im, gdFontSmall, xs + 2 - gdFontSmall->h, y2 + 2 + gdFontSmall->w * strlen(str), str, fgcol);
                   xmaxm = xs - 1;
                }
             }
@@ -10867,6 +11017,99 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
       }
    }
 
+   /* write run markes if selected */
+   if (runmarker) {
+
+      int index_state = -1;
+      int index_run_number = -1;
+
+      for (int k=0; k<hsdata->nvars; k++) {
+         if (hsdata->odb_index[k] == -1)
+            index_state = k;
+
+         if (hsdata->odb_index[k] == -2)
+            index_run_number = k;
+      }
+
+      bool ok = true;
+
+      if (ok)
+         ok = (index_state >= 0) && (index_run_number >= 0);
+
+      if (ok)
+         ok = (hsdata->status[index_state] == HS_SUCCESS);
+
+      if (ok)
+         ok = (hsdata->status[index_run_number] == HS_SUCCESS);
+
+      if (0 && ok)
+         printf("read run info: indexes: %d, %d, status: %d, %d, entries: %d, %d\n", index_state, index_run_number, hsdata->status[index_state], hsdata->status[index_run_number], hsdata->num_entries[index_state], hsdata->num_entries[index_run_number]);
+
+      if (ok)
+         ok = (hsdata->num_entries[index_state] == hsdata->num_entries[index_run_number]);
+
+      int n_marker = hsdata->num_entries[index_state];
+
+      if (ok && n_marker > 0 && n_marker < 100) {
+         xs_old = -1;
+         xmaxm = x1;
+         for (j = 0; j < (int) n_marker; j++) {
+            int col;
+
+            // explicit algebra manipulation to clarify computations:
+
+            //xmin = (double) (-scale / 3600.0 + toffset / 3600.0);
+            //xrange = scale/3600.0;
+            //time_t starttime = now - scale + toffset;
+
+            //x_marker = (int)(tbuf[1][j] - now);
+            //xs = (int) ((x_marker / 3600.0 - xmin) / xrange * (x2 - x1) + x1 + 0.5);
+            //xs = (int) (((tbuf[1][j] - now) / 3600.0 - xmin) / xrange * (x2 - x1) + x1 + 0.5);
+            //xs = (int) (((tbuf[1][j] - now) / 3600.0 - (-scale / 3600.0 + toffset / 3600.0)) / (scale/3600.0) * (x2 - x1) + x1 + 0.5);
+            //xs = (int) (((tbuf[1][j] - now) - (-scale + toffset)) / (scale/1.0) * (x2 - x1) + x1 + 0.5);
+            xs = (int) ((hsdata->t[index_state][j] - starttime) / (scale/1.0) * (x2 - x1) + x1 + 0.5);
+
+            if (xs < x1)
+               continue;
+            if (xs >= x2)
+               continue;
+
+            double run_number = hsdata->v[index_run_number][j];
+
+            if (xs <= xs_old)
+               xs = xs_old + 1;
+            xs_old = xs;
+
+            int state = (int)hsdata->v[index_state][j];
+
+            if (state == 1)
+               col = state_col[0];
+            else if (state == 2)
+               col = state_col[1];
+            else if (state == 3)
+               col = state_col[2];
+            else
+               col = state_col[0];
+
+            gdImageDashedLine(im, xs, y1, xs, y2, col);
+
+            sprintf(str, "%.0f", run_number);
+
+            if (state == STATE_RUNNING) {
+               if (xs > xmaxm) {
+                  gdImageStringUp(im, gdFontSmall, xs + 0, y2 + 2 + gdFontSmall->w * strlen(str), str, fgcol);
+                  xmaxm = xs - 2 + gdFontSmall->h;
+               }
+            } else if (state == STATE_STOPPED) {
+               if (xs + 2 - gdFontSmall->h > xmaxm) {
+                  gdImageStringUp(im, gdFontSmall, xs + 2 - gdFontSmall->h, y2 + 2 + gdFontSmall->w * strlen(str), str, fgcol);
+                  xmaxm = xs - 1;
+               }
+            }
+         }
+      }
+   }
+
    for (i = 0; i < n_vars; i++) {
       if (index != -1 && index != i)
          continue;
@@ -10877,12 +11120,10 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
             if (lower_limit[i] <= 0)
                ys = y1;
             else
-               ys = (int) (y1 -
-                           (log(lower_limit[i]) - log(ymin)) / (log(ymax) -
-                                                                log(ymin)) * (y1 - y2) +
-                           0.5);
-         } else
+               ys = (int) (y1 - (log(lower_limit[i]) - log(ymin)) / (log(ymax) - log(ymin)) * (y1 - y2) + 0.5);
+         } else {
             ys = (int) (y1 - (lower_limit[i] - ymin) / (ymax - ymin) * (y1 - y2) + 0.5);
+         }
 
          if (xs < 0)
             xs = 0;
@@ -10911,12 +11152,10 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
             if (upper_limit[i] <= 0)
                ys = y1;
             else
-               ys = (int) (y1 -
-                           (log(upper_limit[i]) - log(ymin)) / (log(ymax) -
-                                                                log(ymin)) * (y1 - y2) +
-                           0.5);
-         } else
+               ys = (int) (y1 - (log(upper_limit[i]) - log(ymin)) / (log(ymax) - log(ymin)) * (y1 - y2) + 0.5);
+         } else {
             ys = (int) (y1 - (upper_limit[i] - ymin) / (ymax - ymin) * (y1 - y2) + 0.5);
+         }
 
          if (xs < 0)
             xs = 0;
@@ -10942,18 +11181,21 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
       }
 
       for (j = 0; j < (int) n_point[i]; j++) {
-         xs = (int) ((x[i][j] / 3600.0 - xmin) / (xmax - xmin) * (x2 - x1) + x1 + 0.5);
+         //xmin = (double) (-scale / 3600.0 + toffset / 3600.0);
+         //xrange = scale/3600.0;
+         //xs = (int) (((x[i][j]-now) / 3600.0 - xmin) / xrange * (x2 - x1) + x1 + 0.5);
+         //xs = (int) (((x[i][j] - now + scale - toffset) / 3600.0) / xrange * (x2 - x1) + x1 + 0.5);
+         //xs = (int) (((x[i][j] - starttime) / 3600.0) / xrange * (x2 - x1) + x1 + 0.5);
+         xs = (int) (((x[i][j] - starttime)/1.0) / (1.0*scale) * (x2 - x1) + x1 + 0.5);
 
          if (logaxis) {
             if (y[i][j] <= 0)
                ys = y1;
             else
-               ys = (int) (y1 -
-                           (log(y[i][j]) - log(ymin)) / (log(ymax) - log(ymin)) * (y1 -
-                                                                                   y2) +
-                           0.5);
-         } else
+               ys = (int) (y1 - (log(y[i][j]) - log(ymin)) / (log(ymax) - log(ymin)) * (y1 - y2) + 0.5);
+         } else {
             ys = (int) (y1 - (y[i][j] - ymin) / (ymax - ymin) * (y1 - y2) + 0.5);
+         }
 
          if (xs < 0)
             xs = 0;
@@ -11093,17 +11335,64 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
 
 /*------------------------------------------------------------------*/
 
+time_t mktime_with_dst(const struct tm* ptms)
+{
+   // this silly stuff is required to correctly handle daylight savings time (Summer time/Winter time)
+   // when we fill "struct tm" from user input, we cannot know if daylight savings time is in effect
+   // and we do not know how to initialize the value of tms->tm_isdst.
+   // This can cause the output of mktime() to be off by one hour.
+   // (Rules for daylight savings time are set by national and local govt and in some locations, changes yearly)
+   // (There are no locations with 2 hour or half-hour daylight savings that I know of)
+   // (Yes, "man mktime" talks about using "tms->tm_isdst = -1")
+   //
+   // We assume the user is using local time and we convert in two steps:
+   //
+   // first we convert "struct tm" to "time_t" using mktime() with unknown tm_isdst
+   // second we convert "time_t" back to "struct tm" using localtime_r()
+   // this fills "tm_isdst" with correct value from the system time zone database
+   // then we reset all the time fields (except for sub-minute fields not affected by daylight savings)
+   // and call mktime() again, now with the correct value of "tm_isdst".
+   // K.O. 2013-09-14
+
+   struct tm tms = *ptms;
+   struct tm tms2;
+   time_t t1 = mktime(&tms);
+   localtime_r(&t1, &tms2);
+   tms2.tm_year = ptms->tm_year;
+   tms2.tm_mon  = ptms->tm_mon;
+   tms2.tm_mday = ptms->tm_mday;
+   tms2.tm_hour = ptms->tm_hour;
+   tms2.tm_min  = ptms->tm_min;
+   time_t t2 = mktime(&tms2);
+   //printf("t1 %.0f, t2 %.0f, diff %d\n", (double)t1, (double)t2, (int)(t1-t2));
+   return t2;
+}
+
+/*------------------------------------------------------------------*/
+
+void add_param_to_url(char* buf, int bufsize, const char* name, const char* value)
+{
+   if (strstr(buf, "?"))
+      strlcat(buf, "&", bufsize);
+   else
+      strlcat(buf, "?", bufsize);
+   strlcat(buf, name, bufsize); // FIXME: should be URI-encoded
+   strlcat(buf, "=", bufsize);
+   strlcat(buf, value, bufsize); // FIXME: should be URI-encoded
+}
+
+/*------------------------------------------------------------------*/
+
 void show_query_page(const char *path)
 {
    int i;
-   time_t ltime_start, ltime_end;
    HNDLE hDB;
    char str[256], redir[256];
-   time_t now;
-   struct tm *ptms, tms;
 
    if (*getparam("m1")) {
+      struct tm tms;
       memset(&tms, 0, sizeof(struct tm));
+
       tms.tm_year = atoi(getparam("y1")) % 100;
 
       strlcpy(str, getparam("m1"), sizeof(str));
@@ -11115,12 +11404,13 @@ void show_query_page(const char *path)
 
       tms.tm_mon = i;
       tms.tm_mday = atoi(getparam("d1"));
-      tms.tm_hour = 0;
+      tms.tm_hour = atoi(getparam("h1"));
 
       if (tms.tm_year < 90)
          tms.tm_year += 100;
 
-      ltime_start = mktime(&tms);
+      time_t ltime_start = mktime_with_dst(&tms);
+
       memset(&tms, 0, sizeof(struct tm));
       tms.tm_year = atoi(getparam("y2")) % 100;
 
@@ -11133,18 +11423,23 @@ void show_query_page(const char *path)
 
       tms.tm_mon = i;
       tms.tm_mday = atoi(getparam("d2"));
-      tms.tm_hour = 0;
+      tms.tm_hour = atoi(getparam("h2"));
 
       if (tms.tm_year < 90)
          tms.tm_year += 100;
-      ltime_end = mktime(&tms);
-      ltime_end += 3600 * 24;
+
+      time_t ltime_end = mktime_with_dst(&tms);
+
+      if (ltime_end == ltime_start)
+         ltime_end += 3600 * 24;
 
       strcpy(str, path);
       if (strrchr(str, '/'))
          strcpy(str, strrchr(str, '/')+1);
-      sprintf(redir, "%s?scale=%d&offset=%d", str, (int) (ltime_end - ltime_start),
-              MIN((int) (ltime_end - ss_time()), 0));
+      //sprintf(redir, "%s?scale=%d&offset=%d", str, (int) (ltime_end - ltime_start), MIN((int) (ltime_end - ss_time()), 0));
+      sprintf(redir, "%s?scale=%d&time=%s", str, (int) (ltime_end - ltime_start), time_to_string(ltime_end));
+      if (isparam("hindex"))
+         add_param_to_url(redir, sizeof(redir), "index", getparam("hindex"));
       redirect(redir);
       return;
    }
@@ -11156,19 +11451,44 @@ void show_query_page(const char *path)
       strcpy(str, strrchr(str, '/')+1);
    show_header("History", "GET", str, 0);
 
+   /* set the times */
+
+   struct tm *ptms;
+
+   time_t now = time(NULL);
+
+   time_t starttime = now - 3600 * 24;
+   time_t endtime = now;
+   bool full_day = true;
+
+   if (isparam("htime")) {
+      endtime = string_to_time(getparam("htime"));
+
+      if (isparam("hscale")) {
+         starttime = endtime - atoi(getparam("hscale"));
+         full_day = false;
+      } else {
+         starttime = endtime - 3600 * 24;
+         full_day = false;
+      }
+   }
+
    /* menu buttons */
    rsprintf("<tr><td colspan=2>\n");
    rsprintf("<input type=submit name=cmd value=Query>\n");
-   rsprintf("<input type=submit name=cmd value=History>\n");
-   rsprintf("<input type=submit name=cmd value=Status></tr>\n");
+   rsprintf("<input type=submit name=cmd value=Cancel>\n");
+   if (isparam("htime"))
+      rsprintf("<input type=hidden name=htime value=%s>\n", getparam("htime"));
+   if (isparam("hscale"))
+      rsprintf("<input type=hidden name=hscale value=%s>\n", getparam("hscale"));
+   if (isparam("hindex"))
+      rsprintf("<input type=hidden name=hindex value=%s>\n", getparam("hindex"));
    rsprintf("</tr>\n\n");
    rsprintf("</table>");  //end header
 
    rsprintf("<table class=\"dialogTable\">");  //main table
 
-   time(&now);
-   now -= 3600 * 24;
-   ptms = localtime(&now);
+   ptms = localtime(&starttime);
    ptms->tm_year += 1900;
 
    rsprintf("<tr><td nowrap>Start date:</td>", "Start date");
@@ -11191,14 +11511,18 @@ void show_query_page(const char *path)
          rsprintf("<option value=%d>%d\n", i + 1, i + 1);
    rsprintf("</select>\n");
 
-   rsprintf
-       ("&nbsp;Year: <input type=\"text\" size=5 maxlength=5 name=\"y1\" value=\"%d\">",
-        ptms->tm_year);
+   int start_hour = ptms->tm_hour;
+   if (full_day)
+      start_hour = 0;
+
+   rsprintf("&nbsp;Hour: <input type=\"text\" size=5 maxlength=5 name=\"h1\" value=\"%d\">", start_hour);
+
+   rsprintf("&nbsp;Year: <input type=\"text\" size=5 maxlength=5 name=\"y1\" value=\"%d\">", ptms->tm_year);
    rsprintf("</td></tr>\n");
 
    rsprintf("<tr><td nowrap>End date:</td>");
-   time(&now);
-   ptms = localtime(&now);
+
+   ptms = localtime(&endtime);
    ptms->tm_year += 1900;
 
    rsprintf("<td>Month: <select name=\"m2\">\n");
@@ -11219,9 +11543,13 @@ void show_query_page(const char *path)
          rsprintf("<option value=%d>%d\n", i + 1, i + 1);
    rsprintf("</select>\n");
 
-   rsprintf
-       ("&nbsp;Year: <input type=\"text\" size=5 maxlength=5 name=\"y2\" value=\"%d\">",
-        ptms->tm_year);
+   int end_hour = ptms->tm_hour;
+   if (full_day)
+      end_hour = 24;
+
+   rsprintf("&nbsp;Hour: <input type=\"text\" size=5 maxlength=5 name=\"h2\" value=\"%d\">", end_hour);
+
+   rsprintf("&nbsp;Year: <input type=\"text\" size=5 maxlength=5 name=\"y2\" value=\"%d\">", ptms->tm_year);
    rsprintf("</td></tr>\n");
 
    rsprintf("</table>\n");
@@ -12166,7 +12494,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
 
 /*------------------------------------------------------------------*/
 
-void export_hist(const char *path, int scale, int toffset, int index, int labels)
+void export_hist(const char *path, time_t xendtime, int scale, int toffset, int index, int labels)
 {
    HNDLE hDB, hkey, hkeypanel;
    int size, status;
@@ -12363,8 +12691,7 @@ void export_hist(const char *path, int scale, int toffset, int index, int labels
 
 /*------------------------------------------------------------------*/
 
-void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_size,
-                    int refresh)
+void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_size, int refresh)
 {
    char str[256], ref[256], ref2[256], paramstr[256], scalestr[256], hgroup[256],
        bgcolor[32], fgcolor[32], gridcolor[32], url[256], dir[256], file_name[256],
@@ -12373,23 +12700,39 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    const char *p;
    HNDLE hDB, hkey, hikeyp, hkeyp, hkeybutton;
    KEY key, ikey;
-   int i, j, k, scale, offset, index, width, size, status, labels, fh, fsize;
+   int i, j, k, scale, xoffset, index, width, size, status, labels, fh, fsize;
    float factor[2];
    char def_button[][NAME_LENGTH] = { "10m", "1h", "3h", "12h", "24h", "3d", "7d" };
-   time_t now;
    struct tm *tms;
 
+   //printf("show_hist_page: path [%s]\n", path);
+   //printparam();
+
    cm_get_experiment_database(&hDB, NULL);
+
+   if (equal_ustring(getparam("cmd"), "Reset")) {
+      strlcpy(str, path, sizeof(str));
+      if (strrchr(str, '/'))
+         strlcpy(str, strrchr(str, '/')+1, sizeof(str));
+      redirect(str);
+      return;
+   }
 
    if (equal_ustring(getparam("cmd"), "Query")) {
       show_query_page(path);
       return;
    }
 
-   if (equal_ustring(getparam("cmd"), "cancel")) {
+   if (equal_ustring(getparam("cmd"), "Cancel")) {
       strlcpy(str, path, sizeof(str));
       if (strrchr(str, '/'))
          strlcpy(str, strrchr(str, '/')+1, sizeof(str));
+      if (isparam("hscale"))
+         add_param_to_url(str, sizeof(str), "scale", getparam("hscale"));
+      if (isparam("htime"))
+         add_param_to_url(str, sizeof(str), "time", getparam("htime"));
+      if (isparam("hindex"))
+         add_param_to_url(str, sizeof(str), "index", getparam("hindex"));
       redirect(str);
       return;
    }
@@ -12444,6 +12787,11 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
          sprintf(path, "%s%s/%s", back_path, getparam("fgroup"), getparam("fpanel"));
       else
          sprintf(path, "%s%s", back_path, getparam("fgroup"));
+
+      if (isparam("hscale"))
+         add_param_to_url(path, sizeof(path), "scale", getparam("hscale"));
+      if (isparam("htime"))
+         add_param_to_url(path, sizeof(path), "time", getparam("htime"));
 
       redirect(path);
       return;
@@ -12547,9 +12895,9 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    const char* pscale = getparam("scale");
    if (pscale == NULL || *pscale == 0)
       pscale = getparam("hscale");
-   const char* poffset = getparam("offset");
-   if (poffset == NULL || *poffset == 0)
-      poffset = getparam("hoffset");
+   //const char* poffset = getparam("offset");
+   //if (poffset == NULL || *poffset == 0)
+   //   poffset = getparam("hoffset");
    const char* pmag = getparam("width");
    if (pmag == NULL || *pmag == 0)
       pmag = getparam("hwidth");
@@ -12578,10 +12926,16 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
 
    /* evaluate scale and offset */
 
-   if (poffset && *poffset)
-      offset = time_to_sec(poffset);
-   else
-      offset = 0;
+   time_t endtime = 0;
+   if (isparam("time"))
+      endtime = string_to_time(getparam("time"));
+   else if (isparam("htime"))
+      endtime = string_to_time(getparam("htime"));
+
+   //if (poffset && *poffset)
+   //   offset = time_to_sec(poffset);
+   //else
+   //   offset = 0;
 
    if (pscale && *pscale)
       scale = time_to_sec(pscale);
@@ -12611,18 +12965,21 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
          char* fbuffer = (char*)M_MALLOC(fsize);
          assert(fbuffer != NULL);
 
-         if (equal_ustring(pmag, "Large"))
-            generate_hist_graph(path, fbuffer, &fsize, 1024, 768, scale, offset, index,
-                              labels, bgcolor, fgcolor, gridcolor);
-         else if (equal_ustring(pmag, "Small"))
-            generate_hist_graph(path, fbuffer, &fsize, 320, 200, scale, offset, index,
-                              labels, bgcolor, fgcolor, gridcolor);
-         else if (atoi(pmag) > 0)
-            generate_hist_graph(path, fbuffer, &fsize, atoi(pmag), 200, scale, offset, index,
-                              labels, bgcolor, fgcolor, gridcolor);
-         else
-            generate_hist_graph(path, fbuffer, &fsize, 640, 400, scale, offset, index,
-                              labels, bgcolor, fgcolor, gridcolor);
+         int width = 640;
+         int height = 400;
+
+         if (equal_ustring(pmag, "Large")) {
+            width = 1024;
+            height = 768;
+         } else if (equal_ustring(pmag, "Small")) {
+            width = 320;
+            height = 200;
+         } else if (atoi(pmag) > 0) {
+            width = atoi(pmag);
+            height = 200;
+         }
+
+         generate_hist_graph(path, fbuffer, &fsize, width, height, endtime, scale, xoffset, index, labels, bgcolor, fgcolor, gridcolor);
 
          /* save temporary file */
          size = sizeof(dir);
@@ -12631,7 +12988,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
          if (strlen(dir) > 0 && dir[strlen(dir)-1] != DIR_SEPARATOR)
             strlcat(dir, DIR_SEPARATOR_STR, sizeof(dir));
 
-         time(&now);
+         time_t now = time(NULL);
          tms = localtime(&now);
 
          if (strchr(path, '/'))
@@ -12668,13 +13025,20 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
          sprintf(str, "\\HS\\%s.gif", path);
          if (getparam("hscale") && *getparam("hscale"))
             sprintf(str + strlen(str), "?scale=%s", getparam("hscale"));
-         if (getparam("hoffset") && *getparam("hoffset")) {
+         if (getparam("htime") && *getparam("htime")) {
             if (strchr(str, '?'))
                strlcat(str, "&", sizeof(str));
             else
                strlcat(str, "?", sizeof(str));
-            sprintf(str + strlen(str), "offset=%s", getparam("hoffset"));
+            sprintf(str + strlen(str), "time=%s", getparam("htime"));
          }
+         //if (getparam("hoffset") && *getparam("hoffset")) {
+         //   if (strchr(str, '?'))
+         //      strlcat(str, "&", sizeof(str));
+         //   else
+         //      strlcat(str, "?", sizeof(str));
+         //   sprintf(str + strlen(str), "offset=%s", getparam("hoffset"));
+         //}
          if (getparam("hwidth") && *getparam("hwidth")) {
             if (strchr(str, '?'))
                strlcat(str, "&", sizeof(str));
@@ -12696,24 +13060,25 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    }
 
    if (equal_ustring(getparam("cmd"), "Export")) {
-      export_hist(path, scale, offset, index, labels);
+      export_hist(path, endtime, scale, xoffset, index, labels);
       return;
    }
 
    if (strstr(path, ".gif")) {
-      if (equal_ustring(pmag, "Large"))
-         generate_hist_graph(path, buffer, buffer_size, 1024, 768, scale, offset, index,
-                             labels, bgcolor, fgcolor, gridcolor);
-      else if (equal_ustring(pmag, "Small"))
-         generate_hist_graph(path, buffer, buffer_size, 320, 200, scale, offset, index,
-                             labels, bgcolor, fgcolor, gridcolor);
-      else if (atoi(pmag) > 0)
-         generate_hist_graph(path, buffer, buffer_size, atoi(pmag),
-                             (int) (atoi(pmag) * 0.625), scale, offset, index, labels,
-                             bgcolor, fgcolor, gridcolor);
-      else
-         generate_hist_graph(path, buffer, buffer_size, 640, 400, scale, offset, index,
-                             labels, bgcolor, fgcolor, gridcolor);
+      int width =  640;
+      int height = 400;
+      if (equal_ustring(pmag, "Large")) {
+         width = 1024;
+         height = 768;
+      } else if (equal_ustring(pmag, "Small")) {
+         width = 320;
+         height = 200;
+      } else if (atoi(pmag) > 0) {
+         width = atoi(pmag);
+         height = (int)(0.625 * width);
+      }
+
+      generate_hist_graph(path, buffer, buffer_size, width, height, endtime, scale, xoffset, index, labels, bgcolor, fgcolor, gridcolor);
 
       return;
    }
@@ -12721,34 +13086,81 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    if (history_mode && index < 0)
       return;
 
+   time_t now = time(NULL);
+
    /* evaluate offset shift */
-   if (equal_ustring(getparam("shift"), "<"))
-      offset -= scale / 2;
+   if (equal_ustring(getparam("shift"), "<<<")) {
+      if (endtime == 0)
+         endtime = now;
+      time_t last_written = 0;
+      status = get_hist_last_written(path, endtime, index, 1, &last_written);
+      if (status == HS_SUCCESS)
+         endtime = last_written + scale/2;
+   }
+
+   if (equal_ustring(getparam("shift"), "<<")) {
+      if (endtime == 0)
+         endtime = now;
+      time_t last_written = 0;
+      status = get_hist_last_written(path, endtime, index, 0, &last_written);
+      if (status == HS_SUCCESS)
+         if (last_written != endtime)
+            endtime = last_written + scale/2;
+   }
+
+   if (equal_ustring(getparam("shift"), "<")) {
+      if (endtime == 0)
+         endtime = now;
+      endtime -= scale/2;
+      //offset -= scale / 2;
+   }
 
    if (equal_ustring(getparam("shift"), ">")) {
-      offset += scale / 2;
-      if (offset > 0)
-         offset = 0;
+      if (endtime == 0)
+         endtime = now;
+      endtime += scale/2;
+      if (endtime > now)
+         endtime = now;
+
+      //offset += scale / 2;
+      //if (offset > 0)
+      //   offset = 0;
    }
-   if (equal_ustring(getparam("shift"), ">>"))
-      offset = 0;
+
+   if (equal_ustring(getparam("shift"), ">>")) {
+      endtime = 0;
+      //offset = 0;
+   }
 
    if (equal_ustring(getparam("shift"), " + ")) {
-      offset -= scale / 4;
+      if (endtime == 0)
+         endtime = now;
+      endtime -= scale / 4;
+      //offset -= scale / 4;
       scale /= 2;
    }
 
    if (equal_ustring(getparam("shift"), " - ")) {
-      offset += scale / 2;
-      if (offset > 0)
-         offset = 0;
+      if (endtime == 0)
+         endtime = now;
+      endtime += scale / 2;
+      if (endtime > now)
+         endtime = now;
+      //offset += scale / 2;
+      //if (offset > 0)
+      //   offset = 0;
       scale *= 2;
    }
 
    strlcpy(str, path, sizeof(str));
    if (strrchr(str, '/'))
       strlcpy(str, strrchr(str, '/')+1, sizeof(str));
-   show_header(str, "GET", str, offset == 0 ? refresh : 0);
+   int xrefresh = refresh;
+   if (endtime != 0)
+      xrefresh = 0;
+   //if (offset != 0)
+   //   xrefresh = 0;
+   show_header(str, "GET", str, xrefresh);
    show_navigation_bar("History");
    
    rsprintf("<table class=\"genericTable\">");
@@ -12791,8 +13203,10 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
       }
    }
 
-   if (offset != 0)
-      rsprintf("<input type=hidden name=hoffset value=%d>\n", offset);
+   if (endtime != 0)
+      rsprintf("<input type=hidden name=htime value=%s>\n", time_to_string(endtime));
+   //if (offset != 0)
+   //   rsprintf("<input type=hidden name=hoffset value=%d>\n", offset);
    if (pmag && *pmag)
       rsprintf("<input type=hidden name=hwidth value=%s>\n", pmag);
    if (pindex && *pindex)
@@ -12941,6 +13355,12 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
                rsprintf("<option value=\"%s\">%s\n", key.name, key.name);
          }
 
+         if (equal_ustring("ALL", hgroup)) {
+            rsprintf("<option selected value=\"%s\">%s\n", "ALL", "ALL");
+         } else {
+            rsprintf("<option value=\"%s\">%s\n", "ALL", "ALL");
+         }
+
          rsprintf("</select>\n");
          rsprintf("&nbsp;&nbsp;Panel:\n");
          rsprintf("<select title=\"Select panel\" name=\"fpanel\" onChange=\"document.form1.submit()\">\n");
@@ -12989,6 +13409,10 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
       else
          rsprintf("onClick=\"window.location.href='?cmd=New'\">\n");
 
+      rsprintf("<input type=\"submit\" name=\"Cmd\" value=\"Reset\" onClick=\"document.form1.submit()\">\n");
+
+      rsprintf("<input type=\"submit\" name=\"Cmd\" value=\"Query\" onClick=\"document.form1.submit()\">\n");
+
       rsprintf("</td></tr>\n");
    }
 
@@ -13011,6 +13435,15 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
             db_get_key(hDB, hikeyp, &key);
             sprintf(ref, "%s%s/%s.gif?width=%s", hurl, path, key.name, strwidth);
             sprintf(ref2, "%s/%s", path, key.name);
+
+            if (endtime != 0) {
+               char tmp[256];
+               sprintf(tmp, "time=%s&scale=%d", time_to_string(endtime), scale);
+               strlcat(ref, "&", sizeof(ref));
+               strlcat(ref, tmp, sizeof(ref));
+               strlcat(ref2, "?", sizeof(ref2));
+               strlcat(ref2, tmp, sizeof(ref2));
+            }
 
             if (i % 2 == 0)
                rsprintf("<tr><td><a href=\"%s%s\"><img src=\"%s\" alt=\"%s.gif\"></a>\n",
@@ -13048,10 +13481,16 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
          rsprintf("<input type=submit name=scale value=%s>\n", str);
       }
 
+      rsprintf("<input type=submit name=shift value=\"<<<\">\n");
+      rsprintf("<input type=submit name=shift value=\"<<\">\n");
       rsprintf("<input type=submit name=shift value=\"<\">\n");
       rsprintf("<input type=submit name=shift value=\" + \">\n");
       rsprintf("<input type=submit name=shift value=\" - \">\n");
-      if (offset != 0) {
+      //if (offset != 0) {
+      //   rsprintf("<input type=submit name=shift value=\">\">\n");
+      //   rsprintf("<input type=submit name=shift value=\">>\">\n");
+      //}
+      if (endtime != 0) {
          rsprintf("<input type=submit name=shift value=\">\">\n");
          rsprintf("<input type=submit name=shift value=\">>\">\n");
       }
@@ -13062,14 +13501,17 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
       rsprintf("<input type=submit name=cmd value=\"Create ELog\">\n");
       rsprintf("<input type=submit name=cmd value=Config>\n");
       rsprintf("<input type=submit name=cmd value=Export>\n");
-      rsprintf("<input type=submit name=cmd value=Query>\n");
+      //rsprintf("<input type=submit name=cmd value=Query>\n");
+      //rsprintf("<input type=submit name=cmd value=Reset>\n");
 
       rsprintf("</tr>\n");
 
       paramstr[0] = 0;
       sprintf(paramstr + strlen(paramstr), "&scale=%d", scale);
-      if (offset != 0)
-         sprintf(paramstr + strlen(paramstr), "&offset=%d", offset);
+      //if (offset != 0)
+      //   sprintf(paramstr + strlen(paramstr), "&offset=%d", offset);
+      if (endtime != 0)
+         sprintf(paramstr + strlen(paramstr), "&time=%s", time_to_string(endtime));
       if (pmag && *pmag)
          sprintf(paramstr + strlen(paramstr), "&width=%s", pmag);
       else {
@@ -13154,6 +13596,15 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
                db_get_key(hDB, hikeyp, &ikey);
                sprintf(ref, "%s%s/%s.gif?width=Small", hurl, key.name, ikey.name);
                sprintf(ref2, "%s/%s", key.name, ikey.name);
+
+               if (endtime != 0) {
+                  char tmp[256];
+                  sprintf(tmp, "time=%s&scale=%d", time_to_string(endtime), scale);
+                  strlcat(ref, "&", sizeof(ref));
+                  strlcat(ref, tmp, sizeof(ref));
+                  strlcat(ref2, "?", sizeof(ref2));
+                  strlcat(ref2, tmp, sizeof(ref2));
+               }
 
                if (k % 2 == 0)
                   rsprintf("<tr><td><a href=\"%s%s\"><img src=\"%s\" alt=\"%s.gif\"></a>\n",
@@ -15209,3 +15660,11 @@ int main(int argc, char *argv[])
 
    return 0;
 }
+
+/* emacs
+ * Local Variables:
+ * tab-width: 8
+ * c-basic-offset: 3
+ * indent-tabs-mode: nil
+ * End:
+ */
