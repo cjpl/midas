@@ -6405,6 +6405,8 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
                for (i=0 ; p != NULL ; i++) {
                   size = sizeof(data);
                   db_sscanf(p, data, &size, 0, key.type);
+                  if (strchr(data, ','))
+                     *strchr(data, ',') = 0; 
                   db_set_data_index(hDB, hkey, data, key.item_size, i, key.type);
                   p = strchr(p, ',');
                   if (p != NULL)
