@@ -807,7 +807,7 @@ public:
    int hs_connect(const char* connect_string)
    {
       if (fDebug)
-         printf("hs_connect %s!\n", connect_string);
+         printf("hs_connect [%s]!\n", connect_string);
 
       assert(fSql);
 
@@ -1732,7 +1732,7 @@ public:
                       int status[])
    {
       if (fDebug)
-         printf("hs_read: %d variables\n", num_var);
+         printf("hs_read_buffer: %d variables\n", num_var);
 
       if (!fSql->IsConnected())
          return HS_FILE_ERROR;
