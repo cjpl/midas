@@ -638,6 +638,7 @@ extern "C" {
    midas_thread_t EXPRT ss_thread_create(INT(*func) (void *), void *param);
    INT EXPRT ss_thread_kill(midas_thread_t thread_id);
    INT EXPRT ss_get_struct_align(void);
+   INT EXPRT ss_get_struct_padding(void);
    INT EXPRT ss_timezone(void);
    INT EXPRT ss_stack_get(char ***string);
    void EXPRT ss_stack_print();
