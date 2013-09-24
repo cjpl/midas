@@ -6424,7 +6424,14 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
             } else {
                size = sizeof(data);
                db_sscanf(getparam("value"), data, &size, 0, key.type);
-               db_set_data_index(hDB, hkey, data, key.item_size, index, key.type);
+               
+               /* extend data size for single string if necessary */
+               if ((key.type == TID_STRING || key.type == TID_LINK)
+                   && (int) strlen(data) + 1 > key.item_size && key.num_values == 1) {
+                  key.item_size = strlen(data) + 1;
+                  db_set_data(hDB, hkey, data, key.item_size, 1, key.type);
+               } else
+                  db_set_data_index(hDB, hkey, data, key.item_size, index, key.type);
             }
          }
       } else {
