@@ -6540,7 +6540,7 @@ static void db_save_tree_struct(HNDLE hDB, HNDLE hKey, int hfile, INT level)
 
    /* first enumerate this level */
    for (idx = 0;; idx++) {
-      db_enum_key(hDB, hKey, idx, &hSubkey);
+      db_enum_link(hDB, hKey, idx, &hSubkey);
 
       if (!hSubkey)
          break;
