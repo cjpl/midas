@@ -634,6 +634,7 @@ static void db_validate_sizes()
       S(DATABASE_HEADER);
       // misc structures
       S(EVENT_HEADER);
+      S(RUNINFO);
       S(EQUIPMENT_INFO);
       S(EQUIPMENT_STATS);
       S(BANK_HEADER);
@@ -673,7 +674,8 @@ static void db_validate_sizes()
    assert(sizeof(DATABASE_HEADER) == 135232);
    assert(sizeof(EVENT_HEADER) == 16);
    //assert(sizeof(EQUIPMENT_INFO) == 400); // ODB v3, midas.h before rev 4558
-   //assert(sizeof(EQUIPMENT_INFO) == 688); // ODB v3, midaassert(sizeof(EQUIPMENT_INFO) == 696 || sizeof(EQUIPMENT_INFO) == 692 ); // ODB v3, midas.h after cd7abae for 32 & 64bit
+   //assert(sizeof(EQUIPMENT_INFO) == 688); // ODB v3, midas
+   //assert(sizeof(EQUIPMENT_INFO) == 696 || sizeof(EQUIPMENT_INFO) == 692 ); // ODB v3, midas.h after cd7abae for 32 & 64bit
    //assert(sizeof(EQUIPMENT_INFO) == 696); // ODB v3, restored compatibility with 32-bit
    assert(sizeof(EQUIPMENT_STATS) == 24);
    assert(sizeof(BANK_HEADER) == 8);
@@ -8053,7 +8055,7 @@ INT db_get_record(HNDLE hDB, HNDLE hKey, void *data, INT * buf_size, INT align)
       }
 
       /* check record size */
-      db_get_record_size(hDB, hKey, 0, &total_size);
+      db_get_record_size(hDB, hKey, align, &total_size);
       if (total_size != *buf_size) {
          db_get_path(hDB, hKey, str, sizeof(str));
          cm_msg(MERROR, "db_get_record",
@@ -8148,7 +8150,7 @@ INT db_set_record(HNDLE hDB, HNDLE hKey, void *data, INT buf_size, INT align)
       }
 
       /* check record size */
-      db_get_record_size(hDB, hKey, 0, &total_size);
+      db_get_record_size(hDB, hKey, align, &total_size);
       if (total_size != buf_size) {
          cm_msg(MERROR, "db_set_record", "struct size mismatch for \"%s\"", key.name);
          return DB_STRUCT_SIZE_MISMATCH;
@@ -9081,7 +9083,7 @@ INT db_open_record(HNDLE hDB, HNDLE hKey, void *ptr, INT rec_size,
       status = db_get_record(hDB, hKey, data, &size, 0);
       if (status != DB_SUCCESS) {
          _record_list_entries--;
-         cm_msg(MERROR, "db_open_record", "cannot get record");
+         cm_msg(MERROR, "db_open_record", "cannot get record, db_get_record() status %d", status);
          return DB_NO_MEMORY;
       }
    }
@@ -9093,7 +9095,7 @@ INT db_open_record(HNDLE hDB, HNDLE hKey, void *ptr, INT rec_size,
          status = db_set_record(hDB, hKey, data, size, 0);
          if (status != DB_SUCCESS) {
             _record_list_entries--;
-            cm_msg(MERROR, "db_open_record", "cannot set record");
+            cm_msg(MERROR, "db_open_record", "cannot set record, db_set_record() status %d", status);
             return DB_NO_MEMORY;
          }
       }
