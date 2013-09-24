@@ -12699,13 +12699,10 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    const char *p;
    HNDLE hDB, hkey, hikeyp, hkeyp, hkeybutton;
    KEY key, ikey;
-   int i, j, k, scale, xoffset, index, width, size, status, labels, fh, fsize;
+   int i, j, k, scale, index, width, size, status, labels, fh, fsize;
    float factor[2];
    char def_button[][NAME_LENGTH] = { "10m", "1h", "3h", "12h", "24h", "3d", "7d" };
    struct tm *tms;
-
-   //printf("show_hist_page: path [%s]\n", path);
-   //printparam();
 
    cm_get_experiment_database(&hDB, NULL);
 
