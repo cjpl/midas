@@ -10335,7 +10335,6 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
                          int width, int height,
                          time_t xendtime,
                          int scale,
-                         int xtoffset,
                          int index,
                          int labels, const char *bgcolor, const char *fgcolor, const char *gridcolor)
 {
@@ -12895,9 +12894,6 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    const char* pscale = getparam("scale");
    if (pscale == NULL || *pscale == 0)
       pscale = getparam("hscale");
-   //const char* poffset = getparam("offset");
-   //if (poffset == NULL || *poffset == 0)
-   //   poffset = getparam("hoffset");
    const char* pmag = getparam("width");
    if (pmag == NULL || *pmag == 0)
       pmag = getparam("hwidth");
@@ -12931,11 +12927,6 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
       endtime = string_to_time(getparam("time"));
    else if (isparam("htime"))
       endtime = string_to_time(getparam("htime"));
-
-   //if (poffset && *poffset)
-   //   offset = time_to_sec(poffset);
-   //else
-   //   offset = 0;
 
    if (pscale && *pscale)
       scale = time_to_sec(pscale);
@@ -12979,7 +12970,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
             height = 200;
          }
 
-         generate_hist_graph(path, fbuffer, &fsize, width, height, endtime, scale, xoffset, index, labels, bgcolor, fgcolor, gridcolor);
+         generate_hist_graph(path, fbuffer, &fsize, width, height, endtime, scale, index, labels, bgcolor, fgcolor, gridcolor);
 
          /* save temporary file */
          size = sizeof(dir);
@@ -13060,6 +13051,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    }
 
    if (equal_ustring(getparam("cmd"), "Export")) {
+      int xoffset = 0; // must be fixed!
       export_hist(path, endtime, scale, xoffset, index, labels);
       return;
    }
@@ -13078,7 +13070,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
          height = (int)(0.625 * width);
       }
 
-      generate_hist_graph(path, buffer, buffer_size, width, height, endtime, scale, xoffset, index, labels, bgcolor, fgcolor, gridcolor);
+      generate_hist_graph(path, buffer, buffer_size, width, height, endtime, scale, index, labels, bgcolor, fgcolor, gridcolor);
 
       return;
    }
