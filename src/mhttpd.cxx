@@ -8220,7 +8220,9 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    strlcpy(str, dec_path, sizeof(str));
    if (strrchr(str, '/'))
       strlcpy(str, strrchr(str, '/')+1, sizeof(str));
-   show_header("MIDAS online database", "", str, 0);
+   if (str[0] == 0)
+      strlcpy(str, "root", sizeof(str));
+   show_header("MIDAS online database", "GET", str, 0);
 
    /* add one "../" for each level */
    tmp_path[0] = 0;
