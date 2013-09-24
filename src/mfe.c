@@ -631,7 +631,12 @@ INT register_equipment(void)
       db_set_value(hDB, hKey, "Source", &eq_info->source, sizeof(INT), 1, TID_INT);
 
       /* open hot link to equipment info */
-      db_open_record(hDB, hKey, eq_info, sizeof(EQUIPMENT_INFO), MODE_READ, NULL, NULL);
+      status = db_open_record(hDB, hKey, eq_info, sizeof(EQUIPMENT_INFO), MODE_READ, NULL, NULL);
+
+      if (status != DB_SUCCESS) {
+         cm_msg(MERROR, "register_equipment", "Cannot hotlink \"%s\", db_open_record() status %d", str, status);
+         return 0;
+      }
 
       if (equal_ustring(eq_info->format, "YBOS"))
 	      assert(!"YBOS not supported anymore");
@@ -647,7 +652,13 @@ INT register_equipment(void)
       strcpy(eq_info->status_color, "#00FF00");
 
       /* update variables in ODB */
-      db_set_record(hDB, hKey, eq_info, sizeof(EQUIPMENT_INFO), 0);
+      status = db_set_record(hDB, hKey, eq_info, sizeof(EQUIPMENT_INFO), 0);
+
+      if (status != DB_SUCCESS) {
+         cm_msg(MERROR, "register_equipment", "Cannot update equipment Common, db_set_record() status %d", status);
+         return 0;
+      }
+
 
       /*---- Create variables record ---------------------------------*/
 
