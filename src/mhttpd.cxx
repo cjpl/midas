@@ -6737,6 +6737,25 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
       do_jrpc_rev1();
       return;
    }
+
+   /* process "jcreate" command */
+   if (equal_ustring(getparam("cmd"), "jcreate") ) {
+      const char* createKey;
+      createKey = getparam("key");
+      db_create_key(hDB, 0, createKey, atoi(getparam("type")) );
+      rsputs(createKey);
+      return;
+   }
+
+   /* process "jdelete" command */
+   if (equal_ustring(getparam("cmd"), "jdelete") ) {
+      const char* deleteKey;
+      deleteKey = getparam("key");
+      db_find_key(hDB, 0, deleteKey, &hkey);
+      db_delete_key(hDB, hkey, FALSE);
+      rsputs(deleteKey);
+      return;
+   } 
 }
 
 /*------------------------------------------------------------------*/
@@ -14341,7 +14360,10 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
        equal_ustring(command, "jalm") ||
        equal_ustring(command, "jgenmsg") ||
        equal_ustring(command, "jrpc_rev0") ||
-       equal_ustring(command, "jrpc_rev1")) {
+       equal_ustring(command, "jrpc_rev1") ||
+       equal_ustring(command, "jcreate") ||
+       equal_ustring(command, "jdelete")
+      ) {
       java_script_commands(path, cookie_cpwd);
       return;
    }

@@ -419,3 +419,21 @@ function ODBInlineEdit(p, odb_path)
       setTimeout(function(){p.childNodes[0].focus();p.childNodes[0].select();}, 10); // needed for Firefox
    }
 }
+
+function ODBCreate(path, key, type){
+    var url,
+        request = XMLHttpRequestGeneric();
+   url = '?cmd=jcreate&key='+path+'/'+key+'&type='+type;
+   request.open('GET', url, false);
+   request.send(null);
+   return request.responseText;
+}
+
+function ODBDelete(path, key){
+    var url,
+        request = XMLHttpRequestGeneric();
+   url = '?cmd=jdelete&key='+path+'/'+key;
+   request.open('GET', url, false);
+   request.send(null);
+   return request.responseText;
+}
