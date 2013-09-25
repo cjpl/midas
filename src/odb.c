@@ -634,6 +634,7 @@ static void db_validate_sizes()
       S(DATABASE_HEADER);
       // misc structures
       S(EVENT_HEADER);
+      S(RUNINFO);
       S(EQUIPMENT_INFO);
       S(EQUIPMENT_STATS);
       S(BANK_HEADER);
@@ -647,6 +648,17 @@ static void db_validate_sizes()
       S(CHN_STATISTICS);
 #undef S
    }
+
+   if (0) {
+      EQUIPMENT_INFO eq;
+      printf("EQUIPMENT_INFO offset of event_id: %d\n", (int)((char*)&eq.event_id - (char*)&eq));
+      printf("EQUIPMENT_INFO offset of eq_type: %d\n", (int)((char*)&eq.eq_type - (char*)&eq));
+      printf("EQUIPMENT_INFO offset of event_limit: %d\n", (int)((char*)&eq.event_limit - (char*)&eq));
+      printf("EQUIPMENT_INFO offset of num_subevents: %d\n", (int)((char*)&eq.num_subevents - (char*)&eq));
+      printf("EQUIPMENT_INFO offset of status: %d\n", (int)((char*)&eq.status - (char*)&eq));
+      printf("EQUIPMENT_INFO offset of hidden: %d\n", (int)((char*)&eq.hidden - (char*)&eq));
+   }
+
 #ifdef OS_LINUX
    assert(sizeof(EVENT_REQUEST) == 16); // ODB v3
    assert(sizeof(BUFFER_CLIENT) == 256);
@@ -661,9 +673,7 @@ static void db_validate_sizes()
    assert(sizeof(DATABASE_CLIENT) == 2112);
    assert(sizeof(DATABASE_HEADER) == 135232);
    assert(sizeof(EVENT_HEADER) == 16);
-   //assert(sizeof(EQUIPMENT_INFO) == 400); // ODB v3, midas.h before rev 4558
-   //assert(sizeof(EQUIPMENT_INFO) == 688); // ODB v3, midas.h after rev 4558
-   assert(sizeof(EQUIPMENT_INFO) == 696 || sizeof(EQUIPMENT_INFO) == 692 ); // ODB v3, midas.h after cd7abae for 32 & 64bit
+   //assert(sizeof(EQUIPMENT_INFO) == 696); has been moved to dynamic checking inside mhttpd.c
    assert(sizeof(EQUIPMENT_STATS) == 24);
    assert(sizeof(BANK_HEADER) == 8);
    assert(sizeof(BANK) == 8);
@@ -6546,14 +6556,18 @@ static void db_save_tree_struct(HNDLE hDB, HNDLE hKey, int hfile, INT level)
    INT i, idx;
    KEY key;
    HNDLE hSubkey;
-   char line[MAX_ODB_PATH], str[MAX_STRING_LENGTH];
+   char line[MAX_ODB_PATH], str[MAX_STRING_LENGTH], name[MAX_STRING_LENGTH];
 
    /* first enumerate this level */
    for (idx = 0;; idx++) {
-      db_enum_key(hDB, hKey, idx, &hSubkey);
-
+      db_enum_link(hDB, hKey, idx, &hSubkey);
       if (!hSubkey)
          break;
+
+      /* first get the name of the link, than the type of the link target */
+      db_get_key(hDB, hSubkey, &key);
+      strlcpy(name, key.name, sizeof(name));
+      db_enum_key(hDB, hKey, idx, &hSubkey);
 
       db_get_key(hDB, hSubkey, &key);
 
@@ -6590,7 +6604,7 @@ static void db_save_tree_struct(HNDLE hDB, HNDLE hKey, int hfile, INT level)
          }
 
          strcat(line, "                    ");
-         strcpy(str, key.name);
+         strcpy(str, name);
          name2c(str);
 
          if (key.num_values > 1)
@@ -6614,7 +6628,7 @@ static void db_save_tree_struct(HNDLE hDB, HNDLE hKey, int hfile, INT level)
          for (i = 0; i <= level; i++)
             write(hfile, "  ", 2);
 
-         strcpy(str, key.name);
+         strcpy(str, name);
          name2c(str);
 
          sprintf(line, "} %s;\n", str);
@@ -8063,7 +8077,7 @@ INT db_get_record(HNDLE hDB, HNDLE hKey, void *data, INT * buf_size, INT align)
       }
 
       /* check record size */
-      db_get_record_size(hDB, hKey, 0, &total_size);
+      db_get_record_size(hDB, hKey, align, &total_size);
       if (total_size != *buf_size) {
          db_get_path(hDB, hKey, str, sizeof(str));
          cm_msg(MERROR, "db_get_record",
@@ -8158,7 +8172,7 @@ INT db_set_record(HNDLE hDB, HNDLE hKey, void *data, INT buf_size, INT align)
       }
 
       /* check record size */
-      db_get_record_size(hDB, hKey, 0, &total_size);
+      db_get_record_size(hDB, hKey, align, &total_size);
       if (total_size != buf_size) {
          cm_msg(MERROR, "db_set_record", "struct size mismatch for \"%s\"", key.name);
          return DB_STRUCT_SIZE_MISMATCH;
@@ -9060,7 +9074,7 @@ INT db_open_record(HNDLE hDB, HNDLE hKey, void *ptr, INT rec_size,
    if (size != rec_size && ptr != NULL) {
       _record_list_entries--;
       db_get_path(hDB, hKey, str, sizeof(str));
-      cm_msg(MERROR, "db_open_record", "struct size mismatch for \"%s\" (%d instead of %d)", str, rec_size, size);
+      cm_msg(MERROR, "db_open_record", "struct size mismatch for \"%s\" (expected size: %d, size in ODB: %d)", str, rec_size, size);
       return DB_STRUCT_SIZE_MISMATCH;
    }
 
@@ -9091,7 +9105,7 @@ INT db_open_record(HNDLE hDB, HNDLE hKey, void *ptr, INT rec_size,
       status = db_get_record(hDB, hKey, data, &size, 0);
       if (status != DB_SUCCESS) {
          _record_list_entries--;
-         cm_msg(MERROR, "db_open_record", "cannot get record");
+         cm_msg(MERROR, "db_open_record", "cannot get record, db_get_record() status %d", status);
          return DB_NO_MEMORY;
       }
    }
@@ -9103,7 +9117,7 @@ INT db_open_record(HNDLE hDB, HNDLE hKey, void *ptr, INT rec_size,
          status = db_set_record(hDB, hKey, data, size, 0);
          if (status != DB_SUCCESS) {
             _record_list_entries--;
-            cm_msg(MERROR, "db_open_record", "cannot set record");
+            cm_msg(MERROR, "db_open_record", "cannot set record, db_set_record() status %d", status);
             return DB_NO_MEMORY;
          }
       }

@@ -994,6 +994,27 @@ typedef struct {
    BOOL hidden;                       /**< Hidden flag                       */
 } EQUIPMENT_INFO;
 
+#define EQUIPMENT_COMMON_STR "\
+Event ID = WORD : 0\n\
+Trigger mask = WORD : 0\n\
+Buffer = STRING : [32] SYSTEM\n\
+Type = INT : 0\n\
+Source = INT : 0\n\
+Format = STRING : [8] FIXED\n\
+Enabled = BOOL : 0\n\
+Read on = INT : 0\n\
+Period = INT : 0\n\
+Event limit = DOUBLE : 0\n\
+Num subevents = DWORD : 0\n\
+Log history = INT : 0\n\
+Frontend host = STRING : [32] \n\
+Frontend name = STRING : [32] \n\
+Frontend file name = STRING : [256] \n\
+Status = STRING : [256] \n\
+Status color = STRING : [32] \n\
+Hidden = BOOL : 0\n\
+"
+
 typedef struct {
    char name[NAME_LENGTH];            /**< Driver name                       */
    INT(*dd) (INT cmd, ...);           /**< Device driver entry point         */
@@ -1015,6 +1036,12 @@ typedef struct {
    double events_per_sec;
    double kbytes_per_sec;
 } EQUIPMENT_STATS;
+
+#define EQUIPMENT_STATISTICS_STR "\
+Events sent = DOUBLE : 0\n\
+Events per sec. = DOUBLE : 0\n\
+kBytes per sec. = DOUBLE : 0\n\
+"
 
 typedef struct eqpmnt *PEQUIPMENT;
 

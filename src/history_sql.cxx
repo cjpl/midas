@@ -1787,7 +1787,7 @@ public:
       return HS_SUCCESS;
    }
 
-   int hs_get_last_written(int num_var, const char* const event_name[], const char* const tag_name[], const int var_index[], time_t last_written[])
+   int hs_get_last_written(time_t start_time, int num_var, const char* const event_name[], const char* const tag_name[], const int var_index[], time_t last_written[])
    {
       for (int i=0; i<num_var; i++)
          last_written[i] = 0;

@@ -1248,6 +1248,11 @@ struct {
    double d;
 } test_align;
 
+struct {
+   double d;
+   char c;
+} test_padding;
+
 INT ss_get_struct_align()
 /********************************************************************\
 
@@ -1272,6 +1277,31 @@ INT ss_get_struct_align()
 \********************************************************************/
 {
    return (POINTER_T) (&test_align.d) - (POINTER_T) & test_align.c;
+}
+
+INT ss_get_struct_padding()
+/********************************************************************\
+ 
+ Routine: ss_get_struct_padding
+ 
+ Purpose: Returns compiler padding of structures. Under some C
+    compilers and architectures, C structures can be padded at the
+    end to have a size of muliples of 4 or 8. This routine returns
+    this number, like 8 if all structures are padded with 0-7 bytes
+    to lie on an 8 byte boundary.
+ 
+ Input:
+ <none>
+ 
+ Output:
+ <none>
+ 
+ Function value:
+ INT    Structure alignment
+ 
+ \********************************************************************/
+{
+   return (INT) sizeof(test_padding) - 8;
 }
 
 /*------------------------------------------------------------------*/

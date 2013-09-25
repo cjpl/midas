@@ -283,6 +283,7 @@ PROGS = $(BIN_DIR)/mserver $(BIN_DIR)/mhttpd \
 	$(BIN_DIR)/mchart $(BIN_DIR)/stripchart.tcl \
 	$(BIN_DIR)/webpaw $(BIN_DIR)/odbhist \
 	$(BIN_DIR)/melog \
+	$(BIN_DIR)/mh2sql \
 	$(BIN_DIR)/mfe_link_test \
 	$(BIN_DIR)/mana_link_test \
 	$(SPECIFIC_OS_PRG)
@@ -295,10 +296,6 @@ endif
 
 ifdef ROOTSYS
 ANALYZER += $(LIB_DIR)/rmana.o
-endif
-
-ifdef HAVE_ODBC
-PROGS += $(BIN_DIR)/mh2sql
 endif
 
 OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
@@ -333,7 +330,7 @@ dox:
 	cd doc; make
 
 linux32:
-	$(MAKE) ROOTSYS= OS_DIR=linux-m32 USERFLAGS=-m32
+	$(MAKE) ROOTSYS= HAVE_MYSQL= HAVE_ODBC= HAVE_SQLITE= OS_DIR=linux-m32 USERFLAGS=-m32
 
 linux64:
 	$(MAKE) ROOTSYS= OS_DIR=linux-m64 USERFLAGS=-m64
@@ -450,8 +447,11 @@ $(BIN_DIR)/mhttpd: $(LIB_DIR)/mhttpd.o $(LIB_DIR)/mgd.o $(LIB_DIR)/sequencer.o
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(ODBC_LIBS) $(SQLITE_LIBS) $(LIBS) -lm
 endif
 
+$(BIN_DIR)/mh2sql: $(BIN_DIR)/%: $(UTL_DIR)/mh2sql.cxx
+	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(ODBC_LIBS) $(SQLITE_LIBS) $(MYSQL_LIBS) $(LIBS)
+
 $(BIN_DIR)/mhist: $(BIN_DIR)/%: $(UTL_DIR)/%.cxx
-	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(ODBC_LIBS) $(SQLITE_LIBS) $(LIBS)
+	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(ODBC_LIBS) $(SQLITE_LIBS) $(MYSQL_LIBS) $(LIBS)
 
 $(PROGS): $(LIBNAME)
 
@@ -577,9 +577,6 @@ $(BIN_DIR)/mhdump: $(UTL_DIR)/mhdump.cxx
 
 $(BIN_DIR)/mtransition: $(SRC_DIR)/mtransition.cxx
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(LIBS)
-
-$(BIN_DIR)/mh2sql: $(UTL_DIR)/mh2sql.cxx
-	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(ODBC_LIBS) $(LIBS)
 
 $(BIN_DIR)/lazylogger: $(SRC_DIR)/lazylogger.cxx $(SRC_DIR)/mdsupport.c
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $<  $(SRC_DIR)/mdsupport.c $(LIB) $(LIBS)

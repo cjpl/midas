@@ -16,6 +16,7 @@
 #include <ctype.h>
 #include <assert.h>
 #include <math.h>
+#include <errno.h>
 
 #include <vector>
 #include <string>
@@ -454,14 +455,17 @@ int Sqlite::ListTables(std::vector<std::string> *plist)
       return DB_FILE_ERROR;
 
    if (fDebug)
-      printf("Sqlite::ListTables!\n");
+      printf("Sqlite::ListTables at path [%s]\n", fPath.c_str());
 
    int status;
 
    const char* cmd = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;";
 
    DIR *dir = opendir(fPath.c_str());
-   assert(dir);
+   if (!dir) {
+      cm_msg(MERROR, "Sqlite::ListTables", "Cannot opendir(%s), errno %d (%s)", fPath.c_str(), errno, strerror(errno));
+      return HS_FILE_ERROR;
+   }
 
    while (1) {
       const struct dirent* de = readdir(dir);
@@ -556,12 +560,10 @@ int Sqlite::ListColumns(const char* table, std::vector<std::string> *plist)
 }
 
 static int callback(void *NotUsed, int argc, char **argv, char **azColName){
-   printf("callback---->\n");
-   int i;
-   for(i=0; i<argc; i++){
-      printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+   printf("history_sqlite::callback---->\n");
+   for (int i=0; i<argc; i++){
+      printf("history_sqlite::callback[%d] %s = %s\n", i, azColName[i], argv[i] ? argv[i] : "NULL");
    }
-   printf("\n");
    return 0;
 }
 
@@ -814,6 +816,11 @@ public:
             return HS_SUCCESS;
     
       hs_disconnect();
+
+      if (!connect_string || strlen(connect_string) < 1) {
+         // FIXME: should use "logger dir" or some such default, that code should be in hs_get_history(), not here
+         connect_string = ".";
+      }
     
       fConnectString = connect_string;
     
@@ -1520,10 +1527,12 @@ public:
 
    /*------------------------------------------------------------------*/
 
-   int hs_get_last_written(int num_var, const char* const event_name[], const char* const tag_name[], const int var_index[], time_t last_written[])
+   int hs_get_last_written(time_t start_time, int num_var, const char* const event_name[], const char* const tag_name[], const int var_index[], time_t last_written[])
    {
+      double dstart_time = start_time;
+
       if (fDebug) {
-         printf("hs_get_last_written: num_var %d\n", num_var);
+         printf("hs_get_last_written: start time %.0f, num_var %d\n", dstart_time, num_var);
       }
 
       for (int i=0; i<num_var; i++) {
@@ -1532,7 +1541,7 @@ public:
          XItemVector xitem;
          FindItem(event_name[i], tag_name[i], var_index[i], &xitem);
 
-         if (0) {
+         if (fDebug) {
             printf("For event [%s] tag [%s] index [%d] found %d entries: ", event_name[i], tag_name[i], var_index[i], (int)xitem.size());
             for (unsigned j=0; j<xitem.size(); j++) {
                printf(" table [%s], column [%s]", xitem[j].tableName.c_str(), xitem[j].columnName.c_str());
@@ -1550,7 +1559,7 @@ public:
             const char* cn = xitem[j].columnName.c_str();
 
             char cmd[256];
-            sprintf(cmd, "SELECT _i_time, %s FROM %s ORDER BY _i_time DESC LIMIT 2;", cn, tn);
+            sprintf(cmd, "SELECT _i_time, %s FROM %s WHERE _i_time <= %.0f ORDER BY _i_time DESC LIMIT 2;", cn, tn, dstart_time);
 
             sqlite3_stmt *st;
             
@@ -1579,6 +1588,9 @@ public:
                time_t t = fSql->GetInt64(st, 0);
                double v = fSql->GetDouble(st, 1);
 
+               if (t > start_time)
+                  continue;
+
                if (0) {
                   if (k<10)
                      printf("count %d, t %d, v %f, tt %d\n", k, (int)t, v, (int)tt);
@@ -1595,7 +1607,7 @@ public:
       }
 
       if (fDebug) {
-         printf("hs_get_last_written: num_var %d\n", num_var);
+         printf("hs_get_last_written: start time %.0f, num_var %d\n", dstart_time, num_var);
          for (int i=0; i<num_var; i++) {
             printf("  event [%s] tag [%s] index [%d] last_written %d\n", event_name[i], tag_name[i], var_index[i], (int)last_written[i]);
          }
@@ -1648,7 +1660,7 @@ public:
 
       int numcol = (int)colnames.size();
 
-      if (1) {
+      if (fDebug) {
          printf("From table [%s]\n", tn.c_str());
          for (int k=0; k<numcol; k++) {
             printf("read column [%s] var index [%d]\n", colnames[k].c_str(), colindex[k]);
@@ -1658,7 +1670,9 @@ public:
       char cmd[256];
       sprintf(cmd, "SELECT _i_time, %s FROM %s WHERE _i_time>=%.0f and _i_time<=%.0f ORDER BY _i_time;", collist.c_str(), tn.c_str(), start_time, end_time);
 
-      printf("hs_read_table: cmd %s\n", cmd);
+      if (fDebug) {
+         printf("hs_read_table: cmd %s\n", cmd);
+      }
       
       sqlite3_stmt *st;
       
@@ -1752,7 +1766,7 @@ public:
          }
       }
 
-      if (1) {
+      if (fDebug) {
          for (int i=0; i<num_var; i++) {
             printf("For event [%s] tag [%s] index [%d] found %d entries: ", event_name[i], tag_name[i], tag_index[i], (int)vvv[i].size());
             for (unsigned j=0; j<vvv[i].size(); j++) {

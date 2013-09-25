@@ -2077,7 +2077,6 @@ INT cm_connect_experiment1(const char *host_name, const char *exp_name,
    char password[NAME_LENGTH], str[256], exp_name1[NAME_LENGTH];
    HNDLE hDB, hKeyClient;
    BOOL call_watchdog;
-   RUNINFO_STR(runinfo_str);
 
    if (_hKeyClient)
       cm_disconnect_experiment();
@@ -2222,14 +2221,6 @@ INT cm_connect_experiment1(const char *host_name, const char *exp_name,
    cm_get_path(str);
    size = sizeof(str);
    db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING, TRUE);
-
-   /* check /runinfo structure */
-   status = db_check_record(hDB, 0, "/Runinfo", strcomb(runinfo_str), TRUE);
-   if (status == DB_STRUCT_MISMATCH) {
-      cm_msg(MERROR, "cm_connect_experiment1", "Aborting on mismatching /Runinfo structure");
-      cm_disconnect_experiment();
-      abort();
-   }
 
    /* register server to be able to be called by other clients */
    status = cm_register_server();
