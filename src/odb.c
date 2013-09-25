@@ -6535,14 +6535,18 @@ static void db_save_tree_struct(HNDLE hDB, HNDLE hKey, int hfile, INT level)
    INT i, idx;
    KEY key;
    HNDLE hSubkey;
-   char line[MAX_ODB_PATH], str[MAX_STRING_LENGTH];
+   char line[MAX_ODB_PATH], str[MAX_STRING_LENGTH], name[MAX_STRING_LENGTH];
 
    /* first enumerate this level */
    for (idx = 0;; idx++) {
       db_enum_link(hDB, hKey, idx, &hSubkey);
-
       if (!hSubkey)
          break;
+
+      /* first get the name of the link, than the type of the link target */
+      db_get_key(hDB, hSubkey, &key);
+      strlcpy(name, key.name, sizeof(name));
+      db_enum_key(hDB, hKey, idx, &hSubkey);
 
       db_get_key(hDB, hSubkey, &key);
 
@@ -6579,7 +6583,7 @@ static void db_save_tree_struct(HNDLE hDB, HNDLE hKey, int hfile, INT level)
          }
 
          strcat(line, "                    ");
-         strcpy(str, key.name);
+         strcpy(str, name);
          name2c(str);
 
          if (key.num_values > 1)
@@ -6603,7 +6607,7 @@ static void db_save_tree_struct(HNDLE hDB, HNDLE hKey, int hfile, INT level)
          for (i = 0; i <= level; i++)
             write(hfile, "  ", 2);
 
-         strcpy(str, key.name);
+         strcpy(str, name);
          name2c(str);
 
          sprintf(line, "} %s;\n", str);
