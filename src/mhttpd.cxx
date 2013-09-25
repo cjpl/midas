@@ -6814,6 +6814,11 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
       // test:
       // curl "http://localhost:8080?cmd=jcreate&odb0=/test/foo&type0=7&odb1=/nonexistant&type1=100&odb2=/test/bar&type2=12&encoding=json&callback=aaa"
       // curl "http://localhost:8080?cmd=jcreate&odb=/test/foo&type=7"
+      // curl "http://localhost:8080?cmd=jcreate&odb=/test/foo70&type=7&arraylen=10"
+      // curl "http://localhost:8080?cmd=jcreate&odb=/test/foo12s&type=12&strlen=32"
+      // curl "http://localhost:8080?cmd=jcreate&odb=/test/foo12s5&type=12&strlen=32&arraylen=5"
+      // curl "http://localhost:8080?cmd=jcreate&odb0=/test/foo12s5x&type0=12&strlen0=32&arraylen0=5"
+
       
       show_text_header();
 
@@ -6832,16 +6837,141 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
       }
 
       for (unsigned i=0; i<odb.size(); i++) {
+         HNDLE hkey;
          int type = 0;
-         if (single)
+         int arraylength = 0;
+         int strlength = 0;
+
+         if (single) {
             type = atoi(getparam("type"));
+            arraylength = atoi(getparam("arraylen"));
+            strlength = atoi(getparam("strlen"));
+         }
          else if (multiple) {
             char p[256];
             sprintf(p, "type%d", i);
             type = atoi(getparam(p));
+            sprintf(p, "arraylen%d", i);
+            arraylength = atoi(getparam(p));
+            sprintf(p, "strlen%d", i);
+            strlength = atoi(getparam(p));
          }
 
          status = db_create_key(hDB, 0, odb[i].c_str(), type);
+
+         if (status == DB_SUCCESS) {
+            status = db_find_key(hDB, 0, odb[i].c_str(), &hkey);
+         }
+
+         if (status == DB_SUCCESS && hkey && type == TID_STRING && strlength > 0) {
+            char* s = (char*)calloc(strlength, 1); // initialized to zero
+            status = db_set_data(hDB, hkey, s, strlength, 1, TID_STRING);
+            free(s);
+         }
+
+         if (status == DB_SUCCESS && hkey && arraylength > 0) {
+            status = db_set_num_values(hDB, hkey, arraylength);
+         }
+
+         switch (encoding) {
+         default:
+         case ENCODING_JSON:
+            if (multiple && i>0)
+               rsprintf(", ");
+            rsprintf("%d", status);
+            break;
+         }
+      }
+
+      if (multiple) {
+         switch (encoding) {
+         default:
+         case ENCODING_JSON:
+            rsprintf(" ]");
+            break;
+         }
+      }
+
+      if (jsonp) {
+         rsputs(");\n");
+      }
+
+      return;
+   }
+   
+   /* process "jresize" command */
+   if (equal_ustring(getparam("cmd"), "jresize")) {
+
+      // test:
+
+      // curl "http://localhost:8080?cmd=jresize&odb=/test/foo70&arraylen=5"
+      // curl "http://localhost:8080?cmd=jresize&odb=/test/foo12s5&arraylen=5"
+      // curl "http://localhost:8080?cmd=jresize&odb=/test/foo12s5&strlen=16"
+      // curl "http://localhost:8080?cmd=jresize&odb=/test/foo12s5&strlen=30&arraylen=10"
+      
+      show_text_header();
+
+      if (jsonp) {
+         rsputs(jsonp_callback.c_str());
+         rsputs("(");
+      }
+
+      if (multiple) {
+         switch (encoding) {
+         default:
+         case ENCODING_JSON:
+            rsprintf("[ ");
+            break;
+         }
+      }
+
+      for (unsigned i=0; i<odb.size(); i++) {
+         HNDLE hkey;
+         KEY key;
+         int arraylength = 0;
+         int strlength = 0;
+
+         if (single) {
+            arraylength = atoi(getparam("arraylen"));
+            strlength = atoi(getparam("strlen"));
+         }
+         else if (multiple) {
+            char p[256];
+            sprintf(p, "arraylen%d", i);
+            arraylength = atoi(getparam(p));
+            sprintf(p, "strlen%d", i);
+            strlength = atoi(getparam(p));
+         }
+
+         status = db_find_key(hDB, 0, odb[i].c_str(), &hkey);
+
+         if (status == DB_SUCCESS && hkey) {
+            status = db_get_key(hDB, hkey, &key);
+         }
+
+         if (status == DB_SUCCESS && hkey && key.type == TID_STRING && strlength > 0) {
+            int oldsize = key.item_size * key.num_values;
+            char* olddata = (char*)malloc(oldsize);
+            int size = oldsize;
+            status = db_get_data(hDB, hkey, olddata, &size, TID_STRING);
+
+            if (status == DB_SUCCESS) {
+               int newsize = strlength * key.num_values;
+               char* s = (char*)calloc(newsize, 1); // initialized to zero
+               for (int k=0; k<key.num_values; k++) {
+                  strlcpy(s + strlength*k, olddata + key.item_size*k, strlength);
+               }
+
+               status = db_set_data(hDB, hkey, s, newsize, key.num_values, TID_STRING);
+               free(s);
+            }
+
+            free(olddata);
+         }
+
+         if (status == DB_SUCCESS && hkey && arraylength > 0) {
+            status = db_set_num_values(hDB, hkey, arraylength);
+         }
 
          switch (encoding) {
          default:
@@ -14757,6 +14887,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
        equal_ustring(command, "jpaste") ||
        equal_ustring(command, "jkey") ||
        equal_ustring(command, "jcreate") ||
+       equal_ustring(command, "jresize") ||
        equal_ustring(command, "jlink") ||
        equal_ustring(command, "jrename") ||
        equal_ustring(command, "jreorder") ||

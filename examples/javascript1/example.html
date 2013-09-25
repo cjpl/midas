@@ -182,10 +182,13 @@ ODBExtractRecord(record, key);
 new ODBKey(path);
 ODBCopy(path, format);
 ODBMCopy(paths, callback, format);
-ODBMCreate(paths, types, callback);
+ODBMCreate(paths, types);
+ODBMCreate(paths, types, arraylengths, stringlengths, callback);  
+ODBMResize(paths, arraylengths, stringlengths, callback);  
 ODBMRename(paths, names, callback);  
 ODBMLink(paths, links, callback);  
 ODBMReorder(paths, indices, callback);
+ODBMKey(paths, callback);
 ODBMDelete(paths, callback);
 ODBRpc_rev0(name, rpc, args);
 ODBRpc_rev1(name, rpc, max_reply_length, args);
@@ -386,6 +389,39 @@ ODBEdit(path);
         </p> 
 
       <li>
+        <h2>ODBMCreate() arrays</h2>
+
+        <p>
+          <input type=button value='Push me' onClick='
+            clearTimeout(updateTimerId);
+            var paths = [ "/Test/foo10", "/Test/noexistant10", "/Test/bar15" ]; 
+            var types = [ TID_INT, 0, TID_STRING ];
+            var arraylengths = [ 10, 0, 15 ];
+            var stringlengths = [ 0, 0, 32 ];
+            var data = ODBMCreate(paths, types, arraylengths, stringlengths);
+            document.getElementById("mcreate_array_reply").innerHTML = data;
+            update();
+            '></input>
+          Reply: <tt id='mcreate_array_reply'></tt>
+        </p> 
+
+      <li>
+        <h2>ODBMResize() arrays</h2>
+
+        <p>
+          <input type=button value='Push me' onClick='
+            clearTimeout(updateTimerId);
+            var paths = [ "/Test/foo10", "/Test/noexistant10", "/Test/bar15" ]; 
+            var arraylengths = [ 5, 0, 7 ];
+            var stringlengths = [ 0, 0, 12 ];
+            var data = ODBMResize(paths, arraylengths, stringlengths);
+            document.getElementById("mresize_array_reply").innerHTML = data;
+            update();
+            '></input>
+          Reply: <tt id='mresize_array_reply'></tt>
+        </p> 
+
+      <li>
         <h2>ODBMRename()</h2>
 
         <p>
@@ -427,12 +463,26 @@ ODBEdit(path);
         </p> 
 
       <li>
+        <h2>ODBMKey()</h2>
+
+        <p>
+          <input type=button value='Push me' onClick='
+            clearTimeout(updateTimerId);
+            var paths = [ "/Test/foo", "/Test/noexistant", "/Test/bar", "/Test/foofoo", "/Test/barlink", "/Test/foo10", "/Test/bar15" ];
+            var data = ODBMKey(paths);
+            document.getElementById("mkey_reply").innerHTML = data;
+            update();
+            '></input>
+          Reply: <tt id='mkey_reply'></tt>
+        </p> 
+
+      <li>
         <h2>ODBMDelete()</h2>
 
         <p>
           <input type=button value='Push me' onClick='
             clearTimeout(updateTimerId);
-            var paths = [ "/Test/foo", "/Test/noexistant", "/Test/bar", "/Test/foofoo", "/Test/barlink" ];
+            var paths = [ "/Test/foo", "/Test/noexistant", "/Test/bar", "/Test/foofoo", "/Test/barlink", "/Test/foo10", "/Test/bar15" ];
             var data = ODBMDelete(paths);
             document.getElementById("mdelete_reply").innerHTML = data;
             update();
@@ -537,6 +587,6 @@ ODBEdit(path);
     <hr>
     <address><a href="mailto:xxx@xxx">MIDAS Example</a></address>
 <!-- Created: Tue Sep 21 15:44:39 PDT 2010 -->
-<!-- hhmts start -->Last modified: Mon Sep  9 08:33:20 PDT 2013 <!-- hhmts end -->
+<!-- hhmts start -->Last modified: Wed Sep 25 12:08:34 PDT 2013 <!-- hhmts end -->
   </body>
 </html>

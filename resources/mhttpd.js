@@ -285,12 +285,29 @@ function ODBMCopy(paths, callback, encoding)
    return ODBCall(url, callback);
 }
 
-function ODBMCreate(paths, types, callback)
+function ODBMCreate(paths, types, arraylengths, stringlengths, callback)
 {
    var url = ODBUrlBase + '?cmd=jcreate';
    for (var i=0 ; i<paths.length ; i++) {
       url += '&odb'+i+'='+encodeURIComponent(paths[i]);
       url += '&type'+i+'='+encodeURIComponent(types[i]);
+      if (arraylengths != undefined) {
+         url += '&arraylen'+i+'='+encodeURIComponent(arraylengths[i]);
+      }
+      if (stringlengths != undefined) {
+         url += '&strlen'+i+'='+encodeURIComponent(stringlengths[i]);
+      }
+   }
+   return ODBCall(url, callback);
+}
+
+function ODBMResize(paths, arraylengths, stringlengths, callback)
+{
+   var url = ODBUrlBase + '?cmd=jresize';
+   for (var i=0 ; i<paths.length ; i++) {
+      url += '&odb'+i+'='+encodeURIComponent(paths[i]);
+      url += '&arraylen'+i+'='+encodeURIComponent(arraylengths[i]);
+      url += '&strlen'+i+'='+encodeURIComponent(stringlengths[i]);
    }
    return ODBCall(url, callback);
 }
@@ -321,6 +338,15 @@ function ODBMReorder(paths, indices, callback)
    for (var i=0 ; i<paths.length ; i++) {
       url += '&odb'+i+'='+encodeURIComponent(paths[i]);
       url += '&index'+i+'='+encodeURIComponent(indices[i]);
+   }
+   return ODBCall(url, callback);
+}
+
+function ODBMKey(paths, callback)
+{
+   var url = ODBUrlBase + '?cmd=jkey&encoding=json';
+   for (var i=0 ; i<paths.length ; i++) {
+      url += '&odb'+i+'='+encodeURIComponent(paths[i]);
    }
    return ODBCall(url, callback);
 }
