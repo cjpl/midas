@@ -1272,7 +1272,6 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    struct tm *gmt;
    BOOL new_window;
 
-   RUNINFO_STR(runinfo_str);
    RUNINFO runinfo;
    EQUIPMENT_INFO equipment;
    EQUIPMENT_STATS equipment_stats;
@@ -1300,20 +1299,6 @@ void show_status_page(int refresh, const char *cookie_wpwd)
       return;
    }
    
-   status = db_check_record(hDB, 0, "/Runinfo", strcomb(runinfo_str), FALSE);
-   if (status == DB_STRUCT_MISMATCH) {
-      cm_msg(MERROR, "show_status_page", "Aborting on mismatching /Runinfo structure");
-      cm_disconnect_experiment();
-      abort();
-   }
-
-   if (status != DB_SUCCESS) {
-      cm_msg(MERROR, "show_status_page",
-             "Aborting on invalid access to ODB /Runinfo, status=%d", status);
-      cm_disconnect_experiment();
-      abort();
-   }
-
    db_find_key(hDB, 0, "/Runinfo", &hkey);
    assert(hkey);
 
@@ -15125,6 +15110,59 @@ void decode_post(char *header, char *string, char *boundary, int length,
 
 /*------------------------------------------------------------------*/
 
+INT check_odb_records(void)
+{
+   HNDLE hDB, hKeyEq, hKey;
+   RUNINFO_STR(runinfo_str);
+   int i, status;
+   KEY key;
+   
+   /* check /Runinfo structure */
+   cm_get_experiment_database(&hDB, NULL);
+   status = db_check_record(hDB, 0, "/Runinfo", strcomb(runinfo_str), FALSE);
+   if (status == DB_STRUCT_MISMATCH) {
+      status = db_check_record(hDB, 0, "/Runinfo", strcomb(runinfo_str), TRUE);
+      if (status == DB_SUCCESS) {
+         cm_msg(MINFO, "check_odb_records", "ODB subtree /Runinfo corrected successfully");
+      } else {
+         cm_msg(MERROR, "check_odb_records", "Cannot correct ODB subtree /Runinfo");
+         return 0;
+      }
+   } else if (status != DB_SUCCESS) {
+      cm_msg(MERROR, "check_odb_records", "Cannot correct ODB subtree /Runinfo");
+      return 0;
+   }
+   
+   /* check /Equipment/<name>/Common structures */
+   if (db_find_key(hDB, 0, "/equipment", &hKeyEq) == DB_SUCCESS) {
+      for (i = 0 ;; i++) {
+         db_enum_key(hDB, hKeyEq, i, &hKey);
+         if (!hKey)
+            break;
+         db_get_key(hDB, hKey, &key);
+         
+         status = db_check_record(hDB, hKey, "Common", EQUIPMENT_COMMON_STR, FALSE);
+         if (status == DB_STRUCT_MISMATCH) {
+            status = db_check_record(hDB, hKey, "Common", EQUIPMENT_COMMON_STR, TRUE);
+            if (status == DB_SUCCESS) {
+               cm_msg(MINFO, "check_odb_records", "ODB subtree /Equipment/%s/Common corrected successfully", key.name);
+            } else {
+               cm_msg(MERROR, "check_odb_records", "Cannot correct ODB subtree /Equipment/%s/Common", key.name);
+               return 0;
+            }
+         } else if (status != DB_SUCCESS) {
+            cm_msg(MERROR, "check_odb_records", "Cannot correct ODB subtree /Equipment/%s/Common", key.name);
+            return 0;
+         }
+      }
+   }
+   
+   return CM_SUCCESS;
+}
+
+
+/*------------------------------------------------------------------*/
+
 BOOL _abort = FALSE;
 
 void ctrlc_handler(int sig)
@@ -15214,6 +15252,12 @@ void server_loop()
       return;
    }
 
+   /* do ODB record checking */
+   if (!check_odb_records()) {
+      cm_disconnect_experiment();
+      return;
+   }
+   
    printf("Server listening on port %d...\n", tcp_port);
 
    do {

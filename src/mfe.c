@@ -98,35 +98,6 @@ void rotate_wheel(void);
 BOOL logger_root();
 INT check_polled_events(void);
 
-/*---- ODB records -------------------------------------------------*/
-
-#define EQUIPMENT_COMMON_STR "\
-Event ID = WORD : 0\n\
-Trigger mask = WORD : 0\n\
-Buffer = STRING : [32] SYSTEM\n\
-Type = INT : 0\n\
-Source = INT : 0\n\
-Format = STRING : [8] FIXED\n\
-Enabled = BOOL : 0\n\
-Read on = INT : 0\n\
-Period = INT : 0\n\
-Event limit = DOUBLE : 0\n\
-Num subevents = DWORD : 0\n\
-Log history = INT : 0\n\
-Frontend host = STRING : [32] \n\
-Frontend name = STRING : [32] \n\
-Frontend file name = STRING : [256] \n\
-Status = STRING : [256] \n\
-Status color = STRING : [32] \n\
-Hidden = BOOL : 0\n\
-"
-
-#define EQUIPMENT_STATISTICS_STR "\
-Events sent = DOUBLE : 0\n\
-Events per sec. = DOUBLE : 0\n\
-kBytes per sec. = DOUBLE : 0\n\
-"
-
 /*------------------------------------------------------------------*/
 
 void set_rate_period(int ms)
@@ -612,16 +583,24 @@ INT register_equipment(void)
                          TID_DOUBLE, TRUE);
       }
 
-      /* Create common subtree */
+      /* Check common subtree, bail out if wrong. mhttpd is supposed to correct it */
       status = db_check_record(hDB, 0, str, EQUIPMENT_COMMON_STR, FALSE);
-      if (status == DB_NO_KEY || status == DB_STRUCT_MISMATCH) {
+      if (status == DB_NO_KEY) {
          db_create_record(hDB, 0, str, EQUIPMENT_COMMON_STR);
          db_find_key(hDB, 0, str, &hKey);
          db_set_record(hDB, hKey, eq_info, sizeof(EQUIPMENT_INFO), 0);
-      } else if (status != DB_SUCCESS) {
-         printf("Cannot check equipment record, status = %d\n", status);
+      } else if (status == DB_STRUCT_MISMATCH) {
+         printf("ERROR: Found change in /Equipment/%s/Common, please update and recompile this program\n", equipment[idx].name);
+         cm_disconnect_experiment();
          ss_sleep(3000);
+         exit(0);
+      } else if (status != DB_SUCCESS) {
+         printf("ERROR: Cannot check equipment record, status = %d\n", status);
+         cm_disconnect_experiment();
+         ss_sleep(3000);
+         exit(0);
       }
+
       db_find_key(hDB, 0, str, &hKey);
       assert(hKey);
 
@@ -632,10 +611,11 @@ INT register_equipment(void)
 
       /* open hot link to equipment info */
       status = db_open_record(hDB, hKey, eq_info, sizeof(EQUIPMENT_INFO), MODE_READ, NULL, NULL);
-
       if (status != DB_SUCCESS) {
-         cm_msg(MERROR, "register_equipment", "Cannot hotlink \"%s\", db_open_record() status %d", str, status);
-         return 0;
+         printf("ERROR:  Cannot hotlink \"%s\", db_open_record() status %d", str, status);
+         cm_disconnect_experiment();
+         ss_sleep(3000);
+         exit(0);
       }
 
       if (equal_ustring(eq_info->format, "YBOS"))

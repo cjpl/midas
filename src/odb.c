@@ -673,10 +673,7 @@ static void db_validate_sizes()
    assert(sizeof(DATABASE_CLIENT) == 2112);
    assert(sizeof(DATABASE_HEADER) == 135232);
    assert(sizeof(EVENT_HEADER) == 16);
-   //assert(sizeof(EQUIPMENT_INFO) == 400); // ODB v3, midas.h before rev 4558
-   //assert(sizeof(EQUIPMENT_INFO) == 688); // ODB v3, midas
-   //assert(sizeof(EQUIPMENT_INFO) == 696 || sizeof(EQUIPMENT_INFO) == 692 ); // ODB v3, midas.h after cd7abae for 32 & 64bit
-   //assert(sizeof(EQUIPMENT_INFO) == 696); // ODB v3, restored compatibility with 32-bit
+   //assert(sizeof(EQUIPMENT_INFO) == 696); has been moved to dynamic checking inside mhttpd.c
    assert(sizeof(EQUIPMENT_STATS) == 24);
    assert(sizeof(BANK_HEADER) == 8);
    assert(sizeof(BANK) == 8);
