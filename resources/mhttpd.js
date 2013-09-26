@@ -506,3 +506,82 @@ function ODBInlineEdit(p, odb_path)
       setTimeout(function(){p.childNodes[0].focus();p.childNodes[0].select();}, 10); // needed for Firefox
    }
 }
+
+function mhttpd_create_page_handle_create(mouseEvent)
+{
+   var form = document.getElementsByTagName('form')[0];
+   var path = form.elements['odb'].value;
+   var type = form.elements['type'].value;
+   var name = form.elements['value'].value;
+   var arraylength = form.elements['index'].value;
+   var stringlength = form.elements['strlen'].value;
+
+   if (name.length < 1) {
+      alert("Name is too short");
+      return false;
+   }
+
+   if (arraylength < 1) {
+      alert("Bad array length: " + arraylength);
+      return false;
+   }
+
+   if (stringlength < 1) {
+      alert("Bad string length " + stringlength);
+      return false;
+   }
+
+   var result = JSON.parse(ODBMCreate([ path + "/" + name ], [ type ], [ arraylength ], [ stringlength ]));
+
+   if (result[0] == 311) {
+      alert("ODB entry with this name already exists.");
+   } else if (result[0] != 1) {
+      alert("ODBMCreate() error " + result + ", and that's all we know.");
+   } else {
+      location.search = ""; // reloads the document
+   }
+   //window.reload();
+   return false;
+}
+
+function mhttpd_create_page_handle_cancel(mouseEvent)
+{
+   location.search = ""; // reloads the document
+   return false;
+}
+
+function mhttpd_delete_page_handle_delete(mouseEvent)
+{
+   var form = document.getElementsByTagName('form')[0];
+   var path = form.elements['odb'].value;
+
+   var names = [];
+   for (var i=0; ; i++) {
+      var n = "name" + i;
+      var v = form.elements[n];
+      if (v == undefined) break;
+      if (v == undefined) break;
+      if (v.checked)
+         names.push(path + "/" + v.value);
+   }
+
+   if (names.length < 1) {
+      alert("Please select at least one ODB entry to delete.");
+      return false;
+   }
+
+   //alert(names);
+
+   var result = JSON.parse(ODBMDelete(names));
+
+   location.search = ""; // reloads the document
+
+   //window.reload();
+   return false;
+}
+
+function mhttpd_delete_page_handle_cancel(mouseEvent)
+{
+   location.search = ""; // reloads the document
+   return false;
+}

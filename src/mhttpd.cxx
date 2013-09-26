@@ -6435,7 +6435,7 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
       }
    }
 
-   if (1) {
+   if (0) {
       printf("command [%s], encoding %d [%s], jsonp %d, single %d, multiple %d, odb array size %d\n", cmd_parameter.c_str(), encoding, encoding_parameter.c_str(), jsonp, single, multiple, (int)odb.size());
    }
          
@@ -6837,7 +6837,7 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
       }
 
       for (unsigned i=0; i<odb.size(); i++) {
-         HNDLE hkey;
+         HNDLE hkey = 0;
          int type = 0;
          int arraylength = 0;
          int strlength = 0;
@@ -6860,7 +6860,7 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
          status = db_create_key(hDB, 0, odb[i].c_str(), type);
 
          if (status == DB_SUCCESS) {
-            status = db_find_key(hDB, 0, odb[i].c_str(), &hkey);
+            status = db_find_link(hDB, 0, odb[i].c_str(), &hkey);
          }
 
          if (status == DB_SUCCESS && hkey && type == TID_STRING && strlength > 0) {
@@ -6869,7 +6869,7 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
             free(s);
          }
 
-         if (status == DB_SUCCESS && hkey && arraylength > 0) {
+         if (status == DB_SUCCESS && hkey && arraylength > 1) {
             status = db_set_num_values(hDB, hkey, arraylength);
          }
 
@@ -7211,7 +7211,7 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
 
       for (unsigned i=0; i<odb.size(); i++) {
          BOOL follow_links = 0;
-         status = db_find_key(hDB, 0, odb[i].c_str(), &hkey);
+         status = db_find_link(hDB, 0, odb[i].c_str(), &hkey);
          if (status == DB_SUCCESS) {
             status = db_delete_key(hDB, hkey, follow_links);
          }
@@ -8941,6 +8941,13 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
             db_get_link_data(hDB, hkey, link_name, &size, TID_LINK);
             status = db_enum_key(hDB, hkeyroot, i, &hkey);
             db_get_key(hDB, hkey, &key);
+
+            sprintf(link_ref, "%s?cmd=Set", full_path);
+
+            if (status == DB_SUCCESS && link_name[0] == 0) {
+               // fake the case when an empty link somehow resolves
+               sprintf(link_name, "%s", "(empty)");
+            }
          }
 
          if (link_name[0]) {
@@ -8948,19 +8955,21 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
                sprintf(ref, "%s%s?cmd=Set", root_path, link_name+1);
             else
                sprintf(ref, "%s%s?cmd=Set", root_path, link_name);
-            sprintf(link_ref, "%s?cmd=Set", full_path);
          } else
             sprintf(ref, "%s?cmd=Set", full_path);
 
          if (status != DB_SUCCESS) {
-            rsprintf("<tr><td class=\"yellowLight\">");
-            rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td><b><font color=\"red\">&lt;cannot resolve link&gt;</font><b></tr>\n",
-                 keyname, link_ref, link_name);
+            if (scan == 1) {
+               rsprintf("<tr><td class=\"yellowLight\">");
+               rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td><b><font color=\"red\">&lt;cannot resolve link&gt;</font></b></tr>\n", keyname, link_ref, link_name[0]?link_name:"(empty)");
+            }
          } else {
             if (key.type == TID_KEY && scan == 0) {
                /* for keys, don't display data value */
-               rsprintf("<tr><td colspan=%d class=\"ODBdirectory\"><a href=\"%s\">&#x25B6 %s</a><br></tr>\n",
-                       colspan, full_path, keyname);
+               rsprintf("<tr><td colspan=%d class=\"ODBdirectory\"><a href=\"%s\">&#x25B6 %s</a>\n", colspan, full_path, keyname);
+               if (link_name[0])
+                  rsprintf("<i>-> <a href=\"%s\">%s</a></i>", link_ref, link_name);
+               rsprintf("</tr>\n");
             } else if(key.type != TID_KEY && scan == 1) {
                /* display single value */
                if (key.num_values == 1) {
@@ -9400,9 +9409,11 @@ void show_create_page(const char *enc_path, const char *dec_path, const char *va
          strlcpy(str, strrchr(str, '/')+1, sizeof(str));
       show_header("Create ODB entry", "GET", str, 0);
       //close header:
-      rsprintf("</table>");      
+      rsprintf("</table>");
 
-      rsprintf("<table class=\"dialogTable\">");      
+      rsprintf("<script src=\'mhttpd.js\'></script>\n");
+
+      rsprintf("<table class=\"dialogTable\">");
       rsprintf("<tr><th colspan=2>Create ODB entry</tr>\n");
 
       rsprintf("<tr><td>Type");
@@ -9434,9 +9445,27 @@ void show_create_page(const char *enc_path, const char *dec_path, const char *va
       rsprintf("<td><input type=text size=20 maxlength=80 name=index value=1>\n");
       rsprintf("</tr>");
 
+      rsprintf("<tr><td>String size");
+      rsprintf("<td><input type=text size=20 maxlength=80 name=strlen value=32>\n");
+      rsprintf("</tr>");
+
       rsprintf("<tr><td align=center colspan=2>");
-      rsprintf("<input type=submit name=cmd value=Create>");
-      rsprintf("<input type=submit name=cmd value=Cancel>");
+
+      if (1) {
+         char str[256];
+
+         if (dec_path[0] != '/')
+            strcpy(str, "/");
+         else
+            str[0] = 0;
+         strlcat(str, dec_path, sizeof(str));
+         rsprintf("<input type=hidden name=odb value=\"%s\">\n", str);
+      }
+
+      //rsprintf("<input type=submit name=cmd value=Create>\n");
+      rsprintf("<input type=button value=Create onClick=\'mhttpd_create_page_handle_create(event);\'>\n");
+      //rsprintf("<input type=submit name=cmd value=Cancel>\n");
+      rsprintf("<input type=button value=Cancel onClick=\'mhttpd_create_page_handle_cancel(event);\'>\n");
       rsprintf("</tr>");
       rsprintf("</table>");
 
@@ -9538,8 +9567,10 @@ void show_delete_page(const char *enc_path, const char *dec_path, const char *va
       //close header
       rsprintf("</table>");      
 
+      rsprintf("<script src=\'mhttpd.js\'></script>\n");
+
       rsprintf("<table class=\"dialogTable\">");
-      rsprintf("<tr><th colspan=2>Delete ODB entry</tr>\n");
+      rsprintf("<tr><th colspan=2>Delete ODB entries:</tr>\n");
 
       /* find key via from */
       status = db_find_key(hDB, 0, dec_path, &hkeyroot);
@@ -9549,15 +9580,7 @@ void show_delete_page(const char *enc_path, const char *dec_path, const char *va
          return;
       }
 
-      /* count keys */
-      for (i = 0;; i++) {
-         db_enum_key(hDB, hkeyroot, i, &hkey);
-         if (!hkey)
-            break;
-      }
-
-      rsprintf("<tr><td align=center colspan=2><select type=text size=%d name=value>\n",
-               i);
+      int count = 0;
 
       /* enumerate subkeys */
       for (i = 0;; i++) {
@@ -9565,14 +9588,35 @@ void show_delete_page(const char *enc_path, const char *dec_path, const char *va
          if (!hkey)
             break;
          db_get_link(hDB, hkey, &key);
-         rsprintf("<option> %s\n", key.name);
+
+         rsprintf("<tr><td align=left><input align=left type=checkbox name=\"name%d\" value=\"%s\">%s</input></td></tr>\n", i, key.name, key.name);
+         count ++;
       }
 
       rsprintf("</select></tr>\n");
 
+      if (count == 0) {
+         rsprintf("<tr><td>This directory is empty, nothing to delete</td></tr>\n");
+      }
+
       rsprintf("<tr><td align=center colspan=2>");
-      rsprintf("<input type=submit name=cmd value=Delete>");
-      rsprintf("<input type=submit name=cmd value=Cancel>");
+
+      if (1) {
+         char str[256];
+
+         if (dec_path[0] != '/')
+            strcpy(str, "/");
+         else
+            str[0] = 0;
+         strlcat(str, dec_path, sizeof(str));
+         rsprintf("<input type=hidden name=odb value=\"%s\">\n", str);
+      }
+
+      if (count != 0) {
+         rsprintf("<input type=button value=Delete onClick=\'mhttpd_delete_page_handle_delete(event);\'>\n");
+      }
+      rsprintf("<input type=button value=Cancel onClick=\'mhttpd_delete_page_handle_cancel(event);\'>\n");
+
       rsprintf("</tr>");
       rsprintf("</table>");
 
