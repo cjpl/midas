@@ -13464,18 +13464,18 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
          rsprintf("<input type=submit name=scale value=%s>\n", str);
       }
 
-      rsprintf("<input type=submit name=shift value=\"<<<\">\n");
-      rsprintf("<input type=submit name=shift value=\"<<\">\n");
-      rsprintf("<input type=submit name=shift value=\"<\">\n");
-      rsprintf("<input type=submit name=shift value=\" + \">\n");
-      rsprintf("<input type=submit name=shift value=\" - \">\n");
+      rsprintf("<input type=submit name=shift value=\"<<<\" title=\"go back in time to last available data for all variables on the plot\">\n");
+      rsprintf("<input type=submit name=shift value=\"<<\"  title=\"go back in time to last available data\">\n");
+      rsprintf("<input type=submit name=shift value=\"<\"   title=\"go back in time\">\n");
+      rsprintf("<input type=submit name=shift value=\" + \" title=\"zoom in\">\n");
+      rsprintf("<input type=submit name=shift value=\" - \" title=\"zoom out\">\n");
       //if (offset != 0) {
       //   rsprintf("<input type=submit name=shift value=\">\">\n");
       //   rsprintf("<input type=submit name=shift value=\">>\">\n");
       //}
       if (endtime != 0) {
-         rsprintf("<input type=submit name=shift value=\">\">\n");
-         rsprintf("<input type=submit name=shift value=\">>\">\n");
+         rsprintf("<input type=submit name=shift value=\">\" title=\"go forward in time\">\n");
+         rsprintf("<input type=submit name=shift value=\">>\" title=\"go to currently updated fresh data\">\n");
       }
 
       rsprintf("<td>\n");
