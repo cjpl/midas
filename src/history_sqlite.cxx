@@ -559,10 +559,14 @@ int Sqlite::ListColumns(const char* table, std::vector<std::string> *plist)
    return DB_SUCCESS;
 }
 
+static int callback_debug = 0;
+
 static int callback(void *NotUsed, int argc, char **argv, char **azColName){
-   printf("history_sqlite::callback---->\n");
-   for (int i=0; i<argc; i++){
-      printf("history_sqlite::callback[%d] %s = %s\n", i, azColName[i], argv[i] ? argv[i] : "NULL");
+   if (callback_debug) {
+      printf("history_sqlite::callback---->\n");
+      for (int i=0; i<argc; i++){
+         printf("history_sqlite::callback[%d] %s = %s\n", i, azColName[i], argv[i] ? argv[i] : "NULL");
+      }
    }
    return 0;
 }
@@ -586,6 +590,7 @@ int Sqlite::Exec(const char* table_name, const char* sql)
 
    int status;
 
+   callback_debug = fDebug;
    char* errmsg = NULL;
 
    status = sqlite3_exec(db, sql, callback, 0, &errmsg);
@@ -670,12 +675,13 @@ int WriteEvent(Sqlite* sql, Event *e, time_t t, const char*buf, int size)
             values += ", ";
             
             if (arraySize <= 1)
-               tags += t->column_name;
+               tags += "\'" + t->column_name + "\'";
             else {
-               tags += t->column_name;
+               tags += "\'" + t->column_name;
                char s[256];
                sprintf(s,"_%d", j);
                tags += s;
+               tags += "\'";
             }
                 
             char s[1024];
@@ -726,7 +732,7 @@ int WriteEvent(Sqlite* sql, Event *e, time_t t, const char*buf, int size)
    strftime(s,sizeof(s)-1,"%Y-%m-%d %H:%M:%S.0",localtime(&t));
    
    char sss[102400];
-   sprintf(sss, "INSERT INTO %s (_t_time, _i_time%s) VALUES (\'%s\', \'%d\'%s);",
+   sprintf(sss, "INSERT INTO \'%s\' (_t_time, _i_time%s) VALUES (\'%s\', \'%d\'%s);",
            table_name,
            tags.c_str(),
            s,
@@ -1038,10 +1044,10 @@ public:
          sprintf(buf, "CREATE TABLE \'%s\' (_t_time TIMESTAMP NOT NULL, _i_time INTEGER NOT NULL);", e->table_name.c_str());
          status = fSql->Exec(e->table_name.c_str(), buf);
          
-         sprintf(buf, "CREATE INDEX \'%s_i_time_index\' ON %s (_i_time ASC);", e->table_name.c_str(), e->table_name.c_str());
+         sprintf(buf, "CREATE INDEX \'%s_i_time_index\' ON \'%s\' (_i_time ASC);", e->table_name.c_str(), e->table_name.c_str());
          status = fSql->Exec(e->table_name.c_str(), buf);
          
-         sprintf(buf, "CREATE INDEX \'%s_t_time_index\' ON %s (_t_time);", e->table_name.c_str(), e->table_name.c_str());
+         sprintf(buf, "CREATE INDEX \'%s_t_time_index\' ON \'%s\' (_t_time);", e->table_name.c_str(), e->table_name.c_str());
          status = fSql->Exec(e->table_name.c_str(), buf);
          
          sprintf(buf, "CREATE TABLE \'_event_name_%s\' (table_name TEXT NOT NULL, event_name TEXT NOT NULL, _i_time INTEGER NOT NULL);", e->table_name.c_str());
@@ -1158,7 +1164,7 @@ public:
             if (!column_exists) {
                char buf[1024];
             
-               sprintf(buf, "ALTER TABLE \'%s\' ADD COLUMN %s %s;",
+               sprintf(buf, "ALTER TABLE \'%s\' ADD COLUMN \'%s\' %s;",
                        e->table_name.c_str(),
                        colname.c_str(),
                        coltype.c_str());
