@@ -199,7 +199,7 @@ int main(int argc,char*argv[])
          continue;
       
       if (strcmp(arg, "--hs-debug") == 0) {
-         mh->hs_set_debug(atoi(argv[iarg]+2));
+         mh->hs_set_debug(atoi(argv[iarg+1]));
          iarg++;
       }
    }

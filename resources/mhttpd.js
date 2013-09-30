@@ -464,9 +464,11 @@ function ODBFinishInlineEdit(p, path)
       setTimeout(function(){p.appendChild(link);p.removeChild(p.childNodes[0])}, 10);
 }
 
-function ODBInlineEditKeydown(p, path)
+function ODBInlineEditKeydown(event, p, path)
 {
-   if (event.keyCode == 27) {
+   var keyCode = ('which' in event) ? event.which : event.keyCode;
+   
+   if (keyCode == 27) {
       /* cancel editing */
       p.ODBsent = true;
 
@@ -484,7 +486,7 @@ function ODBInlineEditKeydown(p, path)
       else
          setTimeout(function(){p.appendChild(link);p.removeChild(p.childNodes[0])}, 10);
    
-   } else if (event.keyCode == 13)
+   } else if (keyCode == 13)
       ODBFinishInlineEdit(p, path);
 }
 
@@ -501,7 +503,7 @@ function ODBInlineEdit(p, odb_path)
       p.innerHTML = index+"&nbsp;<input type=\"text\" size=\""+size+"\" value=\""+cur_val+"\" onKeydown=\"ODBInlineEditKeydown(this.parentNode,\'"+odb_path+"\');\" onBlur=\"ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\');\" >";
       setTimeout(function(){p.childNodes[1].focus();p.childNodes[1].select();}, 10); // needed for Firefox
    } else {
-      p.innerHTML = "<input type=\"text\" size=\""+size+"\" value=\""+cur_val+"\" onKeydown=\"ODBInlineEditKeydown(this.parentNode,\'"+odb_path+"\');\" onBlur=\"ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\');\" >";
+      p.innerHTML = "<input type=\"text\" size=\""+size+"\" value=\""+cur_val+"\" onKeydown=\"ODBInlineEditKeydown(event, this.parentNode,\'"+odb_path+"\');\" onBlur=\"ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\');\" >";
 
       setTimeout(function(){p.childNodes[0].focus();p.childNodes[0].select();}, 10); // needed for Firefox
    }
