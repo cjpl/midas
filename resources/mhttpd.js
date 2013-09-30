@@ -518,6 +518,8 @@ function mhttpd_create_page_handle_create(mouseEvent)
    var arraylength = form.elements['index'].value;
    var stringlength = form.elements['strlen'].value;
 
+   if (path == "/") path = "";
+
    if (name.length < 1) {
       alert("Name is too short");
       return false;
@@ -556,6 +558,8 @@ function mhttpd_delete_page_handle_delete(mouseEvent)
 {
    var form = document.getElementsByTagName('form')[0];
    var path = form.elements['odb'].value;
+
+   if (path == "/") path = "";
 
    var names = [];
    for (var i=0; ; i++) {

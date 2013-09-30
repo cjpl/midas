@@ -9462,11 +9462,15 @@ void show_create_page(const char *enc_path, const char *dec_path, const char *va
       if (1) {
          char str[256];
 
-         if (dec_path[0] != '/')
-            strcpy(str, "/");
-         else
-            str[0] = 0;
-         strlcat(str, dec_path, sizeof(str));
+         if (strcmp(dec_path, "root") == 0) {
+            strcpy(str, "");
+         } else {
+            if (dec_path[0] != '/')
+               strcpy(str, "/");
+            else
+               str[0] = 0;
+            strlcat(str, dec_path, sizeof(str));
+         }
          rsprintf("<input type=hidden name=odb value=\"%s\">\n", str);
       }
 
@@ -9559,6 +9563,7 @@ void show_create_page(const char *enc_path, const char *dec_path, const char *va
 void show_delete_page(const char *enc_path, const char *dec_path, const char *value, int index)
 {
    char str[256];
+   char path[256];
    int i, status;
    HNDLE hDB, hkeyroot, hkey;
    KEY key;
@@ -9580,10 +9585,20 @@ void show_delete_page(const char *enc_path, const char *dec_path, const char *va
       rsprintf("<table class=\"dialogTable\">");
       rsprintf("<tr><th colspan=2>Delete ODB entries:</tr>\n");
 
+      if (strcmp(dec_path, "root") == 0) {
+         strlcpy(path, "/", sizeof(path));
+      } else {
+         if (dec_path[0] != '/')
+            strcpy(path, "/");
+         else
+            path[0] = 0;
+         strlcat(path, dec_path, sizeof(str));
+      }
+
       /* find key via from */
-      status = db_find_key(hDB, 0, dec_path, &hkeyroot);
+      status = db_find_key(hDB, 0, path, &hkeyroot);
       if (status != DB_SUCCESS) {
-         rsprintf("Error: cannot find key %s<P>\n", dec_path);
+         rsprintf("Error: cannot find key \'%s\'<p>\n", path);
          page_footer();
          return;
       }
@@ -9609,16 +9624,7 @@ void show_delete_page(const char *enc_path, const char *dec_path, const char *va
 
       rsprintf("<tr><td align=center colspan=2>");
 
-      if (1) {
-         char str[256];
-
-         if (dec_path[0] != '/')
-            strcpy(str, "/");
-         else
-            str[0] = 0;
-         strlcat(str, dec_path, sizeof(str));
-         rsprintf("<input type=hidden name=odb value=\"%s\">\n", str);
-      }
+      rsprintf("<input type=hidden name=odb value=\"%s\">\n", path);
 
       if (count != 0) {
          rsprintf("<input type=button value=Delete onClick=\'mhttpd_delete_page_handle_delete(event);\'>\n");
