@@ -1887,8 +1887,13 @@ INT db_create_link(HNDLE hDB, HNDLE hKey, const char *link_name, const char *des
       return DB_INVALID_NAME;
    }
 
+   if (destination[0] != '/') {
+      cm_msg(MERROR, "db_create_link", "destination name \'%s\' should start with \'/\', relative links not supported", destination);
+      return DB_INVALID_NAME;
+   }
+
    if (strlen(destination) < 1) {
-      cm_msg(MERROR, "db_create_link", "destination name is too short");
+      cm_msg(MERROR, "db_create_link", "destination name \'%s\' is too short", destination);
       return DB_INVALID_NAME;
    }
 
@@ -2237,7 +2242,7 @@ INT db_find_key(HNDLE hDB, HNDLE hKey, const char *key_name, HNDLE * subhKey)
          /* resolve links */
          if (pkey->type == TID_LINK) {
             /* copy destination, strip '/' */
-            strcpy(str, (char *) pheader + pkey->data);
+            strlcpy(str, (char *) pheader + pkey->data, sizeof(str));
             if (str[strlen(str) - 1] == '/')
                str[strlen(str) - 1] = 0;
 
@@ -2247,7 +2252,7 @@ INT db_find_key(HNDLE hDB, HNDLE hKey, const char *key_name, HNDLE * subhKey)
 
             /* append rest of key name if existing */
             if (pkey_name[0]) {
-               strcat(str, pkey_name);
+               strlcat(str, pkey_name, sizeof(str));
                db_unlock_database(hDB);
                return db_find_key(hDB, 0, str, subhKey);
             } else {

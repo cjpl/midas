@@ -6539,8 +6539,10 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
             index = 0;
          
          show_text_header();
+
+         status = db_find_key(hDB, 0, str, &hkey);
          
-         if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS)
+         if (status == DB_SUCCESS)
             output_key(hkey, index, getparam("format"));
          else
             rsputs("<DB_NO_KEY>");
@@ -8939,8 +8941,11 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
          if (key.type == TID_LINK) {
             size = sizeof(link_name);
             db_get_link_data(hDB, hkey, link_name, &size, TID_LINK);
-            status = db_enum_key(hDB, hkeyroot, i, &hkey);
-            db_get_key(hDB, hkey, &key);
+
+            status = db_find_key(hDB, 0, link_name, &hkey);
+
+            if (status == DB_SUCCESS)
+               db_get_key(hDB, hkey, &key);
 
             sprintf(link_ref, "%s?cmd=Set", full_path);
 
