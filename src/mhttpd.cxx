@@ -8770,6 +8770,8 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
 
    cm_get_experiment_database(&hDB, NULL);
 
+   //printf("enc_path [%s] dec_path [%s]\n", enc_path, dec_path);
+
    if (strcmp(enc_path, "root") == 0) {
       strcpy(enc_path, "");
       strcpy(dec_path, "");
@@ -8780,6 +8782,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
       strlcpy(str, strrchr(str, '/')+1, sizeof(str));
    if (str[0] == 0)
       strlcpy(str, "root", sizeof(str));
+
    show_header("MIDAS online database", "GET", str, 0);
 
    /* add one "../" for each level */
@@ -8996,16 +8999,16 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
                   if (strcmp(data_str, hex_str) != 0 && hex_str[0]) {
                      if (link_name[0]) {
                         rsprintf("<td class=\"ODBkey\">\n");
-                        rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\">\n", keyname, link_ref, link_name);
+                        rsprintf("%s <i>-> ", keyname);
+                        rsprintf("<a href=\"%s\">%s</a></i>\n", link_ref, link_name);
+                        rsprintf("<td class=\"ODBvalue\">\n");
                         rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, odb_path);
-                        rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">%s (%s)</a>\n",
-                             odb_path, data_str, hex_str);
+                        rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">%s (%s)</a>\n", odb_path, data_str, hex_str);
                      } else {
                         rsprintf("<td class=\"ODBkey\">\n");
                         rsprintf("%s<td class=\"ODBvalue\">", keyname);
                         rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, odb_path);
-                        rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">%s (%s)</a>\n",
-                                 odb_path, data_str, hex_str);
+                        rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">%s (%s)</a>\n", odb_path, data_str, hex_str);
                      }
                   } else {
                      if (strchr(data_str, '\n')) {
