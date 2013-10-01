@@ -26,7 +26,7 @@ extern void strencode(char *text);
 extern void strencode4(char *text);
 extern void show_header(const char *title, const char *method, const char *path, int refresh);
 extern void show_navigation_bar(const char *cur_page);
-extern void page_footer();
+extern void page_footer(BOOL bForm);
 
 #undef NAME_LENGTH
 #define NAME_LENGTH 256
@@ -788,7 +788,7 @@ void seq_start_page()
    if (!pnseq) {
       rsprintf("<tr><td colspan=2 align=\"center\" class=\"redLight\"><b>Error in XML script</b></td></tr>\n");
       rsprintf("</table>\n");
-      page_footer(); 
+      page_footer(TRUE);
       return;
    }
    
@@ -901,7 +901,7 @@ void seq_start_page()
    if (isparam("redir"))
       rsprintf("<input type=hidden name=\"redir\" value=\"%s\">\n", getparam("redir"));
    
-   page_footer();
+   page_footer(TRUE);
 }
 
 /*------------------------------------------------------------------*/
@@ -1885,7 +1885,7 @@ void show_seq_page()
 
    rsprintf("</td></tr></table>"); //end wrapper table
    //rsprintf("</form>\r\n");
-   page_footer();
+   page_footer(TRUE);
 }
 
 /*------------------------------------------------------------------*/

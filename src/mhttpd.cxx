@@ -884,7 +884,7 @@ INT search_callback(HNDLE hDB, HNDLE hKey, KEY * key, INT level, void *info)
 
 /*------------------------------------------------------------------*/
 
-void page_footer()  //wraps up body wrapper and inserts page footer
+void page_footer(BOOL bForm)  //wraps up body wrapper and inserts page footer
 {
    time_t now;
    int size;
@@ -907,7 +907,8 @@ void page_footer()  //wraps up body wrapper and inserts page footer
    rsprintf("<div style=\"display:inline; float:right;\">%s</div>", ctime(&now));
    rsprintf("</div>\n");
    /*---- top level form ----*/
-   rsprintf("</form>\n");
+   if (bForm)
+      rsprintf("</form>\n");
    rsprintf("</body></html>\r\n");   
 }
 
@@ -2129,7 +2130,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
 
    rsprintf("</table>\n");
 
-   page_footer();
+   page_footer(TRUE);
 
 }
 
@@ -2202,7 +2203,7 @@ void show_messages_page(int refresh, int n_message)
 
 
    rsprintf("</div>\n");
-   page_footer();
+   page_footer(TRUE);
    free(buffer);
 
 }
@@ -2598,7 +2599,7 @@ void show_elog_new(const char *path, BOOL bedit, const char *odb_att, const char
         att3);
 
    rsprintf("</table>\n");
-   page_footer();
+   page_footer(TRUE);
 }
 
 /*------------------------------------------------------------------*/
@@ -2775,7 +2776,7 @@ void show_elog_query()
    rsprintf("<i>(case insensitive substring)</i><tr>\n");
 
    rsprintf("</tr></table>\n");
-   page_footer();
+   page_footer(TRUE);
 }
 
 /*------------------------------------------------------------------*/
@@ -2840,7 +2841,7 @@ void show_elog_delete(char *path)
    }
 
    rsprintf("</table>\n");
-   page_footer();
+   page_footer(TRUE);
 }
 
 /*------------------------------------------------------------------*/
@@ -3283,7 +3284,7 @@ void show_elog_submit_query(INT last_n)
    } while (status == EL_SUCCESS);
 
    rsprintf("</table>\n");
-   page_footer();
+   page_footer(TRUE);
 }
 
 /*------------------------------------------------------------------*/
@@ -3369,7 +3370,7 @@ void show_rawfile(char *path)
    if (f == NULL) {
       rsprintf("<tr><td><h3>Cannot find file \"%s\"</h3></td></tr>\n", file_name);
       rsprintf("</table>\n");
-      page_footer();
+      page_footer(TRUE);
       return;
    }
 
@@ -3430,7 +3431,7 @@ void show_rawfile(char *path)
    rsprintf("</pre>\n");
 
    rsprintf("</td></tr></table>\r\n");
-   page_footer();
+   page_footer(TRUE);
 }
 
 /*------------------------------------------------------------------*/
@@ -3554,7 +3555,7 @@ void show_form_query()
    }
 
    rsprintf("</tr></table>\n");
-   page_footer();
+   page_footer(TRUE);
 }
 
 /*------------------------------------------------------------------*/
@@ -4542,7 +4543,7 @@ void show_elog_page(char *path, int path_size)
    }
 
    rsprintf("</table>\n");
-   page_footer();
+   page_footer(TRUE);
 }
 
 /*------------------------------------------------------------------*/
@@ -5077,7 +5078,7 @@ void show_sc_page(char *path, int refresh)
    }
 
    rsprintf("</table>\n");
-   page_footer();
+   page_footer(TRUE);
 }
 
 /*------------------------------------------------------------------*/
@@ -8307,7 +8308,7 @@ void show_mscb_page(char *path, int refresh)
       rsprintf("</table>\r\n"); //submaster table
       rsprintf("</td></tr>\r\n");  
       rsprintf("</table>\r\n");  //main table      
-      page_footer();
+      page_footer(TRUE);
       return;
    }
 
@@ -8376,7 +8377,7 @@ void show_mscb_page(char *path, int refresh)
       rsprintf("</table>\r\n");  //submaster table
       rsprintf("</td></tr>\r\n");
       rsprintf("</table>\r\n"); //main table
-      page_footer();
+      page_footer(TRUE);
       return;
    }
    
@@ -8532,7 +8533,7 @@ mscb_error:
    rsprintf("</td></tr></table>\r\n");
    rsprintf("</td></tr></table>\r\n");
    rsprintf("</td></tr></table>\r\n");
-   page_footer();
+   page_footer(TRUE);
 }
 
 #endif // HAVE_MSCB
@@ -8571,7 +8572,7 @@ void show_password_page(const char *password, const char *experiment)
 
    rsprintf("</table>\n");
 
-   page_footer();
+   page_footer(TRUE);
 }
 
 /*------------------------------------------------------------------*/
@@ -8627,7 +8628,7 @@ BOOL check_web_password(const char *password, const char *redir, const char *exp
 
       rsprintf("</table>\n");
 
-      page_footer();
+      page_footer(TRUE);
 
       return FALSE;
    } else
@@ -8750,7 +8751,7 @@ void show_start_page(int script)
    if (isparam("redir"))
       rsprintf("<input type=hidden name=\"redir\" value=\"%s\">\n", getparam("redir"));
 
-   page_footer();
+   page_footer(TRUE);
 
 }
 
@@ -8782,8 +8783,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
       strlcpy(str, strrchr(str, '/')+1, sizeof(str));
    if (str[0] == 0)
       strlcpy(str, "root", sizeof(str));
-
-   show_header("MIDAS online database", "GET", str, 0);
+   show_header("MIDAS online database", "", str, 0);
 
    /* add one "../" for each level */
    tmp_path[0] = 0;
@@ -9170,7 +9170,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
       }
    }
    rsprintf("</table>\n");
-   page_footer();
+   page_footer(FALSE);
 }
 
 /*------------------------------------------------------------------*/
@@ -9260,7 +9260,7 @@ void show_set_page(char *enc_path, int enc_path_size, char *dec_path, const char
 
       rsprintf("<input type=hidden name=cmd value=Set>\n");
 
-      page_footer();
+      page_footer(TRUE);
       return;
    } else {
       /* set value */
@@ -9368,7 +9368,7 @@ void show_find_page(const char *enc_path, const char *value)
 
       rsprintf("<input type=hidden name=cmd value=Find>");
 
-      page_footer();
+      page_footer(TRUE);
    } else {
       strlcpy(str, enc_path, sizeof(str));
       if (strrchr(str, '/'))
@@ -9393,7 +9393,7 @@ void show_find_page(const char *enc_path, const char *value)
       db_scan_tree(hDB, hkey, 0, search_callback, (void *) value);
 
       rsprintf("</table>");
-      page_footer();
+      page_footer(TRUE);
    }
 }
 
@@ -9481,7 +9481,7 @@ void show_create_page(const char *enc_path, const char *dec_path, const char *va
       rsprintf("</tr>");
       rsprintf("</table>");
 
-      page_footer();
+      page_footer(TRUE);
    } else {
       if (type == TID_LINK) {
          /* check if destination exists */
@@ -9599,7 +9599,7 @@ void show_delete_page(const char *enc_path, const char *dec_path, const char *va
       status = db_find_key(hDB, 0, path, &hkeyroot);
       if (status != DB_SUCCESS) {
          rsprintf("Error: cannot find key \'%s\'<p>\n", path);
-         page_footer();
+         page_footer(TRUE);
          return;
       }
 
@@ -9634,7 +9634,7 @@ void show_delete_page(const char *enc_path, const char *dec_path, const char *va
       rsprintf("</tr>");
       rsprintf("</table>");
 
-      page_footer();
+      page_footer(TRUE);
    } else {
       strlcpy(str, dec_path, sizeof(str));
       if (str[strlen(str) - 1] != '/')
@@ -9842,7 +9842,7 @@ void show_alarm_page()
    }
 
    rsprintf("</table>\n"); //closes main table
-   page_footer();
+   page_footer(TRUE);
 
    //something is closing the top level form with the footer div outside of it; force it back in for now,
    //until the proper closing tag can be chased down:
@@ -10036,7 +10036,7 @@ void show_programs_page()
 
 
    rsprintf("</table>\n");
-   page_footer();
+   page_footer(TRUE);
 }
 
 /*------------------------------------------------------------------*/
@@ -10068,7 +10068,7 @@ void show_config_page(int refresh)
    rsprintf("</tr>\n");
    rsprintf("</table>\n");
 
-   page_footer();
+   page_footer(TRUE);
 }
 
 /*------------------------------------------------------------------*/
@@ -12168,7 +12168,7 @@ void show_query_page(const char *path)
    rsprintf("</td></tr>\n");
 
    rsprintf("</table>\n");
-   page_footer();
+   page_footer(TRUE);
 }
 
 /*------------------------------------------------------------------*/
@@ -13104,7 +13104,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
 
    rsprintf("</table>\n");
    //rsprintf("</form>\n");
-   page_footer();
+   page_footer(TRUE);
 }
 
 /*------------------------------------------------------------------*/
@@ -13454,7 +13454,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
       rsprintf("</td></tr>\n");
 
       rsprintf("</table>\r\n");
-      page_footer();
+      page_footer(TRUE);
       return;
    }
 
@@ -13777,7 +13777,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    if (status != DB_SUCCESS && !equal_ustring(path, "All") && !equal_ustring(path,"")) {
       rsprintf("<h1>Error: History panel \"%s\" does not exist</h1>\n", path);
       rsprintf("</table>\r\n");
-      page_footer();
+      page_footer(TRUE);
       return;
    }
 
@@ -14222,7 +14222,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    }                            // All
    rsprintf("</table>\r\n");
    //rsprintf("</form>\r\n");
-   page_footer();
+   page_footer(TRUE);
 }
 
 
