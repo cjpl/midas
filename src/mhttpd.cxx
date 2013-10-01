@@ -4473,7 +4473,7 @@ void show_elog_page(char *path, int path_size)
       /* message text */
       rsprintf("<tr><td colspan=2>\n");
       if (equal_ustring(encoding, "plain")) {
-         rsputs("<pre>");
+         rsputs("<pre style=\"text-align:left;\">");
          rsputs2(text);
          rsputs("</pre>");
       } else
@@ -4506,7 +4506,7 @@ void show_elog_page(char *path, int path_size)
                   /* display attachment */
                   rsprintf("<br>");
                   if (!strstr(att, ".HTML"))
-                     rsprintf("<pre>");
+                     rsprintf("<pre style=\"text-align:left;\">");
 
                   file_name[0] = 0;
                   size = sizeof(file_name);
@@ -15993,17 +15993,24 @@ void server_loop()
 #else
             status = select(FD_SETSIZE, (fd_set *) &readfds, NULL, NULL, (const timeval *) &timeout);
 #endif
+
+            //printf("select status %d, errno %d, isset %d\n", status, errno, FD_ISSET(_sock, &readfds));
+
             if (FD_ISSET(_sock, &readfds))
                i = recv(_sock, net_buffer + len, sizeof(net_buffer) - len, 0);
             else
                goto error;
 
+            //printf("recv status %d, errno %d\n", i, errno);
+
             /* abort if connection got broken */
             if (i < 0)
                goto error;
 
-            if (i > 0)
+            if (i > 0) {
                len += i;
+               net_buffer[len] = 0; // we later use strstr() on net_buffer - have to make sure it is zero-terminated
+            }
 
             /* check if net_buffer too small */
             if (len >= sizeof(net_buffer)) {
@@ -16060,31 +16067,30 @@ void server_loop()
                         content_length = atoi(strstr(net_buffer, "Content-Length:") + 15);
                      else if (strstr(net_buffer, "Content-length:"))
                         content_length = atoi(strstr(net_buffer, "Content-length:") + 15);
+
+                     //printf("content-length %d\n", content_length);
                      
                      boundary[0] = 0;
                      if (strstr(net_buffer, "boundary=")) {
-                        strlcpy(boundary, strstr(net_buffer, "boundary=") + 9,
-                                sizeof(boundary));
+                        strlcpy(boundary, strstr(net_buffer, "boundary=") + 9, sizeof(boundary));
                         if (strchr(boundary, '\r'))
                            *strchr(boundary, '\r') = 0;
                      }
                      
                      if (strstr(net_buffer, "\r\n\r\n"))
-                        header_length =
-                        (POINTER_T) strstr(net_buffer,
-                                           "\r\n\r\n") - (POINTER_T) net_buffer + 4;
+                        header_length = (POINTER_T) strstr(net_buffer, "\r\n\r\n") - (POINTER_T) net_buffer + 4;
                      
                      if (strstr(net_buffer, "\r\r\n\r\r\n"))
-                        header_length =
-                        (POINTER_T) strstr(net_buffer,
-                                           "\r\r\n\r\r\n") - (POINTER_T) net_buffer + 6;
-                     
+                        header_length = (POINTER_T) strstr(net_buffer, "\r\r\n\r\r\n") - (POINTER_T) net_buffer + 6;
+                  }
+
+                  //printf("header_length %d, len %d, header+contents %d\n", header_length, len, header_length + content_length);
+                  
+                  if (header_length > 0 && (int) len >= header_length + content_length) {
                      if (header_length)
                         net_buffer[header_length - 1] = 0;
-                  }
-                  
-                  if (header_length > 0 && (int) len >= header_length + content_length)
                      break;
+                  }
                } else if (strstr(net_buffer, "OPTIONS") != NULL)
                   goto error;
                else {
