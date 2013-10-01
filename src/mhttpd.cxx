@@ -4473,7 +4473,7 @@ void show_elog_page(char *path, int path_size)
       /* message text */
       rsprintf("<tr><td colspan=2>\n");
       if (equal_ustring(encoding, "plain")) {
-         rsputs("<pre>");
+         rsputs("<pre style=\"text-align:left;\">");
          rsputs2(text);
          rsputs("</pre>");
       } else
@@ -4506,7 +4506,7 @@ void show_elog_page(char *path, int path_size)
                   /* display attachment */
                   rsprintf("<br>");
                   if (!strstr(att, ".HTML"))
-                     rsprintf("<pre>");
+                     rsprintf("<pre style=\"text-align:left;\">");
 
                   file_name[0] = 0;
                   size = sizeof(file_name);
