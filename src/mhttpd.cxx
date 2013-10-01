@@ -32,7 +32,7 @@ extern "C" {
 #define CONNECT_TIME  3600*24
 
 /* size of buffer for incoming data, must fit sum of all attachments */
-#define WEB_BUFFER_SIZE 100000
+#define WEB_BUFFER_SIZE (6*1024*1024)
 
 size_t return_size = WEB_BUFFER_SIZE;
 char *return_buffer = (char*)malloc(return_size);
@@ -15985,23 +15985,23 @@ void server_loop()
             timeout.tv_usec = 0;
 
 #ifdef OS_UNIX
+            int loop = 0;
             do {
-               status =
-                   select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
+               status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
                /* if an alarm signal was cought, restart with reduced timeout */
-            } while (status == -1 && errno == EINTR);
+            } while (status == -1 && errno == EINTR && (++loop < 2));
 #else
             status = select(FD_SETSIZE, (fd_set *) &readfds, NULL, NULL, (const timeval *) &timeout);
 #endif
 
             //printf("select status %d, errno %d, isset %d\n", status, errno, FD_ISSET(_sock, &readfds));
 
-            if (FD_ISSET(_sock, &readfds))
+            if (status > 0 && FD_ISSET(_sock, &readfds))
                i = recv(_sock, net_buffer + len, sizeof(net_buffer) - len, 0);
             else
                goto error;
 
-            //printf("recv status %d, errno %d\n", i, errno);
+            //printf("recv status %d, errno %d, len %d\n", i, errno, len);
 
             /* abort if connection got broken */
             if (i < 0)
@@ -16022,28 +16022,39 @@ void server_loop()
                   timeout.tv_sec = 2;
                   timeout.tv_usec = 0;
 
-                  status =
-                      select(FD_SETSIZE, &readfds, NULL, NULL,
-                             &timeout);
+                  int loop = 0;
+                  do {
+                     status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
+                     /* if an alarm signal was cought, restart with reduced timeout */
+                  } while (status == -1 && errno == EINTR && (++loop < 2));
 
-                  if (FD_ISSET(_sock, &readfds))
-                     i = recv(_sock, net_buffer, sizeof(net_buffer), 0);
-                  else
+                  if (status <= 0)
                      break;
-               } while (i);
+
+                  if (!FD_ISSET(_sock, &readfds))
+                     break;
+
+                  i = recv(_sock, net_buffer, sizeof(net_buffer), 0);
+
+               } while (i > 0);
 
                memset(return_buffer, 0, return_size);
                strlen_retbuf = 0;
                return_length = 0;
 
                show_error("Submitted attachment too large, please increase WEB_BUFFER_SIZE in mhttpd.c and recompile");
-               send(_sock, return_buffer, strlen_retbuf + 1, 0);
+
+               if (return_length == 0)
+                  return_length = strlen(return_buffer);
+
+               i = send_tcp(_sock, return_buffer, return_length, 0x10000);
+
                if (verbose) {
-                  printf("==== Return error info %i bytes ==============\n",
-                         strlen_retbuf + 1);
+                  printf("==== Return error info %i bytes ==============\n", return_length);
                   puts(return_buffer);
                   printf("\n\n");
                }
+
                goto error;
             }
 
