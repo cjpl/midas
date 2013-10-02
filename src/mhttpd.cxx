@@ -3181,7 +3181,7 @@ void show_elog_submit_query(INT last_n)
             }
 
             if (equal_ustring(encoding, "plain")) {
-               rsputs("<pre>");
+               rsputs("<pre style=\"text-align:right\">");
                rsputs2(text);
                rsputs("</pre>");
             } else
@@ -3229,7 +3229,7 @@ void show_elog_submit_query(INT last_n)
                              strstr(str, ".ASC") || strchr(str, '.') == NULL)
                             && show_attachments) {
                            /* display attachment */
-                           rsprintf("<br><pre>");
+                           rsprintf("<br><pre style=\"text-align:right\">");
 
                            file_name[0] = 0;
                            size = sizeof(file_name);
