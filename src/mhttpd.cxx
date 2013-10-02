@@ -13109,7 +13109,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
 
 /*------------------------------------------------------------------*/
 
-void export_hist(const char *path, time_t xendtime, int scale, int toffset, int index, int labels)
+void export_hist(const char *path, time_t endtime, int scale, int index, int labels)
 {
    HNDLE hDB, hkey, hkeypanel;
    int size, status;
@@ -13162,9 +13162,11 @@ void export_hist(const char *path, time_t xendtime, int scale, int toffset, int 
    HistoryData hsxxx;
    HistoryData* hsdata = &hsxxx;
 
-   time_t now = ss_time();
+   time_t starttime = endtime - scale;
 
-   status = read_history(hDB, path, index, runmarker, now - scale + toffset, now + toffset, 0, hsdata);
+   //printf("start %.0f, end %.0f, scale %.0f\n", (double)starttime, (double)endtime, (double)scale);
+
+   status = read_history(hDB, path, index, runmarker, starttime, endtime, 0, hsdata);
    if (status != HS_SUCCESS) {
       rsprintf(str, "History error, status %d\n", status);
       return;
@@ -13664,8 +13666,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    }
 
    if (equal_ustring(getparam("cmd"), "Export")) {
-      int xoffset = 0; // must be fixed!
-      export_hist(path, endtime, scale, xoffset, index, labels);
+      export_hist(path, endtime, scale, index, labels);
       return;
    }
 
