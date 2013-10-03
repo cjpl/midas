@@ -76,6 +76,7 @@ body {
 	min-width: -moz-min-content;
 	min-width: -webkit-min-content; /*currently (July 2013) only FF and Chrome support min-content, expand to other browsers as they catch up.*/
 	text-align:center;
+	height:100%;
 }
 
 form {
