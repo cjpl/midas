@@ -1565,7 +1565,7 @@ public:
             const char* cn = xitem[j].columnName.c_str();
 
             char cmd[256];
-            sprintf(cmd, "SELECT _i_time, %s FROM %s WHERE _i_time <= %.0f ORDER BY _i_time DESC LIMIT 2;", cn, tn, dstart_time);
+            sprintf(cmd, "SELECT _i_time, \'%s\' FROM \'%s\' WHERE _i_time <= %.0f ORDER BY _i_time DESC LIMIT 2;", cn, tn, dstart_time);
 
             sqlite3_stmt *st;
             
@@ -1659,7 +1659,7 @@ public:
 
                if (collist.length() > 0)
                   collist += ",";
-               collist += vvv[i][j].columnName;
+               collist += std::string("\'") + vvv[i][j].columnName + "\'";
             }
          }
       }
@@ -1674,7 +1674,7 @@ public:
       }
 
       char cmd[256];
-      sprintf(cmd, "SELECT _i_time, %s FROM %s WHERE _i_time>=%.0f and _i_time<=%.0f ORDER BY _i_time;", collist.c_str(), tn.c_str(), start_time, end_time);
+      sprintf(cmd, "SELECT _i_time, %s FROM \'%s\' WHERE _i_time>=%.0f and _i_time<=%.0f ORDER BY _i_time;", collist.c_str(), tn.c_str(), start_time, end_time);
 
       if (fDebug) {
          printf("hs_read_table: cmd %s\n", cmd);
@@ -1899,13 +1899,21 @@ public:
       int status;
 
       ReadBuffer** buffer = new ReadBuffer*[num_var];
-      MidasHistoryBufferInterface** xbuffer = new MidasHistoryBufferInterface*[num_var];
+      MidasHistoryBufferInterface** bi = new MidasHistoryBufferInterface*[num_var];
 
       for (int i=0; i<num_var; i++) {
          buffer[i] = new ReadBuffer(start_time, end_time, interval);
-         xbuffer[i] = buffer[i];
+         bi[i] = buffer[i];
 
-         num_entries[i] = 0;
+         // make sure outputs are initialized to something sane
+         if (num_entries)
+            num_entries[i] = 0;
+         if (time_buffer)
+            time_buffer[i] = NULL;
+         if (data_buffer)
+            data_buffer[i] = NULL;
+         if (st)
+            st[i] = 0;
 
          if (num_entries)
             buffer[i]->fNumEntries = &num_entries[i];
@@ -1917,8 +1925,7 @@ public:
 
       status = hs_read_buffer(start_time, end_time,
                               num_var, event_name, tag_name, var_index,
-                              xbuffer,
-                              st);
+                              bi, st);
 
       for (int i=0; i<num_var; i++) {
          buffer[i]->Finish();
@@ -1926,7 +1933,7 @@ public:
       }
 
       delete buffer;
-      delete xbuffer;
+      delete bi;
 
       return status;
    }
