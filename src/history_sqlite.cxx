@@ -1565,7 +1565,7 @@ public:
             const char* cn = xitem[j].columnName.c_str();
 
             char cmd[256];
-            sprintf(cmd, "SELECT _i_time, \'%s\' FROM \'%s\' WHERE _i_time <= %.0f ORDER BY _i_time DESC LIMIT 2;", cn, tn, dstart_time);
+            sprintf(cmd, "SELECT _i_time, \"%s\" FROM \'%s\' WHERE _i_time <= %.0f ORDER BY _i_time DESC LIMIT 2;", cn, tn, dstart_time);
 
             sqlite3_stmt *st;
             
@@ -1659,7 +1659,7 @@ public:
 
                if (collist.length() > 0)
                   collist += ",";
-               collist += std::string("\'") + vvv[i][j].columnName + "\'";
+               collist += std::string("\"") + vvv[i][j].columnName + "\"";
             }
          }
       }

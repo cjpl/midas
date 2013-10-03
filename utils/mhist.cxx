@@ -163,8 +163,8 @@ INT query_params(MidasHistoryInterface* mh, std::string* event_name, DWORD * sta
 
    printf("\nHow many hours: ");
    scanf("%d", &hour);
-   *start_time = ss_time() - hour * 3600;
    *end_time = ss_time();
+   *start_time = (*end_time) - hour * 3600;
 
    printf("\nInterval [sec]: ");
    scanf("%d", interval);
