@@ -500,6 +500,14 @@ td.meterCell{
 	background-color: #CCCCCC;
 }
 
+#elogContent tr:nth-child(4n+3), #elogContent tr:nth-child(4n+4){
+	background-color: #CCCCCC;
+}
+
+#elogContent{
+	border-spacing:0px;	
+}
+
 /*client table checkers*/
 #clientsTable tr:nth-child(odd) td:nth-child(odd){
 	background-color: #CCCCCC;
@@ -507,7 +515,6 @@ td.meterCell{
 #clientsTable tr:nth-child(even) td:nth-child(even){
 	background-color: #CCCCCC;
 }
-
 
 #stripeList{
 	border-spacing: 0px 1px;

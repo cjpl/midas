@@ -2981,7 +2981,7 @@ void show_elog_submit_query(INT last_n)
 
    rsprintf("</table>");  //end header
 
-   rsprintf("<table class=\"dialogTable\">");  //main table
+   rsprintf("<table id=\"elogContent\" class=\"dialogTable\">");  //main table
    rsprintf("<tr><th class=\"subStatusTitle\" colspan=6>E-Log</th><tr>");
 
    if (*getparam("r1")) {
