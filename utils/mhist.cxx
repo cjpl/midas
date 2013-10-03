@@ -96,7 +96,7 @@ INT query_params(MidasHistoryInterface* mh, std::string* event_name, DWORD * sta
                  INT * var_n_data, DWORD * index)
 {
    DWORD status, hour;
-   unsigned var_index;
+   int var_index;
 
    std::vector<std::string> events;
    status = mh->hs_get_events(&events);
@@ -142,7 +142,7 @@ INT query_params(MidasHistoryInterface* mh, std::string* event_name, DWORD * sta
    if (tags.size() > 1) {
       printf("\nSelect variable (0..%d,-1 for all): ", (int)tags.size() - 1);
       scanf("%d", &var_index);
-      if (var_index >= tags.size())
+      if (var_index >= (int)tags.size())
          var_index = tags.size() - 1;
    } else {
       var_index = 0;
