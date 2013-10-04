@@ -55,14 +55,18 @@ class MJsonNode {
    static MJsonNode* MakeBool(bool value);
    static MJsonNode* MakeNull();
    
+ public: // public "put" methods
+   void AddToArray(MJsonNode* node); /// add node to an array. the array takes ownership of this node
+   void AddToObject(const char* name, MJsonNode* node); /// add node to an object. the object takes ownership of this node
+
  public: // public "get" methods
-   int GetType() const; /// get node type: MJSON_xxx
-   const MJsonNodeVector* GetArray() const; /// get array value, NULL if not array, empty array if value is JSON "null"
-   const MJsonNodeMap* GetObject() const; /// get object value, NULL if not object, empty object if value is JSON "null"
-   std::string GetString() const; /// get string value, "" if not string or value is JSON "null"
-   int GetInt() const; /// get integer value, 0 if not an integer or value is JSON "null"
-   double GetNumber() const; /// get number or integer value, 0 if not a number or value is JSON "null"
-   bool GetBool() const; /// get boolean value, false if not a boolean or value is JSON "null"
+   int                    GetType() const;   /// get node type: MJSON_xxx
+   const MJsonNodeVector* GetArray() const;  /// get array value, NULL if not array, empty array if value is JSON "null"
+   const MJsonNodeMap*    GetObject() const; /// get object value, NULL if not object, empty object if value is JSON "null"
+   std::string            GetString() const; /// get string value, "" if not string or value is JSON "null"
+   int                    GetInt() const;    /// get integer value, 0 if not an integer or value is JSON "null"
+   double                 GetNumber() const; /// get number or integer value, 0 if not a number or value is JSON "null"
+   bool                   GetBool() const;   /// get boolean value, false if not a boolean or value is JSON "null"
    
    static std::vector<std::string> GetKeys(const MJsonNodeMap& map); /// helper: get array keys
 
