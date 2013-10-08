@@ -5,12 +5,188 @@
 
   Contents:     JSON encoder and decoder
 
+  The JSON parser is written to the specifications at:
+    http://www.json.org/
+    http://www.ietf.org/rfc/rfc4627.txt
+
 \********************************************************************/
 
 #include <stdio.h>
 #include <assert.h>
 
 #include "mjson.h"
+
+static const char* skip_spaces(const char* s)
+{
+   while (*s) {
+      if (!isspace(*s))
+         return s;
+      s++;
+   }
+
+   return s;
+}
+
+static MJsonNode* parse_something(const char* s, const char** sout);
+
+static MJsonNode* parse_array(const char* s, const char** sout)
+{
+   printf("array-->%s\n", s);
+   MJsonNode *n = MJsonNode::MakeArray();
+
+   while (1) {
+      s = skip_spaces(s);
+      
+      if (*s == 0) {
+         // error
+         *sout = s;
+         return n;
+      } else if (*s == ']') {
+         // end of array
+         *sout = s+1;
+         return n;
+      }
+
+      MJsonNode *p = parse_something(s, sout);
+      if (p == NULL) {
+         // error
+         // sout set by parse_something()
+         return n;
+      }
+
+      n->AddToArray(p);
+
+      s = skip_spaces(*sout);
+      
+      if (*s == ']') {
+         // end of array
+         *sout = s+1;
+         return n;
+      }
+
+      if (*s == ',') {
+         s++;
+         continue;
+      }
+
+      // error
+      *sout = s;
+      return n;
+   }
+
+   // NOT REACHED
+}
+
+static MJsonNode* parse_object(const char* s, const char** sout)
+{
+   printf("object-->%s\n", s);
+   *sout = s;
+   return NULL;
+}
+
+static MJsonNode* parse_string(const char* s, const char** sout)
+{
+   printf("string-->%s\n", s);
+
+   std::string v;
+
+   while (1) {
+      if (*s == 0) {
+         // error
+         *sout = s;
+         return NULL;
+      } else if (*s == '\"') {
+         // end of string
+         *sout = s+1;
+         return MJsonNode::MakeString(v.c_str());
+      } else if (*s == '\\') {
+         // escape sequence
+         v += 'X';
+         s++;
+      } else {
+         v += *s;
+         s++;
+      }
+   }
+
+   // NOT REACHED
+}
+
+static MJsonNode* parse_number(const char* s, const char** sout)
+{
+   printf("number-->%s\n", s);
+   *sout = s;
+   return NULL;
+}
+
+static MJsonNode* parse_null(const char* s, const char** sout)
+{
+   if (s[0] == 'n' && s[1] == 'u' && s[2] == 'l' && s[3] == 'l') {
+      *sout = s+4;
+      return MJsonNode::MakeNull();
+   }
+
+   // error
+   *sout = s;
+   return NULL;
+}
+
+static MJsonNode* parse_true(const char* s, const char** sout)
+{
+   if (s[0] == 't' && s[1] == 'r' && s[2] == 'u' && s[3] == 'e') {
+      *sout = s+4;
+      return MJsonNode::MakeBool(true);
+   }
+
+   // error
+   *sout = s;
+   return NULL;
+}
+
+static MJsonNode* parse_false(const char* s, const char** sout)
+{
+   if (s[0] == 'f' && s[1] == 'a' && s[2] == 'l' && s[3] == 's' && s[4] == 'e') {
+      *sout = s+5;
+      return MJsonNode::MakeBool(false);
+   }
+
+   // error
+   *sout = s;
+   return NULL;
+}
+
+
+static MJsonNode* parse_something(const char* s, const char** sout)
+{
+   s = skip_spaces(s);
+   
+   if (*s == '[') {
+      return parse_array(s+1, sout);
+   } else if (*s == '{') {
+      return parse_object(s+1, sout);
+   } else if (*s == '\"') {
+      return parse_string(s+1, sout);
+   } else if (*s == '-') {
+      return parse_number(s, sout);
+   } else if (*s >= '0' && *s <= '9') {
+      return parse_number(s, sout);
+   } else if (*s == 'n') {
+      return parse_null(s, sout);
+   } else if (*s == 't') {
+      return parse_true(s, sout);
+   } else if (*s == 'f') {
+      return parse_false(s, sout);
+   }
+
+   // error
+   *sout = s;
+   return NULL;
+}
+
+MJsonNode* MJsonNode::Parse(const char* jsonstring)
+{
+   return NULL;
+}
 
 std::vector<std::string> MJsonNode::GetKeys(const MJsonNodeMap& map) /// helper: get array keys
 {
@@ -32,11 +208,6 @@ MJsonNode::~MJsonNode() // dtor
 
    // poison deleted nodes
    type = MJSON_NONE;
-}
-
-MJsonNode* MJsonNode::Parse(const char* jsonstring)
-{
-   return NULL;
 }
 
 static char toHexChar(int c)
