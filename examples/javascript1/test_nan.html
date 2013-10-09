@@ -1,0 +1,50 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html> <head>
+<title></title>
+</head>
+
+<body>
+<h1></h1>
+
+<script>
+function test(v) {
+document.write("value [" + v + "], isnan: " + isNaN(v) + "<br>");
+}
+
+function testObject(v) {
+document.write("object [" + JSON.stringify(v) + "]<br>");
+}
+
+test(1.0); // isNaN()->false
+test(1.0/0.0); // +Infinity, isNan()->false
+test(-1.0/0.0); // -Infinity, isNan()->false
+test(Math.sqrt(-1)); // NaN, isNan()->true 
+test("foo"); // NaN, isNan()->true  
+test("1.0");
+test(1+2); 
+
+test(null);  
+test(1+null);  
+
+test(1+1.0/0.0); // +inf
+test(1-1.0/0.0); // -inf
+test(1+0.0/0.0); // nan
+
+test("infinity");
+test("Infinity");
+test("-Infinity");
+test(1+"Infinity");  
+test(1+"-Infinity"); 
+
+testObject(JSON.parse("{ \"aaa\": 1 }")); 
+
+testObject({ "aaa" : 1.0 });  
+testObject({ "aaa" : 1.0/0.0 });   
+testObject({ "aaa" : 0.0/0.0 });
+
+</script>
+
+<hr>
+<address></address>
+<!-- hhmts start -->Last modified: Wed Oct  9 09:20:52 PDT 2013 <!-- hhmts end -->
+</body> </html>
