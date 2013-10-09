@@ -345,6 +345,9 @@ int read_slow_event(char *pevent, int off)
   pdatad[0] = count_slow;
   pdatad[1] = t;
   pdatad[2] = 100.0*sin(M_PI*t/60);
+  //pdatad[0] = 0.0/0.0; // nan
+  //pdatad[1] = 1.0/0.0; // inf
+  //pdatad[2] = -1.0/0.0; // -inf
   printf("time %d, data %f\n", (int)t, pdatad[2]);
 
   bk_close(pevent, pdatad + 3);
