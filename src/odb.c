@@ -38,6 +38,7 @@ The Online Database file
 #include "strlcpy.h"
 #include <assert.h>
 #include <signal.h>
+#include <math.h>
 
 /*------------------------------------------------------------------*/
 
@@ -7165,7 +7166,14 @@ INT db_save_json_key(HNDLE hDB, HNDLE hKey, INT level, char **buffer, int* buffe
             break;
          case TID_FLOAT: {
             float flt = (*(float*)p);
-            if (flt == 0)
+            if (isnan(flt))
+               json_write(buffer, buffer_size, buffer_end, 0, "\"NaN\"", 0);
+            else if (isinf(flt)) {
+               if (flt > 0)
+                  json_write(buffer, buffer_size, buffer_end, 0, "\"Infinity\"", 0);
+               else
+                  json_write(buffer, buffer_size, buffer_end, 0, "\"-Infinity\"", 0);
+            } else if (flt == 0)
                json_write(buffer, buffer_size, buffer_end, 0, "0", 0);
             else if (flt == (int)flt) {
                sprintf(str, "%.0f", flt);
@@ -7178,7 +7186,14 @@ INT db_save_json_key(HNDLE hDB, HNDLE hKey, INT level, char **buffer, int* buffe
          }
          case TID_DOUBLE: {
             double dbl = (*(double*)p);
-            if (dbl == 0)
+            if (isnan(dbl))
+               json_write(buffer, buffer_size, buffer_end, 0, "\"NaN\"", 0);
+            else if (isinf(dbl)) {
+               if (dbl > 0)
+                  json_write(buffer, buffer_size, buffer_end, 0, "\"Infinity\"", 0);
+               else
+                  json_write(buffer, buffer_size, buffer_end, 0, "\"-Infinity\"", 0);
+            } else if (dbl == 0)
                json_write(buffer, buffer_size, buffer_end, 0, "0", 0);
             else if (dbl == (int)dbl) {
                sprintf(str, "%.0f", dbl);
