@@ -70,6 +70,10 @@ class MJsonNode {
    
    static std::vector<std::string> GetKeys(const MJsonNodeMap& map); /// helper: get array keys
 
+ public: // public helper and debug methods
+   static const char* TypeToString(int type); /// return node type as string
+   void Dump(int nest = 0) const; /// dump the subtree to standard output
+
  private:
    MJsonNode(); // private constructor
 };

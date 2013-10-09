@@ -286,6 +286,7 @@ PROGS = $(BIN_DIR)/mserver $(BIN_DIR)/mhttpd \
 	$(BIN_DIR)/mh2sql \
 	$(BIN_DIR)/mfe_link_test \
 	$(BIN_DIR)/mana_link_test \
+	$(BIN_DIR)/mjson_test \
 	$(SPECIFIC_OS_PRG)
 
 ANALYZER = $(LIB_DIR)/mana.o
@@ -557,9 +558,11 @@ $(LIB_DIR)/alarm.o: msystem.h midas.h midasinc.h
 #
 # utilities
 #
-$(BIN_DIR)/%:$(UTL_DIR)/%.c
+$(BIN_DIR)/%: $(UTL_DIR)/%.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(LIBS)
 
+$(BIN_DIR)/%: $(UTL_DIR)/%.cxx
+	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(LIBS)
 
 $(BIN_DIR)/mcnaf: $(UTL_DIR)/mcnaf.c $(DRV_DIR)/camac/camacrpc.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mcnaf.c $(DRV_DIR)/camac/camacrpc.c $(LIB) $(LIBS)
