@@ -5,10 +5,11 @@
 
   Contents:     V1190B 64ch. TDC
 
-  $Id$
+  $Id: v1190B.c 4614 2009-10-28 18:34:23Z olchanski $
 *********************************************************************/
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "v1190B.h"
 
 /*****************************************************************/
@@ -359,6 +360,17 @@ void v1190_OffsetSet(MVME_INTERFACE *mvme, DWORD base, WORD offset)
   mvme_set_dmode(mvme, cmode);
 }
 
+void v1190_OffsetSet_ns(MVME_INTERFACE *mvme, DWORD base, int offset_ns)
+{
+  unsigned w = abs(offset_ns)/25; // in units of 25 ns
+  v1190_OffsetSet(mvme, base, -w);
+}
+
+void v1190_WidthSet_ns(MVME_INTERFACE *mvme, DWORD base, int width_ns)
+{
+  v1190_WidthSet(mvme, base, width_ns/25); // in units of 25 ns
+}
+
 /*****************************************************************/
 void v1190_SetEdgeDetection(MVME_INTERFACE *mvme, DWORD base, int eLeading, int eTrailing)
 {
@@ -384,22 +396,24 @@ void v1190_SetEdgeDetection(MVME_INTERFACE *mvme, DWORD base, int eLeading, int 
 int v1190_MicroWrite(MVME_INTERFACE *mvme, DWORD base, WORD data)
 {
   int cmode, i;
+  WORD microHS = 0;
 
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
 
-  for (i=0; i<1000; i++)
+  for (i=0; i<1000000; i++)
   {
-    WORD microHS = mvme_read_value(mvme, base+V1190_MICRO_HAND_RO);
+    microHS = mvme_read_value(mvme, base+V1190_MICRO_HAND_RO);
     if (microHS & V1190_MICRO_WR_OK) {
       mvme_write_value(mvme, base+V1190_MICRO_RW, data);
       mvme_set_dmode(mvme, cmode);
+      printf("v1190_MicroWrite: TDC at 0x%08x: write 0x%04x, wait %8d loops\n", base, data, i);
       return 1;
     }
-    udelay(500);
+    udelay(50);
   }
 
-  printf("v1190_MicroWrite: Micro not ready for writing!\n");
+  printf("v1190_MicroWrite: Handshake timeout: Micro not ready for writing, TDC at 0x%08x, data 0x%04x, handshake register 0x%04x!\n", base, data, microHS);
   mvme_set_dmode(mvme, cmode);
   return -1;
 }
@@ -412,7 +426,7 @@ int v1190_MicroRead(MVME_INTERFACE *mvme, const DWORD base)
 
   mvme_get_dmode(mvme, &cmode);
   mvme_set_dmode(mvme, MVME_DMODE_D16);
-  for (i=100; i>0; i--) {
+  for (i=1000; i>0; i--) {
     WORD  microHS = mvme_read_value(mvme, base+V1190_MICRO_HAND_RO);
     if (microHS & V1190_MICRO_RD_OK) {
       reg = mvme_read_value(mvme, base+V1190_MICRO_RW);
@@ -420,8 +434,10 @@ int v1190_MicroRead(MVME_INTERFACE *mvme, const DWORD base)
       mvme_set_dmode(mvme, cmode);
       return (reg);
     }
-    udelay(500);
+    udelay(50);
   };
+
+  printf("v1190_MicroRead: Handshake timeout: Micro not ready for reading, TDC at 0x%08x\n", base);
   mvme_set_dmode(mvme, cmode);
   return -1;
 }
@@ -495,7 +511,7 @@ int  v1190_Setup(MVME_INTERFACE *mvme, DWORD base, int mode)
     mvme_set_dmode(mvme, cmode);
     return -1;
   }
-  v1190_Status(mvme, base);
+  //v1190_Status(mvme, base);
   mvme_set_dmode(mvme, cmode);
   return 0;
 }

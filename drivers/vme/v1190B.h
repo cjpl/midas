@@ -5,7 +5,7 @@
 
   Contents:     V1190B 64ch. TDC
 
-  $Id$
+  $Id: v1190B.h 4613 2009-10-24 04:14:13Z olchanski $
 *********************************************************************/
 
 #include "mvmestd.h"
@@ -81,6 +81,8 @@ void v1190_AcqModeRead(MVME_INTERFACE *mvme, DWORD base);
 void v1190_ContinuousSet(MVME_INTERFACE *mvme, DWORD base);
 void v1190_WidthSet(MVME_INTERFACE *mvme, DWORD base, WORD width);
 void v1190_OffsetSet(MVME_INTERFACE *mvme, DWORD base, WORD offset);
+void v1190_WidthSet_ns(MVME_INTERFACE *mvme, DWORD base, int width_ns);
+void v1190_OffsetSet_ns(MVME_INTERFACE *mvme, DWORD base, int offset_ns);
 int  v1190_GeoWrite(MVME_INTERFACE *mvme, DWORD base, int geo);
 int  v1190_Setup(MVME_INTERFACE *mvme, DWORD base, int mode);
 int  v1190_Status(MVME_INTERFACE *mvme, DWORD base);
