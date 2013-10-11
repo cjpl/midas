@@ -13,18 +13,23 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include <math.h>
 
 #include "mjson.h"
 
 static const char* skip_spaces(const char* s)
 {
-   while (*s) {
-      if (!isspace(*s))
-         return s;
-      s++;
+   while (1) {
+      // per RFC 4627, "Insignificant whitespace"
+      switch (*s) {
+      default: return s;
+      case ' ': s++; break;
+      case '\t': s++; break;
+      case '\n': s++; break;
+      case '\r': s++; break;
+      }
    }
-
-   return s;
+   // NOT REACHED
 }
 
 static std::string xparse_string(const char* s, const char** sout)
@@ -191,12 +196,209 @@ static MJsonNode* parse_string(const char* s, const char** sout)
    return MJsonNode::MakeString(v.c_str());
 }
 
+static std::string parse_digits(const char* s, const char** sout)
+{
+   std::string v;
+
+   while (*s) {
+      if (*s < '0')
+         break;
+      if (*s > '9')
+         break;
+
+      v += *s;
+      s++;
+   }
+   
+   *sout = s;
+   return v;
+}
+
+static int atoi_with_overflow(const char* s)
+{
+   const int kMAX = INT_MAX/10;
+   const int kLAST = INT_MAX - kMAX*10;
+   int v = 0;
+   for ( ; *s != 0; s++) {
+      int vadd = (*s)-'0';
+      //printf("compare: %d kMAX: %d, v*10: %d, vadd %d, kLAST %d\n", v, kMAX, v*10, vadd, kLAST);
+      if (v > kMAX)
+         return -1;
+      if (v == kMAX && vadd > kLAST) {
+         return -1;
+      }
+      v = v*10 + vadd;
+   }
+   return v;
+}
+
+static void test_atoi_with_overflow_value(const char*s, int v)
+{
+   int vv = atoi_with_overflow(s);
+   //printf("atoi test: [%s] -> %d (0x%x) should be %d (0x%x)\n", s, vv, vv, v, v);
+   if (vv == v)
+      return;
+
+   printf("atoi test failed: [%s] -> %d (0x%x) != %d (0x%x)\n", s, vv, vv, v, v);
+   assert(!"mjson self test: my atoi() is broken, bye!");
+   abort();
+   // DOES NOT RETURN
+}
+
+static void test_atoi_with_overflow()
+{
+   test_atoi_with_overflow_value("0", 0);
+   test_atoi_with_overflow_value("1", 1);
+   test_atoi_with_overflow_value("12", 12);
+   test_atoi_with_overflow_value("1234", 1234);
+   test_atoi_with_overflow_value("2147483646", 0x80000000-2);
+   test_atoi_with_overflow_value("2147483647", 0x80000000-1);
+   if (0x80000000 < 0) { // check for 32-bit integers
+      test_atoi_with_overflow_value("2147483648", -1);
+      test_atoi_with_overflow_value("2147483649", -1);
+   }
+   test_atoi_with_overflow_value("999999999999999999999999999999999999999999999999999999", -1);
+}
+
 static MJsonNode* parse_number(const char* s, const char** sout)
 {
-   // FIXME
-   printf("number-->%s\n", s);
+   //printf("number-->%s\n", s);
+
+   static int once = 1;
+   if (once) {
+      once = 0;
+      test_atoi_with_overflow();
+   }
+
+   // per RFC 4627
+   // A number contains an integer component that
+   // may be prefixed with an optional minus sign, which may be followed by
+   // a fraction part and/or an exponent part.
+   //
+   // number = [ minus ] int [ frac ] [ exp ]
+   //      decimal-point = %x2E       ; .
+   //      digit1-9 = %x31-39         ; 1-9
+   //      e = %x65 / %x45            ; e E
+   //      exp = e [ minus / plus ] 1*DIGIT
+   //      frac = decimal-point 1*DIGIT
+   //      int = zero / ( digit1-9 *DIGIT )
+   //      minus = %x2D               ; -
+   //      plus = %x2B                ; +
+   //      zero = %x30                ; 0
+
+   int sign = 1;
+   std::string sint;
+   std::string sfrac;
+   int expsign = 1;
+   std::string sexp;
+
+   if (*s == '-') {
+      sign = -1;
+      s++;
+   }
+
+   if (*s == '0') {
+      sint += *s;
+      s++;
+   } else {
+      sint = parse_digits(s, sout);
+      s = *sout;
+   }
+
+   if (*s == '.') {
+      s++;
+      sfrac = parse_digits(s, sout);
+      s = *sout;
+   }
+
+   if (*s == 'e' || *s == 'E') {
+      s++;
+
+      if (*s == '-') {
+         expsign = -1;
+         s++;
+      }
+
+      sexp = parse_digits(s, sout);
+      s = *sout;
+   }
+
+   //printf("number: sign %d, sint [%s], sfrac [%s], expsign %d, sexp [%s]\n", sign, sint.c_str(), sfrac.c_str(), expsign, sexp.c_str());
+
+   // check for floatign point
+
+   if (expsign < 0 || sfrac.length() > 0) {
+      // definitely floating point number
+      double v1 = atof(sint.c_str());
+      double v2 = 0;
+      double vm = 0.1;
+      const char* p = sfrac.c_str();
+      for ( ; *p != 0; p++, vm/=10.0) {
+         v2 += (*p-'0')*vm;
+      }
+
+      int e = atoi_with_overflow(sexp.c_str()); // may overflow
+
+      if (e < 0 || e > 400) {
+         // overflow or exponent will not fit into IEEE754 double precision number
+         // convert to 0 or +/- infinity
+         printf("overflow!\n");
+         if (expsign > 0) {
+            *sout = s;
+            double inf = 1.0/0.0;
+            return MJsonNode::MakeNumber(sign*inf);
+         } else {
+            *sout = s;
+            return MJsonNode::MakeNumber(sign*0.0);
+         }
+      }
+
+      double ee = 1.0;
+      if (e != 0)
+         ee = pow(10, expsign*e);
+      double v = sign*(v1+v2)*ee;
+      //printf("v1: %f, v2: %f, e: %d, ee: %g, v: %g\n", v1, v2, e, ee, v);
+
+      *sout = s;
+      return MJsonNode::MakeNumber(v);
+   } else {
+      // no sfrac, expsign is positive, so this is an integer, unless it overflows
+
+      int e = atoi_with_overflow(sexp.c_str()); // may overflow
+
+      if (e < 0 || e > 400) {
+         // overflow or exponent will not fit into IEEE754 double precision number
+         // convert to +/- infinity
+         //printf("overflow!\n");
+         *sout = s;
+         double inf = 1.0/0.0;
+         return MJsonNode::MakeNumber(sign*inf);
+      }
+
+      // this is stupid but quicker than calling pow(). Unless they feed us stupid exponents that are not really integers anyway
+      for (int ee=0; ee<e; ee++)
+         sint += "0";
+
+      int v1 = atoi_with_overflow(sint.c_str());
+
+      // FIXME: -2147483648 (0x80000000) overflows and converts to a double precision number instead of integer
+
+      if (v1 < 0) {
+         // overflow, convert to double
+         //printf("integer overflow!\n");
+         double v = atof(sint.c_str());
+         *sout = s;
+         return MJsonNode::MakeNumber(sign*v);
+      }
+
+      int v = sign*v1;
+      *sout = s;
+      return MJsonNode::MakeInt(v);
+   }
+
+   // error
    *sout = s;
-   return MJsonNode::MakeInt(999);
+   return NULL;
 }
 
 static MJsonNode* parse_null(const char* s, const char** sout)
@@ -370,8 +572,9 @@ std::string MJsonNode::Stringify(int flags) const
       return buf;
    }
    case MJSON_NUMBER: {
-      // FIXME
-      return "number";
+      char buf[256];
+      sprintf(buf, "%g", numbervalue);
+      return buf;
    }
    case MJSON_BOOL:
       if (intvalue)
