@@ -730,7 +730,8 @@ int WriteEvent(Sqlite* sql, Event *e, time_t t, const char*buf, int size)
    // 2001-02-16 20:38:40.1
    char s[1024];
    strftime(s,sizeof(s)-1,"%Y-%m-%d %H:%M:%S.0",localtime(&t));
-   
+
+   // FIXME: should use std::string instead of sprintf() into fixed size buffer
    char sss[102400];
    sprintf(sss, "INSERT INTO \'%s\' (_t_time, _i_time%s) VALUES (\'%s\', \'%d\'%s);",
            table_name,
@@ -859,6 +860,7 @@ public:
       int status;
       char cmd[1024];
       sprintf(cmd, "SELECT event_name, _i_time FROM \'_event_name_%s\' WHERE table_name='%s' ORDER BY _i_time ASC;", table_name, table_name);
+      assert(strlen(cmd) < sizeof(cmd));
 
       sqlite3_stmt* st;
 
@@ -925,6 +927,7 @@ public:
    {
       char cmd[1024];
       sprintf(cmd, "SELECT column_name, tag_name, _i_time FROM \'_column_names_%s\' WHERE table_name='%s' ORDER BY _i_time ASC;", table_name, table_name);
+      assert(strlen(cmd) < sizeof(cmd));
 
       sqlite3_stmt* st;
       
@@ -1042,15 +1045,19 @@ public:
          char buf[1024];
 
          sprintf(buf, "CREATE TABLE \'%s\' (_t_time TIMESTAMP NOT NULL, _i_time INTEGER NOT NULL);", e->table_name.c_str());
+         assert(strlen(buf) < sizeof(buf));
          status = fSql->Exec(e->table_name.c_str(), buf);
          
          sprintf(buf, "CREATE INDEX \'%s_i_time_index\' ON \'%s\' (_i_time ASC);", e->table_name.c_str(), e->table_name.c_str());
+         assert(strlen(buf) < sizeof(buf));
          status = fSql->Exec(e->table_name.c_str(), buf);
          
          sprintf(buf, "CREATE INDEX \'%s_t_time_index\' ON \'%s\' (_t_time);", e->table_name.c_str(), e->table_name.c_str());
+         assert(strlen(buf) < sizeof(buf));
          status = fSql->Exec(e->table_name.c_str(), buf);
          
          sprintf(buf, "CREATE TABLE \'_event_name_%s\' (table_name TEXT NOT NULL, event_name TEXT NOT NULL, _i_time INTEGER NOT NULL);", e->table_name.c_str());
+         assert(strlen(buf) < sizeof(buf));
          status = fSql->Exec(e->table_name.c_str(), buf);
          
          sprintf(buf, "INSERT INTO \'_event_name_%s\' (table_name, event_name, _i_time) VALUES (\'%s\', \'%s\', \'%.0f\');",
@@ -1058,9 +1065,11 @@ public:
                  e->table_name.c_str(),
                  e->event_name.c_str(),
                  now);
+         assert(strlen(buf) < sizeof(buf));
          status = fSql->Exec(e->table_name.c_str(), buf);
          
          sprintf(buf, "CREATE TABLE \'_column_names_%s\' (table_name TEXT NOT NULL, column_name TEXT NOT NULL, tag_name TEXT NOT NULL, tag_type TEXT NOT NULL, column_type TEXT NOT NULL, _i_time INTEGER NOT NULL);", e->table_name.c_str());
+         assert(strlen(buf) < sizeof(buf));
          status = fSql->Exec(e->table_name.c_str(), buf);
       }
 
@@ -1148,6 +1157,7 @@ public:
                        midasTypeName(tagtype),
                        coltype.c_str(),
                        now);
+               assert(strlen(buf) < sizeof(buf));
                status = fSql->Exec(e->table_name.c_str(), buf);
             }
 
@@ -1168,6 +1178,7 @@ public:
                        e->table_name.c_str(),
                        colname.c_str(),
                        coltype.c_str());
+               assert(strlen(buf) < sizeof(buf));
                
                status = fSql->Exec(e->table_name.c_str(), buf);
                
@@ -1566,6 +1577,7 @@ public:
 
             char cmd[256];
             sprintf(cmd, "SELECT _i_time, \"%s\" FROM \'%s\' WHERE _i_time <= %.0f ORDER BY _i_time DESC LIMIT 2;", cn, tn, dstart_time);
+            assert(strlen(cmd) < sizeof(cmd));
 
             sqlite3_stmt *st;
             
@@ -1658,7 +1670,7 @@ public:
                colindex.push_back(i);
 
                if (collist.length() > 0)
-                  collist += ",";
+                  collist += ", ";
                collist += std::string("\"") + vvv[i][j].columnName + "\"";
             }
          }
@@ -1673,16 +1685,20 @@ public:
          }
       }
 
-      char cmd[256];
-      sprintf(cmd, "SELECT _i_time, %s FROM \'%s\' WHERE _i_time>=%.0f and _i_time<=%.0f ORDER BY _i_time;", collist.c_str(), tn.c_str(), start_time, end_time);
+      std::string cmd1 = "SELECT _i_time, ";
+      char cmd2[256];
+      sprintf(cmd2, " FROM \'%s\' WHERE _i_time>=%.0f and _i_time<=%.0f ORDER BY _i_time;", tn.c_str(), start_time, end_time);
+      assert(strlen(cmd2) < sizeof(cmd2));
+
+      std::string cmd = cmd1 + collist + cmd2;
 
       if (fDebug) {
-         printf("hs_read_table: cmd %s\n", cmd);
+         printf("hs_read_table: cmd %s\n", cmd.c_str());
       }
       
       sqlite3_stmt *st;
       
-      int status = fSql->Prepare(tn.c_str(), cmd, &st);
+      int status = fSql->Prepare(tn.c_str(), cmd.c_str(), &st);
       
       if (fDebug) {
          printf("hs_read_table: Read table \"%s\" columns \"%s\": status %d\n", tn.c_str(), collist.c_str(), status);
