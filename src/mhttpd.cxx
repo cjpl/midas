@@ -2881,6 +2881,7 @@ void show_elog_submit_query(INT last_n)
    db_get_value(hDB, 0, "/Elog/Display run number", &display_run_number, &size, TID_BOOL,
                 TRUE);
 
+#if 0
    /* header */
    rsprintf("HTTP/1.0 200 Document follows\r\n");
    rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
@@ -2891,6 +2892,10 @@ void show_elog_submit_query(INT last_n)
    rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
    rsprintf("<title>MIDAS ELog</title></head>\n");
    rsprintf("<body><form method=\"GET\" action=\"./\">\n");
+#endif
+
+   show_header("ELog", "GET", "./", 0);
+   show_navigation_bar("ELog");
 
    /*---- body needs wrapper div to pin footer ----*/
    rsprintf("<div class=\"wrapper\">\n");
@@ -2987,6 +2992,7 @@ void show_elog_submit_query(INT last_n)
    if (!display_run_number)
       colspan--;
 
+#if 0
    /* menu buttons */
    rsprintf("<tr><td colspan=%d>\n", colspan);
    rsprintf("<input type=submit name=cmd value=Query>\n");
@@ -2994,6 +3000,7 @@ void show_elog_submit_query(INT last_n)
    if (!elog_mode)
       rsprintf("<input type=submit name=cmd value=Status>\n");
    rsprintf("</tr>\n");
+#endif
 
    rsprintf("</table>");  //end header
 
@@ -3197,7 +3204,7 @@ void show_elog_submit_query(INT last_n)
             }
 
             if (equal_ustring(encoding, "plain")) {
-               rsputs("<pre style=\"text-align:left\">");
+               rsputs("<pre class=\"elogText\">");
                rsputs2(text);
                rsputs("</pre>");
             } else
@@ -3245,7 +3252,7 @@ void show_elog_submit_query(INT last_n)
                              strstr(str, ".ASC") || strchr(str, '.') == NULL)
                             && show_attachments) {
                            /* display attachment */
-                           rsprintf("<br><pre style=\"text-align:left\">");
+                           rsprintf("<br><pre class=\"elogText\">");
 
                            file_name[0] = 0;
                            size = sizeof(file_name);
@@ -4369,7 +4376,7 @@ void show_elog_page(char *path, int path_size)
    rsprintf("</table>\n"); //ends header table
 
    rsprintf("<table class=\"dialogTable\">\n"); //main table
-   rsprintf("<tr><th class=\"subStatusTitle\">E-Log</th></tr>");
+   rsprintf("<tr><th class=\"subStatusTitle\" colspan=2>E-Log</th></tr>");
 
    //local buttons
    rsprintf("<tr><td colspan=2>\n");
@@ -4490,7 +4497,7 @@ void show_elog_page(char *path, int path_size)
       /* message text */
       rsprintf("<tr><td colspan=2>\n");
       if (equal_ustring(encoding, "plain")) {
-         rsputs("<pre style=\"text-align:left;\">");
+         rsputs("<pre class=\"elogText\">");
          rsputs2(text);
          rsputs("</pre>");
       } else
@@ -4523,7 +4530,7 @@ void show_elog_page(char *path, int path_size)
                   /* display attachment */
                   rsprintf("<br>");
                   if (!strstr(att, ".HTML"))
-                     rsprintf("<pre style=\"text-align:left;\">");
+                     rsprintf("<pre class=\"elogText\">");
 
                   file_name[0] = 0;
                   size = sizeof(file_name);
