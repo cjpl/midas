@@ -32,7 +32,71 @@ static const char* skip_spaces(const char* s)
    // NOT REACHED
 }
 
-static std::string xparse_string(const char* s, const char** sout)
+static int hexToInt(char c)
+{
+   if (c == 0)
+      return -1;
+   if (c >= '0' && c <= '9')
+      return c-'0';
+   if (c >= 'a' && c <= 'f')
+      return c-'a'+10;
+   if (c >= 'A' && c <= 'F')
+      return c-'A'+10;
+   return -1;
+}
+
+static int xparse_unicode(const char* s, const char** sout)
+{
+   int unicode = 0;
+
+   for (int i=0; i<4; i++) {
+      int v = hexToInt(*s);
+      if (v < 0) {
+         *sout = s;
+         return -1;
+      }
+      unicode = unicode*16 + v;
+      s++;
+   }
+
+   *sout = s;
+   return unicode;
+}
+
+static std::string xoutput_unicode(int unicode, bool* error)
+{
+   // see http://en.wikipedia.org/wiki/UTF-8
+   if (unicode >= 0 && unicode <= 0x7F) { // 7 bits
+      char buf[2];
+      buf[0] = unicode & 0x7F;
+      buf[1] = 0;
+      return buf;
+   }
+
+   // FIXME: does this unicode gibberish work right?
+
+   if (unicode >= 0x80 && unicode <= 0x7FF) { // 11 bits
+      char buf[3];
+      buf[0] = 0x80|0x40|((unicode>>6)&0x1F); // 5 bits
+      buf[1] = 0x80|((unicode>>0)&0x3F); // 6 bits
+      buf[3] = 0;
+      return buf;
+   }
+
+   if (unicode >= 0x800 && unicode <= 0xFFFF) { // 16 bits
+      char buf[4];
+      buf[0] = 0x80|0x40|0x20|((unicode>>12)&0xF); // 4 bits
+      buf[1] = 0x80|((unicode>>6)&0x3F); // 6 bits
+      buf[2] = 0x80|((unicode>>0)&0x3F); // 6 bits
+      buf[3] = 0;
+      return buf;
+   }
+
+   *error = true;
+   return "";
+}
+
+static std::string xparse_string(const char* s, const char** sout, bool *error)
 {
    //printf("xstring-->%s\n", s);
 
@@ -42,16 +106,56 @@ static std::string xparse_string(const char* s, const char** sout)
       if (*s == 0) {
          // error
          *sout = s;
+         *error = true;
          return "";
       } else if (*s == '\"') {
          // end of string
          *sout = s+1;
          return v;
       } else if (*s == '\\') {
-         // FIXME
          // escape sequence
-         v += 'X';
          s++;
+         //printf("escape %d (%c)\n", *s, *s);
+         switch (*s) {
+         case 0:
+            // maybe error - unexpected end of string
+            *sout = s;
+            *error = true;
+            return v;
+         default:
+            // error - unknown escape
+            *sout = s;
+            *error = true;
+            return v;
+         case '\"': v += '\"'; s++; break;
+         case '\\': v += '\\'; s++; break;
+         case '/': v += '/';  s++; break;
+         case 'b': v += '\b'; s++; break;
+         case 'f': v += '\f'; s++; break;
+         case 'n': v += '\n'; s++; break;
+         case 'r': v += '\r'; s++; break;
+         case 't': v += '\t'; s++; break;
+         case 'u': {
+            s++;
+            int unicode = xparse_unicode(s, sout);
+            //printf("unicode %d (0x%x), next %c\n", unicode, unicode, **sout);
+            if (unicode < 0) {
+               // error - bad unicode
+               *sout = s;
+               *error = true;
+               return v;
+            }
+            v += xoutput_unicode(unicode, error);
+            if (*error) {
+               // error - bad unicode
+               //*sout = s; // stay pointing at the bad unicode
+               *error = true;
+               return v;
+            }
+            s = *sout;
+            break;
+         }
+         }
       } else {
          v += *s;
          s++;
@@ -136,8 +240,9 @@ static MJsonNode* parse_object(const char* s, const char** sout)
          return n;
       }
 
-      std::string name = xparse_string(s+1, sout);
-      if (name.length() < 1) {
+      bool error = false;
+      std::string name = xparse_string(s+1, sout, &error);
+      if (error || name.length() < 1) {
          // error
          // sout set by parse_something()
          return n;
@@ -191,7 +296,12 @@ static MJsonNode* parse_string(const char* s, const char** sout)
 {
    //printf("string-->%s\n", s);
 
-   std::string v = xparse_string(s, sout);
+   bool error = false;
+   std::string v = xparse_string(s, sout, &error);
+
+   // error
+   if (error)
+      return NULL;
 
    return MJsonNode::MakeString(v.c_str());
 }
@@ -540,27 +650,27 @@ std::string MJsonNode::Stringify(int flags) const
    switch (type) {
    case MJSON_ARRAY: {
       std::string v;
-      v += "[ ";
+      v += "[";
       for (unsigned i=0; i<arrayvalue.size(); i++) {
          if (i > 0)
-            v += ", ";
+            v += ",";
          v += arrayvalue[i]->Stringify(flags);
       }
-      v += " ]";
+      v += "]";
       return v;
    }
    case MJSON_OBJECT: {
       std::string v;
-      v += "{ ";
+      v += "{";
       int i=0;
       for (MJsonNodeMap::const_iterator iter = objectvalue.begin(); iter != objectvalue.end(); iter++, i++) {
          if (i > 0)
-            v += ", ";
+            v += ",";
          v += std::string("\"") + quote(iter->first.c_str()) + "\"";
-         v += ": ";
+         v += ":";
          v += iter->second->Stringify(flags);
       }
-      v += " }";
+      v += "}";
       return v;
    }
    case MJSON_STRING: {
@@ -750,6 +860,12 @@ const char* MJsonNode::TypeToString(int type)
    }
 }
 
+static void pnest(int nest)
+{
+   for (int i=0; i<nest; i++)
+      printf("  ");
+}
+
 void MJsonNode::Dump(int nest) const // debug
 {
    printf("Node type %d (%s)", type, TypeToString(type));
@@ -759,6 +875,22 @@ void MJsonNode::Dump(int nest) const // debug
    case MJSON_INT: printf(", value %d\n", intvalue); break;
    case MJSON_NUMBER: printf(", value %g\n", numbervalue); break;
    case MJSON_BOOL: printf(", value %d\n", intvalue); break;
+   case MJSON_ARRAY:
+      printf("\n");
+      for (unsigned i=0; i<arrayvalue.size(); i++) {
+         pnest(nest);
+         printf("element %d: ", i);
+         arrayvalue[i]->Dump(nest+1);
+      }
+      break;
+   case MJSON_OBJECT:
+      printf("\n");
+      for (MJsonNodeMap::const_iterator iter = objectvalue.begin(); iter != objectvalue.end(); iter++) {
+         pnest(nest);
+         printf("%s: ", iter->first.c_str());
+         iter->second->Dump(nest+1);
+      }
+      break;
    }
 }
 
