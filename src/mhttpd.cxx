@@ -14306,6 +14306,7 @@ FILE *open_resource_file(const char *filename, std::string* pfilename)
 {
    int status;
    HNDLE hDB;
+   char* env;
    std::string path;
    FILE *fp = NULL;
 
@@ -14316,56 +14317,62 @@ FILE *open_resource_file(const char *filename, std::string* pfilename)
       char buf[1024];
       int size = sizeof(buf);
       status = db_get_value(hDB, 0, "/Experiment/Resources", buf, &size, TID_STRING, FALSE);
-      if (status == DB_SUCCESS) {
-         if (buf[strlen(buf)-1] != DIR_SEPARATOR)
-            strlcat(buf, DIR_SEPARATOR_STR, sizeof(buf));
-         path = std::string(buf) + filename;
+      if (status == DB_SUCCESS && strlen(buf) > 0) {
+         path = buf;
+         if (path[path.length()-1] != DIR_SEPARATOR)
+            path += DIR_SEPARATOR_STR;
+         path += filename;
          fp = fopen(path.c_str(), "r");
          if (fp)
             break;
       }
    
-      path = getenv("MIDASSYS");
-      if (path.length() > 0) {
-         if (path.back() != DIR_SEPARATOR)
-            path += std::string(DIR_SEPARATOR_STR);
-         path += std::string("resources") + DIR_SEPARATOR_STR;
-         path += filename;
-         fp = fopen(path.c_str(), "r");
-         if (fp)
-            break;
-      }
-
-      path = getenv("MIDAS_DIR");
-      if (path.length() > 0) {
-         if (path.back() != DIR_SEPARATOR)
-            path += std::string(DIR_SEPARATOR_STR);
-         path += std::string("resources") + DIR_SEPARATOR_STR;
-         path += filename;
-         fp = fopen(path.c_str(), "r");
-         if (fp)
-            break;
-      }
-
-      path = getenv("MIDAS_DIR");
-      if (path.length() > 0) {
-         if (path.back() != DIR_SEPARATOR)
-            path += std::string(DIR_SEPARATOR_STR);
-         path += filename;
-         fp = fopen(path.c_str(), "r");
-         if (fp)
-            break;
-      }
+      path = filename;
+      fp = fopen(path.c_str(), "r");
+      if (fp)
+         break;
 
       path = std::string("resources") + DIR_SEPARATOR_STR + filename;
       fp = fopen(path.c_str(), "r");
       if (fp)
          break;
 
-      path = filename;
-      fp = fopen(path.c_str(), "r");
-      if (fp)
-         break;
+      env = getenv("MIDAS_DIR");
+      if (env && strlen(env) > 0) {
+         path = env;
+         if (path[path.length()-1] != DIR_SEPARATOR)
+            path += DIR_SEPARATOR_STR;
+         path += filename;
+         fp = fopen(path.c_str(), "r");
+         if (fp)
+            break;
+      }
+
+      env = getenv("MIDAS_DIR");
+      if (env && strlen(env) > 0) {
+         path = env;
+         if (path[path.length()-1] != DIR_SEPARATOR)
+            path += DIR_SEPARATOR_STR;
+         path += "resources";
+         path += DIR_SEPARATOR_STR;
+         path += filename;
+         fp = fopen(path.c_str(), "r");
+         if (fp)
+            break;
+      }
+
+      env = getenv("MIDASSYS");
+      if (env && strlen(env) > 0) {
+         path = env;
+         if (path[path.length()-1] != DIR_SEPARATOR)
+            path += std::string(DIR_SEPARATOR_STR);
+         path += "resources";
+         path += DIR_SEPARATOR_STR;
+         path += filename;
+         fp = fopen(path.c_str(), "r");
+         if (fp)
+            break;
+      }
 
       break;
    } while (false); // THIS IS NOT A LOOP
@@ -15778,20 +15785,22 @@ INT check_odb_records(void)
    RUNINFO_STR(runinfo_str);
    int i, status;
    KEY key;
-   
+
    /* check /Runinfo structure */
-   cm_get_experiment_database(&hDB, NULL);
+   status = cm_get_experiment_database(&hDB, NULL);
+   assert(status == DB_SUCCESS);
+
    status = db_check_record(hDB, 0, "/Runinfo", strcomb(runinfo_str), FALSE);
    if (status == DB_STRUCT_MISMATCH) {
       status = db_check_record(hDB, 0, "/Runinfo", strcomb(runinfo_str), TRUE);
       if (status == DB_SUCCESS) {
          cm_msg(MINFO, "check_odb_records", "ODB subtree /Runinfo corrected successfully");
       } else {
-         cm_msg(MERROR, "check_odb_records", "Cannot correct ODB subtree /Runinfo");
+         cm_msg(MERROR, "check_odb_records", "Cannot correct ODB subtree /Runinfo, db_check_record() status %d", status);
          return 0;
       }
    } else if (status != DB_SUCCESS) {
-      cm_msg(MERROR, "check_odb_records", "Cannot correct ODB subtree /Runinfo");
+      cm_msg(MERROR, "check_odb_records", "Cannot correct ODB subtree /Runinfo, db_check_record() status %d", status);
       return 0;
    }
    
@@ -15809,11 +15818,11 @@ INT check_odb_records(void)
             if (status == DB_SUCCESS) {
                cm_msg(MINFO, "check_odb_records", "ODB subtree /Equipment/%s/Common corrected successfully", key.name);
             } else {
-               cm_msg(MERROR, "check_odb_records", "Cannot correct ODB subtree /Equipment/%s/Common", key.name);
+               cm_msg(MERROR, "check_odb_records", "Cannot correct ODB subtree /Equipment/%s/Common, db_check_record() status %d", key.name, status);
                return 0;
             }
          } else if (status != DB_SUCCESS) {
-            cm_msg(MERROR, "check_odb_records", "Cannot correct ODB subtree /Equipment/%s/Common", key.name);
+            cm_msg(MERROR, "check_odb_records", "Cannot correct ODB subtree /Equipment/%s/Common, db_check_record() status %d", key.name, status);
             return 0;
          }
       }
@@ -15916,6 +15925,8 @@ void server_loop()
 
    /* do ODB record checking */
    if (!check_odb_records()) {
+      // why am I getting a silent exit() from mhttpd when check_odb_records() fails?!? At least print something!
+      printf("check_odb_records() failed, bye!\n");
       cm_disconnect_experiment();
       return;
    }
