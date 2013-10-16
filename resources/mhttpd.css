@@ -508,6 +508,13 @@ td.meterCell{
 	border-spacing:0px;	
 }
 
+.elogText{
+  line-height: normal;
+  text-align: left;
+  color: black;
+  background-color: white;
+}
+
 /*client table checkers*/
 #clientsTable tr:nth-child(odd) td:nth-child(odd){
 	background-color: #CCCCCC;

@@ -249,7 +249,6 @@ int vaxis(gdImagePtr im, gdFont * font, int col, int gcol, int x1, int y1, int w
 void haxis(gdImagePtr im, gdFont * font, int col, int gcol, int x1, int y1, int width,
            int minor, int major, int text, int label, int grid, double xmin, double xmax);
 void get_elog_url(char *url, int len);
-void get_resource_dir(char *str, int size);
 void show_header(const char *title, const char *method, const char *path, int refresh);
 void show_navigation_bar(const char *cur_page);
 
@@ -912,6 +911,8 @@ void page_footer(BOOL bForm)  //wraps up body wrapper and inserts page footer
    rsprintf("</body></html>\r\n");   
 }
 
+FILE *open_resource_file(const char *filename, std::string* pfilename);
+
 void show_help_page()
 {
    const char *s;
@@ -984,9 +985,24 @@ void show_help_page()
    rsprintf("        </tr>\n");
 
    rsprintf("        <tr>\n");
-   rsprintf("          <td style=\"text-align:right;\">Resource directory:</td>\n");
-   get_resource_dir(str, sizeof(str));
-   rsprintf("          <td style=\"text-align:left;\">%s</td>\n", str);
+   rsprintf("          <td style=\"text-align:right;\">mhttpd.css:</td>\n");
+   std::string f;
+   FILE *fp = open_resource_file("mhttpd.css", &f);
+   if (fp) {
+      fclose(fp);
+      rsprintf("          <td style=\"text-align:left;\">%s</td>\n", f.c_str());
+   } else
+      rsprintf("          <td style=\"text-align:left;\">NOT FOUND</td>\n");
+   rsprintf("        </tr>\n");
+
+   rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\">mhttpd.js:</td>\n");
+   fp = open_resource_file("mhttpd.js", &f);
+   if (fp) {
+      fclose(fp);
+      rsprintf("          <td style=\"text-align:left;\">%s</td>\n", f.c_str());
+   } else
+      rsprintf("          <td style=\"text-align:left;\">NOT FOUND</td>\n");
    rsprintf("        </tr>\n");
 
    rsprintf("      </table>\n");
@@ -2865,6 +2881,7 @@ void show_elog_submit_query(INT last_n)
    db_get_value(hDB, 0, "/Elog/Display run number", &display_run_number, &size, TID_BOOL,
                 TRUE);
 
+#if 0
    /* header */
    rsprintf("HTTP/1.0 200 Document follows\r\n");
    rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
@@ -2875,6 +2892,10 @@ void show_elog_submit_query(INT last_n)
    rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
    rsprintf("<title>MIDAS ELog</title></head>\n");
    rsprintf("<body><form method=\"GET\" action=\"./\">\n");
+#endif
+
+   show_header("ELog", "GET", "./", 0);
+   show_navigation_bar("ELog");
 
    /*---- body needs wrapper div to pin footer ----*/
    rsprintf("<div class=\"wrapper\">\n");
@@ -2971,6 +2992,7 @@ void show_elog_submit_query(INT last_n)
    if (!display_run_number)
       colspan--;
 
+#if 0
    /* menu buttons */
    rsprintf("<tr><td colspan=%d>\n", colspan);
    rsprintf("<input type=submit name=cmd value=Query>\n");
@@ -2978,6 +3000,7 @@ void show_elog_submit_query(INT last_n)
    if (!elog_mode)
       rsprintf("<input type=submit name=cmd value=Status>\n");
    rsprintf("</tr>\n");
+#endif
 
    rsprintf("</table>");  //end header
 
@@ -3181,7 +3204,7 @@ void show_elog_submit_query(INT last_n)
             }
 
             if (equal_ustring(encoding, "plain")) {
-               rsputs("<pre style=\"text-align:left\">");
+               rsputs("<pre class=\"elogText\">");
                rsputs2(text);
                rsputs("</pre>");
             } else
@@ -3229,7 +3252,7 @@ void show_elog_submit_query(INT last_n)
                              strstr(str, ".ASC") || strchr(str, '.') == NULL)
                             && show_attachments) {
                            /* display attachment */
-                           rsprintf("<br><pre style=\"text-align:left\">");
+                           rsprintf("<br><pre class=\"elogText\">");
 
                            file_name[0] = 0;
                            size = sizeof(file_name);
@@ -4353,7 +4376,7 @@ void show_elog_page(char *path, int path_size)
    rsprintf("</table>\n"); //ends header table
 
    rsprintf("<table class=\"dialogTable\">\n"); //main table
-   rsprintf("<tr><th class=\"subStatusTitle\">E-Log</th></tr>");
+   rsprintf("<tr><th class=\"subStatusTitle\" colspan=2>E-Log</th></tr>");
 
    //local buttons
    rsprintf("<tr><td colspan=2>\n");
@@ -4474,7 +4497,7 @@ void show_elog_page(char *path, int path_size)
       /* message text */
       rsprintf("<tr><td colspan=2>\n");
       if (equal_ustring(encoding, "plain")) {
-         rsputs("<pre style=\"text-align:left;\">");
+         rsputs("<pre class=\"elogText\">");
          rsputs2(text);
          rsputs("</pre>");
       } else
@@ -4507,7 +4530,7 @@ void show_elog_page(char *path, int path_size)
                   /* display attachment */
                   rsprintf("<br>");
                   if (!strstr(att, ".HTML"))
-                     rsprintf("<pre style=\"text-align:left;\">");
+                     rsprintf("<pre class=\"elogText\">");
 
                   file_name[0] = 0;
                   size = sizeof(file_name);
@@ -4666,6 +4689,7 @@ void show_sc_page(char *path, int refresh)
 
    sprintf(str, "%s", group);
    show_header("MIDAS slow control", "", str, i_edit == -1 ? refresh : 0);
+   show_navigation_bar("SC");
    rsprintf("<script type=\"text/javascript\" src=\"mhttpd.js\"></script>\n");
    
    /*---- menu buttons ----*/
@@ -4675,10 +4699,12 @@ void show_sc_page(char *path, int refresh)
    if (equal_ustring(getparam("cmd"), "Edit"))
       rsprintf("<input type=submit name=cmd value=Set>\n");
    else {
+#if 0
       rsprintf("<input type=button value=Alarms onclick=\"self.location=\'?cmd=Alarms\';\">\n");
       rsprintf("<input type=button value=Programs onclick=\"self.location=\'?cmd=Programs\';\">\n");
       rsprintf("<input type=button value=Status onclick=\"self.location=\'?cmd=Status\';\">\n");
       rsprintf("<input type=button value=Help onclick=\"self.location=\'?cmd=Help\';\">\n");
+#endif
    }
    rsprintf("</tr>\n\n");
    rsprintf("</table>");  //end header table
@@ -14283,54 +14309,80 @@ void send_icon(const char *icon)
 
 /*------------------------------------------------------------------*/
 
-void get_resource_dir(char *str, int size)
+FILE *open_resource_file(const char *filename, std::string* pfilename)
 {
+   int status;
    HNDLE hDB;
-   
+   std::string path;
+   FILE *fp = NULL;
+
    cm_get_experiment_database(&hDB, NULL);
-   if (db_get_value(hDB, 0, "/Experiment/Resources", str, &size, TID_STRING, FALSE) == DB_SUCCESS) {
-      if (str[strlen(str)-1] != DIR_SEPARATOR)
-         strlcat(str, DIR_SEPARATOR_STR, size);
-      return;
-   }
+
+   do { // THIS IS NOT A LOOP
+
+      char buf[1024];
+      int size = sizeof(buf);
+      status = db_get_value(hDB, 0, "/Experiment/Resources", buf, &size, TID_STRING, FALSE);
+      if (status == DB_SUCCESS) {
+         path = std::string(buf) + "/" + filename;
+         fp = fopen(path.c_str(), "r");
+         if (fp)
+            break;
+      }
    
-   if (getenv("MIDASSYS")) {
-      strlcpy(str, getenv("MIDASSYS"), size);
-      if (str[strlen(str)-1] != DIR_SEPARATOR)
-         strlcat(str, DIR_SEPARATOR_STR, size);
-      strlcat(str, "resources/", size);
-      return;
+      path = getenv("MIDASSYS");
+      if (path.length() > 0) {
+         path += std::string("/resources/") + filename;
+         fp = fopen(path.c_str(), "r");
+         if (fp)
+            break;
+      }
+
+      path = getenv("MIDAS_DIR");
+      if (path.length() > 0) {
+         path += std::string("/resources/") + filename;
+         fp = fopen(path.c_str(), "r");
+         if (fp)
+            break;
+      }
+
+      path = getenv("MIDAS_DIR");
+      if (path.length() > 0) {
+         path += std::string("/") + filename;
+         fp = fopen(path.c_str(), "r");
+         if (fp)
+            break;
+      }
+
+      path = std::string("resources/") + filename;
+      fp = fopen(path.c_str(), "r");
+      if (fp)
+         break;
+
+      path = filename;
+      fp = fopen(path.c_str(), "r");
+      if (fp)
+         break;
+
+      break;
+   } while (false); // THIS IS NOT A LOOP
+
+   if (fp) {
+      if (pfilename)
+         *pfilename = path;
+      //cm_msg(MINFO, "open_resource_file", "Resource file \'%s\' is \'%s\'", filename, path.c_str());
+      return fp;
    }
-   
-   cm_msg(MERROR, "get_resource_dir", "/Experiment/Resources and MIDASSYS not defined. Cannot obtain paht to resources");
+
+   cm_msg(MERROR, "open_resource_file", "Cannot find resource file \'%s\' in ODB /Experiment/Resources, in $MIDASSYS/resources, in $MIDAS_DIR/resources or in local directory", filename);
+   return NULL;
 }
-
-/* internal minimal CSS for better readable fonts */
-
-char mhttpd_css[] = "body {\
-  margin:3px;\
-  color:black;\
-  background-color:white;\
-  font-family:verdana,tahoma,sans-serif;\
-}\
-\
-/* standard link colors and decorations */\
-a:link { color:#0000FF; text-decoration:none }\
-a:visited { color:#800080; text-decoration:none }\
-a:hover { color:#0000FF; text-decoration:underline }\
-a:active { color:#0000FF; text-decoration:underline }\
-a:focus { color:#0000FF; text-decoration:underline }\
-";
-
 
 void send_css()
 {
-   int length, fh;
-   char str[256], format[256], filename[256];
+   char str[256], format[256];
    time_t now;
    struct tm *gmt;
-   HNDLE hDB;
-   struct stat stat_buf;
 
    rsprintf("HTTP/1.1 200 Document follows\r\n");
    rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
@@ -14346,46 +14398,26 @@ void send_css()
    rsprintf("Content-Type: text/css\r\n");
 
    /* look for external CSS file */
-   cm_get_experiment_database(&hDB, NULL);
-   fh = 0;
-   get_resource_dir(filename, sizeof(filename));
-   strlcat(filename, "mhttpd.css", sizeof(filename));
-   fh = open(filename, O_RDONLY | O_BINARY);
-   
-   if (fh <= 0 && getenv("MIDAS_DIR")) {
-      strlcpy(filename, getenv("MIDAS_DIR"), sizeof(filename));
-      if (filename[strlen(filename)-1] != DIR_SEPARATOR)
-         strlcat(filename, DIR_SEPARATOR_STR, sizeof(filename));
-      strlcat(filename, "resources/mhttpd.css", sizeof(filename));
-      fh = open(filename, O_RDONLY | O_BINARY);
-   }
-   
-   if (fh <= 0) {
-      strlcpy(filename, "resources/mhttpd.css", sizeof(filename));
-      fh = open(filename, O_RDONLY | O_BINARY);
-   }
-   
-   if (fh <= 0) {
-      strlcpy(filename, "mhttpd.css", sizeof(filename));
-      fh = open(filename, O_RDONLY | O_BINARY);
-   }
-   
-   if (fh > 0) {
-      fstat(fh, &stat_buf);
-      length = stat_buf.st_size;
+
+   FILE *fp = open_resource_file("mhttpd.css", NULL);
+
+   if (fp) {
+      struct stat stat_buf;
+      fstat(fileno(fp), &stat_buf);
+      int length = stat_buf.st_size;
       rsprintf("Content-Length: %d\r\n\r\n", length);
+
+      return_grow(length);
       
       return_length = strlen(return_buffer) + length;
-      read(fh, return_buffer + strlen(return_buffer), length);
-      close(fh);
+      int rd = fread(return_buffer + strlen(return_buffer), 1, length, fp);
+      assert(rd == length);
+      fclose(fp);
       return;
    }
    
-   length = strlen(mhttpd_css);
+   int length = 0;
    rsprintf("Content-Length: %d\r\n\r\n", length);
-   
-   return_length = strlen(return_buffer) + length;
-   memcpy(return_buffer + strlen(return_buffer), mhttpd_css, length);
 }
 
 /*------------------------------------------------------------------*/
@@ -14713,12 +14745,10 @@ const char *mhttpd_js =
 
 void send_js()
 {
-   int length, fh;
-   char str[256], format[256], filename[256];
+   int length;
+   char str[256], format[256];
    time_t now;
    struct tm *gmt;
-   HNDLE hDB;
-   struct stat stat_buf;
 
    rsprintf("HTTP/1.1 200 Document follows\r\n");
    rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
@@ -14734,20 +14764,20 @@ void send_js()
    rsprintf("Content-Type: text/javascript\r\n");
 
    /* look for external JS file */
-   cm_get_experiment_database(&hDB, NULL);
-   fh = 0;
-   get_resource_dir(filename, sizeof(filename));
-   strlcat(filename, "mhttpd.js", sizeof(filename));
-   fh = open(filename, O_RDONLY | O_BINARY);
-      
-   if (fh > 0) {
-      fstat(fh, &stat_buf);
+   FILE *fp = open_resource_file("mhttpd.js", NULL);
+
+   if (fp) {
+      struct stat stat_buf;
+      fstat(fileno(fp), &stat_buf);
       length = stat_buf.st_size;
       rsprintf("Content-Length: %d\r\n\r\n", length);
+
+      return_grow(length);
       
       return_length = strlen(return_buffer) + length;
-      read(fh, return_buffer + strlen(return_buffer), length);
-      close(fh);
+      int rd = read(fileno(fp), return_buffer + strlen(return_buffer), length);
+      assert(rd == length);
+      fclose(fp);
       return;
    }
    
