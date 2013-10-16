@@ -15799,11 +15799,20 @@ INT check_odb_records(void)
          cm_msg(MERROR, "check_odb_records", "Cannot correct ODB subtree /Runinfo, db_check_record() status %d", status);
          return 0;
       }
+   } else if (status == DB_NO_KEY) {
+      cm_msg(MERROR, "check_odb_records", "ODB subtree /Runinfo does not exist");
+      status = db_create_record(hDB, 0, "/Runinfo", strcomb(runinfo_str));
+      if (status == DB_SUCCESS) {
+         cm_msg(MINFO, "check_odb_records", "ODB subtree /Runinfo created successfully");
+      } else {
+         cm_msg(MERROR, "check_odb_records", "Cannot create ODB subtree /Runinfo, db_create_record() status %d", status);
+         return 0;
+      }
    } else if (status != DB_SUCCESS) {
       cm_msg(MERROR, "check_odb_records", "Cannot correct ODB subtree /Runinfo, db_check_record() status %d", status);
       return 0;
    }
-   
+
    /* check /Equipment/<name>/Common structures */
    if (db_find_key(hDB, 0, "/equipment", &hKeyEq) == DB_SUCCESS) {
       for (i = 0 ;; i++) {
@@ -15919,14 +15928,16 @@ void server_loop()
    /* listen for connection */
    status = listen(lsock, SOMAXCONN);
    if (status < 0) {
-      printf("Cannot listen\n");
+      printf("listen() errno %d (%s), bye!\n", errno, strerror(errno));
       return;
    }
 
    /* do ODB record checking */
    if (!check_odb_records()) {
-      // why am I getting a silent exit() from mhttpd when check_odb_records() fails?!? At least print something!
-      printf("check_odb_records() failed, bye!\n");
+      // check_odb_records() fails with nothing printed to the terminal
+      // because mhttpd does not print cm_msg(MERROR, ...) messages to the terminal.
+      // At least print something!
+      printf("check_odb_records() failed, see messages and midas.log, bye!\n");
       cm_disconnect_experiment();
       return;
    }
