@@ -985,6 +985,18 @@ void show_help_page()
    rsprintf("        </tr>\n");
 
    rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\">CWD:</td>\n");
+   getcwd(str, sizeof(str));
+   rsprintf("          <td style=\"text-align:left;\">%s</td>\n", str);
+   rsprintf("        </tr>\n");
+
+   rsprintf("        <tr>\n");
+   rsprintf("          <td style=\"text-align:right;\">midas.log:</td>\n");
+   strlcpy(str, "???", sizeof(str)); // how do we get the location of midas.log?!?
+   rsprintf("          <td style=\"text-align:left;\">%s</td>\n", str);
+   rsprintf("        </tr>\n");
+
+   rsprintf("        <tr>\n");
    rsprintf("          <td style=\"text-align:right;\">mhttpd.css:</td>\n");
    std::string f;
    FILE *fp = open_resource_file("mhttpd.css", &f);
