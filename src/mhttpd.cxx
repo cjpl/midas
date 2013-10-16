@@ -9561,7 +9561,7 @@ void show_create_page(const char *enc_path, const char *dec_path, const char *va
          }
 
          db_find_key(hDB, 0, str, &hkey);
-	 assert(hkey);
+         assert(hkey);
          db_get_key(hDB, hkey, &key);
          memset(data, 0, sizeof(data));
          if (key.type == TID_STRING || key.type == TID_LINK)
@@ -14324,7 +14324,9 @@ FILE *open_resource_file(const char *filename, std::string* pfilename)
       int size = sizeof(buf);
       status = db_get_value(hDB, 0, "/Experiment/Resources", buf, &size, TID_STRING, FALSE);
       if (status == DB_SUCCESS) {
-         path = std::string(buf) + "/" + filename;
+         if (buf[strlen(buf)-1] != DIR_SEPARATOR)
+            strlcat(buf, DIR_SEPARATOR_STR, sizeof(buf));
+         path = std::string(buf) + filename;
          fp = fopen(path.c_str(), "r");
          if (fp)
             break;
@@ -14332,7 +14334,10 @@ FILE *open_resource_file(const char *filename, std::string* pfilename)
    
       path = getenv("MIDASSYS");
       if (path.length() > 0) {
-         path += std::string("/resources/") + filename;
+         if (path.back() != DIR_SEPARATOR)
+            path += std::string(DIR_SEPARATOR_STR);
+         path += std::string("resources") + DIR_SEPARATOR_STR;
+         path += filename;
          fp = fopen(path.c_str(), "r");
          if (fp)
             break;
@@ -14340,7 +14345,10 @@ FILE *open_resource_file(const char *filename, std::string* pfilename)
 
       path = getenv("MIDAS_DIR");
       if (path.length() > 0) {
-         path += std::string("/resources/") + filename;
+         if (path.back() != DIR_SEPARATOR)
+            path += std::string(DIR_SEPARATOR_STR);
+         path += std::string("resources") + DIR_SEPARATOR_STR;
+         path += filename;
          fp = fopen(path.c_str(), "r");
          if (fp)
             break;
@@ -14348,13 +14356,15 @@ FILE *open_resource_file(const char *filename, std::string* pfilename)
 
       path = getenv("MIDAS_DIR");
       if (path.length() > 0) {
-         path += std::string("/") + filename;
+         if (path.back() != DIR_SEPARATOR)
+            path += std::string(DIR_SEPARATOR_STR);
+         path += filename;
          fp = fopen(path.c_str(), "r");
          if (fp)
             break;
       }
 
-      path = std::string("resources/") + filename;
+      path = std::string("resources") + DIR_SEPARATOR_STR + filename;
       fp = fopen(path.c_str(), "r");
       if (fp)
          break;
