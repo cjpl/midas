@@ -4698,22 +4698,15 @@ void show_sc_page(char *path, int refresh)
 
    if (equal_ustring(getparam("cmd"), "Edit"))
       rsprintf("<input type=submit name=cmd value=Set>\n");
-   else {
-#if 0
-      rsprintf("<input type=button value=Alarms onclick=\"self.location=\'?cmd=Alarms\';\">\n");
-      rsprintf("<input type=button value=Programs onclick=\"self.location=\'?cmd=Programs\';\">\n");
-      rsprintf("<input type=button value=Status onclick=\"self.location=\'?cmd=Status\';\">\n");
-      rsprintf("<input type=button value=Help onclick=\"self.location=\'?cmd=Help\';\">\n");
-#endif
-   }
+
    rsprintf("</tr>\n\n");
    rsprintf("</table>");  //end header table
 
-   rsprintf("<table class=\"genericStripe\">");  //body table
+   rsprintf("<table class=\"ODBtable\">");  //body table
 
    /*---- enumerate SC equipment ----*/
 
-   rsprintf("<tr><td colspan=15><i>Equipment:</i> &nbsp;&nbsp;\n");
+   rsprintf("<tr><td class=\"subStatusTitle\" colspan=15><i>Equipment:</i> &nbsp;&nbsp;\n");
 
    db_find_key(hDB, 0, "/Equipment", &hkey);
    if (hkey)
