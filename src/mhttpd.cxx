@@ -4689,6 +4689,7 @@ void show_sc_page(char *path, int refresh)
 
    sprintf(str, "%s", group);
    show_header("MIDAS slow control", "", str, i_edit == -1 ? refresh : 0);
+   show_navigation_bar("SC");
    rsprintf("<script type=\"text/javascript\" src=\"mhttpd.js\"></script>\n");
    
    /*---- menu buttons ----*/
@@ -4698,10 +4699,12 @@ void show_sc_page(char *path, int refresh)
    if (equal_ustring(getparam("cmd"), "Edit"))
       rsprintf("<input type=submit name=cmd value=Set>\n");
    else {
+#if 0
       rsprintf("<input type=button value=Alarms onclick=\"self.location=\'?cmd=Alarms\';\">\n");
       rsprintf("<input type=button value=Programs onclick=\"self.location=\'?cmd=Programs\';\">\n");
       rsprintf("<input type=button value=Status onclick=\"self.location=\'?cmd=Status\';\">\n");
       rsprintf("<input type=button value=Help onclick=\"self.location=\'?cmd=Help\';\">\n");
+#endif
    }
    rsprintf("</tr>\n\n");
    rsprintf("</table>");  //end header table
