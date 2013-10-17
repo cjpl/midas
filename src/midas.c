@@ -3418,7 +3418,7 @@ typedef struct tr_client {
    char  host_name[HOST_NAME_LENGTH];
    char  client_name[NAME_LENGTH];
    int   port;
-   HNDLE hKey;
+   char  key_name[NAME_LENGTH]; /* this client key name in /System/Clients */
    int   status;
    char  errorstr[256];
 } TR_CLIENT;
@@ -3526,7 +3526,7 @@ int cm_transition_detach(INT transition, INT run_number, char *errstr, INT errst
 int cm_transition_call(void *param)
 {
    INT old_timeout, status, i, t1, t0, size, n_wait;
-   HNDLE hDB, hConn;
+   HNDLE hDB, hConn, hKey;
    int connect_timeout = 10000;
    int timeout = 120000;
    TR_CLIENT *tr_client;
@@ -3654,12 +3654,19 @@ int cm_transition_call(void *param)
    if (status != CM_SUCCESS && strlen(tr_client->errorstr) < 2)
       sprintf(tr_client->errorstr, "Unknown error %d from client \'%s\' on host %s", status, tr_client->client_name, tr_client->host_name);
 
-   /* put error string into client entry in ODB */
-   db_set_mode(hDB, tr_client->hKey, MODE_READ | MODE_WRITE, TRUE);
-   db_set_value(hDB, tr_client->hKey, "Error", tr_client->errorstr, sizeof(tr_client->errorstr), 1, TID_STRING);
-   db_set_mode(hDB, tr_client->hKey, MODE_READ, TRUE);
-
    tr_client->status = status;
+
+   /* put error string into client entry in ODB */
+   status = db_find_key(hDB, 0, "/System/Clients", &hKey);
+   if (status == DB_SUCCESS && hKey) {
+      status = db_find_key(hDB, hKey, tr_client->key_name, &hKey);
+      if (status == DB_SUCCESS) {
+         db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE, TRUE);
+         db_set_value(hDB, hKey, "Error", tr_client->errorstr, sizeof(tr_client->errorstr), 1, TID_STRING);
+         db_set_mode(hDB, hKey, MODE_READ, TRUE);
+      }
+   }
+
    return CM_SUCCESS;
 }
 
@@ -3668,7 +3675,8 @@ int cm_transition_call(void *param)
 int cm_transition_call_direct(TR_CLIENT *tr_client)
 {
    int i, status;
-   HNDLE hDB;
+   int transition_status = CM_SUCCESS;
+   HNDLE hDB, hKey;
    
    cm_get_experiment_database(&hDB, NULL);
    
@@ -3683,21 +3691,26 @@ int cm_transition_call_direct(TR_CLIENT *tr_client)
       if (tr_client->debug_flag == 2)
          cm_msg(MINFO, "cm_transition_call_direct", "cm_transition: Calling local transition callback");
       
-      status = _trans_table[i].func(tr_client->run_number, tr_client->errorstr);
+      transition_status = _trans_table[i].func(tr_client->run_number, tr_client->errorstr);
       
       if (tr_client->debug_flag == 1)
-         printf("Local transition callback finished\n");
+         printf("Local transition callback finished, status %d\n", transition_status);
       if (tr_client->debug_flag == 2)
-         cm_msg(MINFO, "cm_transition_call_direct", "cm_transition: Local transition callback finished");
-   } else
-      status = CM_SUCCESS;
+         cm_msg(MINFO, "cm_transition_call_direct", "cm_transition: Local transition callback finished, status %d", transition_status);
+   }
    
    /* put error string into client entry in ODB */
-   db_set_mode(hDB, tr_client->hKey, MODE_READ | MODE_WRITE, TRUE);
-   db_set_value(hDB, tr_client->hKey, "Error", tr_client->errorstr, sizeof(tr_client->errorstr), 1, TID_STRING);
-   db_set_mode(hDB, tr_client->hKey, MODE_READ, TRUE);
+   status = db_find_key(hDB, 0, "/System/Clients", &hKey);
+   if (status == DB_SUCCESS && hKey) {
+      status = db_find_key(hDB, hKey, tr_client->key_name, &hKey);
+      if (status == DB_SUCCESS) {
+         db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE, TRUE);
+         db_set_value(hDB, hKey, "Error", tr_client->errorstr, sizeof(tr_client->errorstr), 1, TID_STRING);
+         db_set_mode(hDB, hKey, MODE_READ, TRUE);
+      }
+   }
 
-   return status;
+   return transition_status;
 }
 
 /********************************************************************/
@@ -4061,9 +4074,13 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
    tr_client = NULL;
 
    for (i = 0, status = 0;; i++) {
+      KEY subkey;
       status = db_enum_key(hDB, hRootKey, i, &hSubkey);
       if (status == DB_NO_MORE_SUBKEYS)
          break;
+
+      status = db_get_key(hDB, hSubkey, &subkey);
+      assert(status == DB_SUCCESS);
 
       if (status == DB_SUCCESS) {
          status = db_find_key(hDB, hSubkey, tr_key_name, &hKeyTrans);
@@ -4091,17 +4108,16 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
                tr_client[n_tr_clients].status = 0;
                tr_client[n_tr_clients].n_pred  = 0;
                tr_client[n_tr_clients].pred = NULL;
+               strlcpy(tr_client[n_tr_clients].key_name, subkey.name, sizeof(tr_client[n_tr_clients].key_name));
 
                if (hSubkey == hKeylocal) {
                   /* remember own client */
                   tr_client[n_tr_clients].port = 0;
-                  tr_client[n_tr_clients].hKey = hKeylocal;
                } else {
                   /* get client info */
-                  tr_client[n_tr_clients].hKey = hSubkey;
                   size = sizeof(client_name);
                   db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING, TRUE);
-                  strcpy(tr_client[n_tr_clients].client_name, client_name);
+                  strlcpy(tr_client[n_tr_clients].client_name, client_name, sizeof(tr_client[n_tr_clients].client_name));
 
                   size = sizeof(port);
                   db_get_value(hDB, hSubkey, "Server Port", &port, &size, TID_INT, TRUE);
