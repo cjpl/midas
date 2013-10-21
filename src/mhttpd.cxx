@@ -538,11 +538,11 @@ void urlDecode(char *p)
    Decode the given string in-place by expanding %XX escapes
 \********************************************************************/
 {
-   char *px = p;
+   //char *px = p;
    char *pD, str[3];
    int i;
 
-   printf("URL decode: [%s] --> ", p);
+   //printf("URL decode: [%s] --> ", p);
 
    pD = p;
    while (*p) {
@@ -569,7 +569,7 @@ void urlDecode(char *p)
    }
    *pD = '\0';
 
-   printf("[%s]\n", px);
+   //printf("[%s]\n", px);
 }
 
 void urlEncode(char *ps, int ps_size)
