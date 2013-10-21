@@ -538,8 +538,11 @@ void urlDecode(char *p)
    Decode the given string in-place by expanding %XX escapes
 \********************************************************************/
 {
+   //char *px = p;
    char *pD, str[3];
    int i;
+
+   //printf("URL decode: [%s] --> ", p);
 
    pD = p;
    while (*p) {
@@ -565,6 +568,8 @@ void urlDecode(char *p)
       }
    }
    *pD = '\0';
+
+   //printf("[%s]\n", px);
 }
 
 void urlEncode(char *ps, int ps_size)
@@ -14885,7 +14890,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
    /* encode path for further usage */
    strlcpy(dec_path, path, sizeof(dec_path));
    urlDecode(dec_path);
-   urlDecode(dec_path); /* necessary for %2520 -> %20 -> ' ', used e.g. in deleting ODB entries with blanks in path */
+   // double URL decode not permitted, it breaks "x+y" encoded as "x%2By" into "x+y" then "x y". urlDecode(dec_path); /* necessary for %2520 -> %20 -> ' ', used e.g. in deleting ODB entries with blanks in path */
    strlcpy(enc_path, dec_path, sizeof(enc_path));
    urlEncode(enc_path, sizeof(enc_path));
    set_dec_path(dec_path);

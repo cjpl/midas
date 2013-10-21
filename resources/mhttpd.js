@@ -427,10 +427,10 @@ function ODBGetAlarms()
 
 function ODBEdit(path)
 {
-   var value = ODBGet(path);
+   var value = ODBGet(encodeURIComponent(path));
    var new_value = prompt('Please enter new value', value);
    if (new_value != undefined) {
-      ODBSet(path, new_value);
+      ODBSet(encodeURIComponent(path), new_value);
       window.location.reload();
    }
 }
@@ -447,7 +447,7 @@ function ODBFinishInlineEdit(p, path)
    else
       value = p.childNodes[0].value;
 
-   ODBSet(path, value);
+   ODBSet(encodeURIComponent(path), value);
    p.ODBsent = true;
    
    var link = document.createElement('a');
@@ -472,7 +472,7 @@ function ODBInlineEditKeydown(event, p, path)
       /* cancel editing */
       p.ODBsent = true;
 
-      var value = ODBGet(path);
+      var value = ODBGet(encodeURIComponent(path));
       var link = document.createElement('a');
       if (value == "")
          value = "(empty)";
@@ -499,7 +499,7 @@ function ODBInlineEditKeydown(event, p, path)
 
 function ODBInlineEdit(p, odb_path)
 {
-   var cur_val = ODBGet(odb_path);
+   var cur_val = ODBGet(encodeURIComponent(odb_path));
    var size = cur_val.length+10;
    var index;
    
