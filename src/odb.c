@@ -488,24 +488,14 @@ static int db_validate_key(DATABASE_HEADER * pheader, int recurse, const char *p
    static time_t t_min = 0, t_max;
 
    if (!db_validate_key_offset(pheader, (POINTER_T) pkey - (POINTER_T) pheader)) {
-      cm_msg(MERROR, "db_validate_key",
-             "Warning: database corruption, key \"%s\", data 0x%08X", path, pkey->data - sizeof(DATABASE_HEADER));
+      cm_msg(MERROR, "db_validate_key", "Warning: database corruption, path \"%s\", key offset %d is invalid", path, (POINTER_T) pkey - (POINTER_T) pheader);
       return 0;
    }
 
    if (!db_validate_data_offset(pheader, pkey->data)) {
-      cm_msg(MERROR, "db_validate_key",
-             "Warning: database corruption, data \"%s\", data 0x%08X", path, pkey->data - sizeof(DATABASE_HEADER));
+      cm_msg(MERROR, "db_validate_key", "Warning: database corruption, path \"%s\", data offset 0x%08X is invalid", path, pkey->data - sizeof(DATABASE_HEADER));
       return 0;
    }
-#if 0
-   /* correct invalid key type 0 */
-   if (pkey->type == 0) {
-      cm_msg(MERROR, "db_validate_key",
-             "Warning: invalid key type, key \"%s\", type %d, changed to type %d", path, pkey->type, TID_KEY);
-      pkey->type = TID_KEY;
-   }
-#endif
 
    /* check key type */
    if (pkey->type <= 0 || pkey->type >= TID_LAST) {
@@ -568,9 +558,7 @@ static int db_validate_key(DATABASE_HEADER * pheader, int recurse, const char *p
 
       if (pkeylist->num_keys != 0 &&
           (pkeylist->first_key == 0 || !db_validate_key_offset(pheader, pkeylist->first_key))) {
-         cm_msg(MERROR, "db_validate_key",
-                "Warning: database corruption, key \"%s\", first_key 0x%08X",
-                path, pkeylist->first_key - sizeof(DATABASE_HEADER));
+         cm_msg(MERROR, "db_validate_key", "Warning: database corruption, key \"%s\", first_key 0x%08X", path, pkeylist->first_key - sizeof(DATABASE_HEADER));
          return 0;
       }
 
@@ -582,9 +570,7 @@ static int db_validate_key(DATABASE_HEADER * pheader, int recurse, const char *p
          sprintf(buf, "%s/%s", path, pkey->name);
 
          if (!db_validate_key_offset(pheader, pkey->next_key)) {
-            cm_msg(MERROR, "db_validate_key",
-                   "Warning: database corruption, key \"%s\", next_key 0x%08X",
-                   buf, pkey->next_key - sizeof(DATABASE_HEADER));
+            cm_msg(MERROR, "db_validate_key", "Warning: database corruption, key \"%s\", next_key 0x%08X is invalid", buf, pkey->next_key - sizeof(DATABASE_HEADER));
             return 0;
          }
 
@@ -787,7 +773,7 @@ static int db_validate_db(DATABASE_HEADER * pheader)
 
    if (!db_validate_key_offset(pheader, pheader->root_key)) {
       cm_msg(MERROR, "db_validate_db",
-             "Warning: database corruption, root_key 0x%08X", pheader->root_key - sizeof(DATABASE_HEADER));
+             "Warning: database corruption, root_key 0x%08X is invalid", pheader->root_key - sizeof(DATABASE_HEADER));
       return 0;
    }
 
@@ -892,7 +878,7 @@ INT db_open_database(const char *xdatabase_name, INT database_size, HNDLE * hDB,
          }
       }
    }
-   
+
    handle = (HNDLE) i;
    
    /* open shared memory region */
@@ -966,6 +952,29 @@ INT db_open_database(const char *xdatabase_name, INT database_size, HNDLE * hDB,
              "Different database format: Shared memory is %d, program is %d", pheader->version, DATABASE_VERSION);
       return DB_VERSION_MISMATCH;
    }
+
+   /* check root key */
+   if (!db_validate_key_offset(pheader, pheader->root_key)) {
+      cm_msg(MERROR, "db_open_database", "Invalid, incompatible or corrupted database: root key offset %d is invalid", pheader->root_key);
+      return DB_VERSION_MISMATCH;
+   } else {
+      pkey = (KEY*)((char*)pheader + pheader->root_key);
+
+      if (pkey->type != TID_KEY) {
+         cm_msg(MERROR, "db_open_database", "Invalid, incompatible or corrupted database: root key type %d is not TID_KEY", pkey->type);
+         return DB_VERSION_MISMATCH;
+      }
+
+      if (strcmp(pkey->name, "root") != 0) {
+         cm_msg(MERROR, "db_open_database", "Invalid, incompatible or corrupted database: root key name \"%s\" is not \"root\"", pkey->name);
+         return DB_VERSION_MISMATCH;
+      }
+
+      if (!db_validate_key(pheader, 0, "", pkey)) {
+         cm_msg(MERROR, "db_open_database", "Invalid, incompatible or corrupted database: root key is invalid");
+         return DB_VERSION_MISMATCH;
+      }
+   }
    
    /* create mutexes for the database */
    status = ss_mutex_create(&_database[handle].mutex);
@@ -1036,10 +1045,13 @@ INT db_open_database(const char *xdatabase_name, INT database_size, HNDLE * hDB,
                pkey = (KEY *) ((char *) pheader + pheader->client[i].open_record[k].handle);
                if (pkey->notify_count > 0)
                   pkey->notify_count--;
+
+               printf("client %d, open rec %d, access more 0x%x\n", i, k, pheader->client[i].open_record[k].access_mode);
                
-               if (pheader->client[i].open_record[k].access_mode & MODE_WRITE)
-                  db_set_mode(handle + 1, pheader->client[i].open_record[k].handle,
-                              (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE), 2);
+               if (pheader->client[i].open_record[k].access_mode & MODE_WRITE) {
+                  status = db_set_mode(handle + 1, pheader->client[i].open_record[k].handle, (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE), 2);
+                  printf("db_set_mode status %d\n", status);
+               }
             }
          
          /* clear entry from client structure in database header */
@@ -1715,9 +1727,7 @@ INT db_create_key(HNDLE hDB, HNDLE hKey, const char *key_name, DWORD type)
          for (i = 0; i < pkeylist->num_keys; i++) {
             if (!db_validate_key_offset(pheader, pkey->next_key)) {
                db_unlock_database(hDB);
-               cm_msg(MERROR, "db_create_key",
-                      "Warning: database corruption, key %s, next_key 0x%08X",
-                      key_name, pkey->next_key - sizeof(DATABASE_HEADER));
+               cm_msg(MERROR, "db_create_key", "Warning: database corruption, key \"%s\", next_key 0x%08X", key_name, pkey->next_key - sizeof(DATABASE_HEADER));
                return DB_CORRUPTED;
             }
 
@@ -2221,9 +2231,7 @@ INT db_find_key(HNDLE hDB, HNDLE hKey, const char *key_name, HNDLE * subhKey)
          for (i = 0; i < pkeylist->num_keys; i++) {
             if (pkey->name[0] == 0 || !db_validate_key_offset(pheader, pkey->next_key)) {
                db_unlock_database(hDB);
-               cm_msg(MERROR, "db_find_key",
-                      "Warning: database corruption, key %s, next_key 0x%08X",
-                      key_name, pkey->next_key - sizeof(DATABASE_HEADER));
+               cm_msg(MERROR, "db_find_key", "Warning: database corruption, key \"%s\", next_key 0x%08X is invalid", key_name, pkey->next_key - sizeof(DATABASE_HEADER));
                *subhKey = 0;
                return DB_CORRUPTED;
             }
@@ -2543,9 +2551,7 @@ INT db_find_link(HNDLE hDB, HNDLE hKey, const char *key_name, HNDLE * subhKey)
          for (i = 0; i < pkeylist->num_keys; i++) {
             if (!db_validate_key_offset(pheader, pkey->next_key)) {
                db_unlock_database(hDB);
-               cm_msg(MERROR, "db_find_link",
-                      "Warning: database corruption, key \"%s\", next_key 0x%08X",
-                      key_name, pkey->next_key - sizeof(DATABASE_HEADER));
+               cm_msg(MERROR, "db_find_link", "Warning: database corruption, key \"%s\", next_key 0x%08X is invalid", key_name, pkey->next_key - sizeof(DATABASE_HEADER));
                *subhKey = 0;
                return DB_CORRUPTED;
             }
@@ -2694,9 +2700,7 @@ INT db_find_link1(HNDLE hDB, HNDLE hKey, const char *key_name, HNDLE * subhKey)
 
          for (i = 0; i < pkeylist->num_keys; i++) {
             if (!db_validate_key_offset(pheader, pkey->next_key)) {
-               cm_msg(MERROR, "db_find_link1",
-                      "Warning: database corruption, key \"%s\", next_key 0x%08X",
-                      key_name, pkey->next_key - sizeof(DATABASE_HEADER));
+               cm_msg(MERROR, "db_find_link1", "Warning: database corruption, key \"%s\", next_key 0x%08X is invalid", key_name, pkey->next_key - sizeof(DATABASE_HEADER));
                *subhKey = 0;
                return DB_CORRUPTED;
             }
@@ -4698,8 +4702,7 @@ INT db_get_data_index(HNDLE hDB, HNDLE hKey, void *data, INT * buf_size, INT idx
          db_unlock_database(hDB);
 
          db_get_path(hDB, hKey, str, sizeof(str));
-         cm_msg(MERROR, "db_get_data_index",
-                "index (%d) exceeds array length (%d) for key \"%s\"", idx, pkey->num_values, str);
+         cm_msg(MERROR, "db_get_data_index", "index (%d) exceeds array length (%d) for key \"%s\"", idx, pkey->num_values, str);
          return DB_OUT_OF_RANGE;
       }
 
@@ -6316,8 +6319,7 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
             return DB_SUCCESS;  /* key or tree is locked, just skip it */
 
          if (status != DB_SUCCESS && status != DB_KEY_EXIST) {
-            cm_msg(MERROR, "db_paste_node",
-                   "cannot create key \"%s\" in ODB, status = %d", mxml_get_attribute(node, "name"), status);
+            cm_msg(MERROR, "db_paste_node", "cannot create key \"%s\" in ODB, status = %d", mxml_get_attribute(node, "name"), status);
             return status;
          }
          status = db_find_link(hDB, hKeyRoot, mxml_get_attribute(node, "name"), &hKey);
@@ -6363,14 +6365,12 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
             return DB_SUCCESS;  /* key or tree is locked, just skip it */
 
          if (status != DB_SUCCESS) {
-            cm_msg(MERROR, "db_paste_node",
-                   "cannot create key \"%s\" in ODB, status = %d", mxml_get_attribute(node, "name"), status);
+            cm_msg(MERROR, "db_paste_node", "cannot create key \"%s\" in ODB, status = %d", mxml_get_attribute(node, "name"), status);
             return status;
          }
          status = db_find_link(hDB, hKeyRoot, mxml_get_attribute(node, "name"), &hKey);
          if (status != DB_SUCCESS) {
-            cm_msg(MERROR, "db_paste_node",
-                   "cannot find key \"%s\" in ODB, status = %d", mxml_get_attribute(node, "name"));
+            cm_msg(MERROR, "db_paste_node", "cannot find key \"%s\" in ODB, status = %d", mxml_get_attribute(node, "name"));
             return status;
          }
       }
