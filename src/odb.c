@@ -452,6 +452,34 @@ INT db_show_mem(HNDLE hDB, char *result, INT buf_size, BOOL verbose)
 }
 
 /*------------------------------------------------------------------*/
+static int db_validate_name(const char* name, int maybe_path, const char* caller_name)
+{
+   //printf("db_validate_name [%s] maybe_path %d from %s\n", name, maybe_path, caller_name);
+
+   if (name == NULL) {
+      cm_msg(MERROR, "db_validate_name", "Invalid name passed to %s: should not be NULL", caller_name);
+      return DB_INVALID_NAME;
+   }
+
+   if (strlen(name) < 1) {
+      cm_msg(MERROR, "db_validate_name", "Invalid name passed to %s: should not be an empty string", caller_name);
+      return DB_INVALID_NAME;
+   }
+
+   if (!maybe_path) {
+      if (strchr(name, '/')) {
+         cm_msg(MERROR, "db_validate_name", "Invalid name \"%s\" passed to %s: should not contain \"/\"", name, caller_name);
+         return DB_INVALID_NAME;
+      }
+   }
+
+   //if (strcmp(name, "test")==0)
+   //return DB_INVALID_NAME;
+
+   return DB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
 static int db_validate_key_offset(DATABASE_HEADER * pheader, int offset)
 /* check if key offset lies in valid range */
 {
@@ -485,6 +513,7 @@ static int db_validate_key(DATABASE_HEADER * pheader, int recurse, const char *p
 {
    KEYLIST *pkeylist;
    int i;
+   int status;
    static time_t t_min = 0, t_max;
 
    if (!db_validate_key_offset(pheader, (POINTER_T) pkey - (POINTER_T) pheader)) {
@@ -501,6 +530,16 @@ static int db_validate_key(DATABASE_HEADER * pheader, int recurse, const char *p
    if (pkey->type <= 0 || pkey->type >= TID_LAST) {
       cm_msg(MERROR, "db_validate_key", "Warning: invalid key type, key \"%s\", type %d", path, pkey->type);
       return 0;
+   }
+
+   /* check key name */
+   status = db_validate_name(pkey->name, FALSE, "db_validate_key");
+   if (status != DB_SUCCESS) {
+      char newname[NAME_LENGTH];
+      sprintf(newname, "%p", pkey);
+      cm_msg(MERROR, "db_validate_key", "Warning: corrected key \"%s\": invalid name \"%s\" replaced with \"%s\"", path, pkey->name, newname);
+      strlcpy(pkey->name, newname, sizeof(pkey->name));
+      //return 0;
    }
 
    /* check key sizes */
@@ -1791,6 +1830,7 @@ INT db_create_key(HNDLE hDB, HNDLE hKey, const char *key_name, DWORD type)
       const char *pkey_name;
       char str[MAX_STRING_LENGTH];
       INT i;
+      int status;
 
       if (hDB > _database_entries || hDB <= 0) {
          cm_msg(MERROR, "db_create_key", "invalid database handle");
@@ -1801,6 +1841,10 @@ INT db_create_key(HNDLE hDB, HNDLE hKey, const char *key_name, DWORD type)
          cm_msg(MERROR, "db_create_key", "invalid database handle");
          return DB_INVALID_HANDLE;
       }
+
+      status = db_validate_name(key_name, TRUE, "db_create_key");
+      if (status != DB_SUCCESS)
+         return status;
 
       /* check type */
       if (type <= 0 || type >= TID_LAST) {
@@ -1833,6 +1877,12 @@ INT db_create_key(HNDLE hDB, HNDLE hKey, const char *key_name, DWORD type)
       do {
          /* extract single key from key_name */
          pkey_name = extract_key(pkey_name, str, sizeof(str));
+
+         status = db_validate_name(str, FALSE, "db_create_key");
+         if (status != DB_SUCCESS) {
+            db_unlock_database(hDB);
+            return status;
+         }
 
          /* do not allow empty names, like '/dir/dir//dir/' */
          if (str[0] == 0) {
@@ -1992,7 +2042,7 @@ INT db_create_key(HNDLE hDB, HNDLE hKey, const char *key_name, DWORD type)
 
             if (pkey->type != TID_KEY) {
                db_unlock_database(hDB);
-               cm_msg(MERROR, "db_create_key", "key used with value and as parent key");
+               cm_msg(MERROR, "db_create_key", "path element \"%s\" in \"%s\" is not a subdirectory", str, key_name);
                return DB_KEY_EXIST;
             }
 
@@ -3351,16 +3401,21 @@ INT level1;
 INT db_set_value_index(HNDLE hDB, HNDLE hKeyRoot, const char *key_name, const void *data,
                        INT data_size, INT idx, DWORD type, BOOL trunc)
 {
+   int status;
    HNDLE hkey;
 
-   db_find_key(hDB, hKeyRoot, key_name, &hkey);
+   status = db_find_key(hDB, hKeyRoot, key_name, &hkey);
    if (!hkey) {
-      db_create_key(hDB, hKeyRoot, key_name, type);
-      db_find_key(hDB, hKeyRoot, key_name, &hkey);
-      assert(hkey);
+      status = db_create_key(hDB, hKeyRoot, key_name, type);
+      status = db_find_key(hDB, hKeyRoot, key_name, &hkey);
+      if (status != DB_SUCCESS)
+         return status;
    } else
-      if (trunc)
-         db_set_num_values(hDB, hkey, idx + 1);
+      if (trunc) {
+         status = db_set_num_values(hDB, hkey, idx + 1);
+         if (status != DB_SUCCESS)
+            return status;
+      }
 
    return db_set_data_index(hDB, hkey, data, data_size, idx, type);
 }
@@ -4185,6 +4240,7 @@ INT db_rename_key(HNDLE hDB, HNDLE hKey, const char *name)
    {
       DATABASE_HEADER *pheader;
       KEY *pkey;
+      int status;
 
       if (hDB > _database_entries || hDB <= 0) {
          cm_msg(MERROR, "db_rename_key", "invalid database handle");
@@ -4200,6 +4256,10 @@ INT db_rename_key(HNDLE hDB, HNDLE hKey, const char *name)
          cm_msg(MERROR, "db_rename_key", "invalid key handle");
          return DB_INVALID_HANDLE;
       }
+
+      status = db_validate_name(name, FALSE, "db_rename_key");
+      if (status != DB_SUCCESS)
+         return status;
 
       if (name == NULL) {
          cm_msg(MERROR, "db_rename_key", "key name is NULL");
@@ -5663,7 +5723,9 @@ INT db_merge_data(HNDLE hDB, HNDLE hKeyRoot, const char *name, void *data, INT d
    status = db_find_key(hDB, hKeyRoot, name, &hKey);
    if (status != DB_SUCCESS) {
       db_create_key(hDB, hKeyRoot, name, type);
-      db_find_key(hDB, hKeyRoot, name, &hKey);
+      status = db_find_key(hDB, hKeyRoot, name, &hKey);
+      if (status != DB_SUCCESS)
+         return status;
       status = db_set_data(hDB, hKey, data, data_size, num_values, type);
    } else {
       old_size = data_size;
