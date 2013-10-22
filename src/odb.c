@@ -674,6 +674,149 @@ static void db_validate_sizes()
 #endif
 }
 
+typedef struct {
+   DATABASE_HEADER * pheader;
+   int max_keys;
+   int num_keys;
+   HNDLE* hkeys;
+   int* counts;
+   int* modes;
+   int num_modified;
+} UPDATE_OPEN_RECORDS;
+
+static void db_update_open_record(HNDLE hDB, HNDLE hKey, KEY* xkey, INT level, void* voidp)
+{
+   KEY* pkey;
+   int found = 0;
+   int count = 0;
+   int status;
+   int k;
+   UPDATE_OPEN_RECORDS *uorp = voidp;
+   char path[256];
+
+   for (k=0; k<uorp->num_keys; k++)
+      if (uorp->hkeys[k] == hKey) {
+         found = 1;
+         count = uorp->counts[k];
+         break;
+      }
+
+   if (xkey->notify_count == 0 && !found)
+      return; // no open record here
+
+   status = db_get_path(hDB, hKey, path, sizeof(path));
+   if (status != DB_SUCCESS)
+      return;
+
+   pkey = (KEY *) ((char *) uorp->pheader + hKey);
+   
+   // extra check: are we looking at the same key?
+   assert(xkey->notify_count == pkey->notify_count);
+   
+   if (0)
+      printf("%s, notify_count %d, found %d, our count %d\n", path, pkey->notify_count, found, count);
+
+   if (pkey->notify_count==0 && found) {
+      cm_msg(MINFO, "db_update_open_record", "Added missing open record flag to \"%s\"", path);
+      pkey->notify_count = count;
+      uorp->num_modified++;
+      return;
+   }
+
+   if (pkey->notify_count!=0 && !found) {
+      cm_msg(MINFO, "db_update_open_record", "Removed open record flag from \"%s\"", path);
+      pkey->notify_count = 0;
+      uorp->num_modified++;
+
+      if (pkey->access_mode | MODE_EXCLUSIVE) {
+         status = db_set_mode(hDB, hKey, (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE), 2);
+         if (status != DB_SUCCESS) {
+            cm_msg(MERROR, "db_update_open_record", "Cannot remove exclusive access mode from \"%s\", db_set_mode() status %d", path, status);
+            return;
+         }
+         cm_msg(MINFO, "db_update_open_record", "Removed exclusive access mode from \"%s\"", path);
+      }
+      return;
+   }
+
+   if (pkey->notify_count != uorp->counts[k]) {
+      cm_msg(MINFO, "db_update_open_record", "Updated notify_count of \"%s\" from %d to %d", path, pkey->notify_count, count);
+      pkey->notify_count = count;
+      uorp->num_modified++;
+      return;
+   }
+}
+
+static int db_validate_open_records(HNDLE hDB)
+{
+   UPDATE_OPEN_RECORDS uor;
+   DATABASE_HEADER * pheader;
+   int i, j, k;
+
+   if (hDB > _database_entries || hDB <= 0) {
+      cm_msg(MERROR, "db_validate_open_records", "invalid database handle");
+      return DB_INVALID_HANDLE;
+   }
+
+   uor.max_keys = MAX_CLIENTS*MAX_OPEN_RECORDS;
+   uor.num_keys = 0;
+   uor.hkeys = (HNDLE*)calloc(uor.max_keys, sizeof(HNDLE));
+   uor.counts = (int*)calloc(uor.max_keys, sizeof(int));
+   uor.modes = (int*)calloc(uor.max_keys, sizeof(int));
+   uor.num_modified = 0;
+
+   assert(uor.hkeys != NULL);
+   assert(uor.counts != NULL);
+   assert(uor.modes != NULL);
+
+   db_lock_database(hDB);
+
+   pheader = _database[hDB - 1].database_header;
+
+   uor.pheader = pheader;
+
+   for (i = 0; i < pheader->max_client_index; i++) {
+      DATABASE_CLIENT* pclient = &pheader->client[i];
+      for (j = 0; j < pclient->max_index; j++)
+         if (pclient->open_record[j].handle) {
+            int found = 0;
+            for (k=0; k<uor.num_keys; k++) {
+               if (uor.hkeys[k] == pclient->open_record[j].handle) {
+                  uor.counts[k]++;
+                  found = 1;
+                  break;
+               }
+            }
+            if (!found) {
+               uor.hkeys[uor.num_keys] = pclient->open_record[j].handle;
+               uor.counts[uor.num_keys] = 1;
+               uor.modes[uor.num_keys] = pclient->open_record[j].access_mode;
+               uor.num_keys++;
+            }
+         }
+   }
+
+   if (0) {
+      for (i=0; i<uor.num_keys; i++) {
+         printf("index %d, handle %d, count %d, access mode %d\n", i, uor.hkeys[i], uor.counts[i], uor.modes[i]);
+      }
+   }
+
+   db_scan_tree_link(hDB, 0, 0, db_update_open_record, &uor);
+
+   if (uor.num_modified) {
+      cm_msg(MINFO, "db_validate_open_records", "Corrected %d ODB entries", uor.num_modified);
+   }
+
+   db_unlock_database(hDB);
+
+   free(uor.hkeys);
+   free(uor.counts);
+   free(uor.modes);
+
+   return DB_SUCCESS;
+}
+
 /*------------------------------------------------------------------*/
 static int db_validate_db(DATABASE_HEADER * pheader)
 {
@@ -689,8 +832,7 @@ static int db_validate_db(DATABASE_HEADER * pheader)
    /* validate the key free list */
 
    if (!db_validate_key_offset(pheader, pheader->first_free_key)) {
-      cm_msg(MERROR, "db_validate_db",
-             "Warning: database corruption, first_free_key 0x%08X", pheader->first_free_key - sizeof(DATABASE_HEADER));
+      cm_msg(MERROR, "db_validate_db", "Warning: database corruption, first_free_key 0x%08X", pheader->first_free_key - sizeof(DATABASE_HEADER));
       return 0;
    }
 
@@ -700,8 +842,7 @@ static int db_validate_db(DATABASE_HEADER * pheader)
       FREE_DESCRIP *nextpfree;
 
       if (pfree->next_free != 0 && !db_validate_key_offset(pheader, pfree->next_free)) {
-         cm_msg(MERROR, "db_validate_db",
-                "Warning: database corruption, key area next_free 0x%08X", pfree->next_free - sizeof(DATABASE_HEADER));
+         cm_msg(MERROR, "db_validate_db", "Warning: database corruption, key area next_free 0x%08X", pfree->next_free - sizeof(DATABASE_HEADER));
          return 0;
       }
 
@@ -709,9 +850,7 @@ static int db_validate_db(DATABASE_HEADER * pheader)
       nextpfree = (FREE_DESCRIP *) ((char *) pheader + pfree->next_free);
 
       if (pfree->next_free != 0 && nextpfree == pfree) {
-         cm_msg(MERROR, "db_validate_db",
-                "Warning: database corruption, key area next_free 0x%08X is same as current free",
-                pfree - sizeof(DATABASE_HEADER));
+         cm_msg(MERROR, "db_validate_db", "Warning: database corruption, key area next_free 0x%08X is same as current free", pfree - sizeof(DATABASE_HEADER));
          return 0;
       }
 
@@ -730,9 +869,7 @@ static int db_validate_db(DATABASE_HEADER * pheader)
    /* validate the data free list */
 
    if (!db_validate_data_offset(pheader, pheader->first_free_data)) {
-      cm_msg(MERROR, "db_validate_db",
-             "Warning: database corruption, first_free_data 0x%08X",
-             pheader->first_free_data - sizeof(DATABASE_HEADER));
+      cm_msg(MERROR, "db_validate_db", "Warning: database corruption, first_free_data 0x%08X", pheader->first_free_data - sizeof(DATABASE_HEADER));
       return 0;
    }
 
@@ -742,8 +879,7 @@ static int db_validate_db(DATABASE_HEADER * pheader)
       FREE_DESCRIP *nextpfree;
 
       if (pfree->next_free != 0 && !db_validate_data_offset(pheader, pfree->next_free)) {
-         cm_msg(MERROR, "db_validate_db",
-                "Warning: database corruption, data area next_free 0x%08X", pfree->next_free - sizeof(DATABASE_HEADER));
+         cm_msg(MERROR, "db_validate_db", "Warning: database corruption, data area next_free 0x%08X", pfree->next_free - sizeof(DATABASE_HEADER));
          return 0;
       }
 
@@ -751,9 +887,7 @@ static int db_validate_db(DATABASE_HEADER * pheader)
       nextpfree = (FREE_DESCRIP *) ((char *) pheader + pfree->next_free);
 
       if (pfree->next_free != 0 && nextpfree == pfree) {
-         cm_msg(MERROR, "db_validate_db",
-                "Warning: database corruption, data area next_free 0x%08X is same as current free",
-                pfree - sizeof(DATABASE_HEADER));
+         cm_msg(MERROR, "db_validate_db", "Warning: database corruption, data area next_free 0x%08X is same as current free", pfree - sizeof(DATABASE_HEADER));
          return 0;
       }
 
@@ -772,12 +906,16 @@ static int db_validate_db(DATABASE_HEADER * pheader)
    /* validate the tree of keys, starting from the root key */
 
    if (!db_validate_key_offset(pheader, pheader->root_key)) {
-      cm_msg(MERROR, "db_validate_db",
-             "Warning: database corruption, root_key 0x%08X is invalid", pheader->root_key - sizeof(DATABASE_HEADER));
+      cm_msg(MERROR, "db_validate_db", "Warning: database corruption, root_key 0x%08X is invalid", pheader->root_key - sizeof(DATABASE_HEADER));
       return 0;
    }
 
-   return db_validate_key(pheader, 1, "", (KEY *) ((char *) pheader + pheader->root_key));
+   if (!db_validate_key(pheader, 1, "", (KEY *) ((char *) pheader + pheader->root_key))) {
+      //cm_msg(MERROR, "db_validate_db", "Warning: database corruption ... what do we say here??? db_validate_key() already complained");
+      return 0;
+   }
+
+   return 1;
 }
 
 /**dox***************************************************************/
@@ -1028,8 +1166,6 @@ INT db_open_database(const char *xdatabase_name, INT database_size, HNDLE * hDB,
    /* Only enable this for systems that define ESRCH and hope that
     they also support kill(pid,0) */
    for (i = 0; i < MAX_CLIENTS; i++) {
-      int k;
-      
       errno = 0;
       kill(pheader->client[i].pid, 0);
       if (errno == ESRCH) {
@@ -1039,20 +1175,8 @@ INT db_open_database(const char *xdatabase_name, INT database_size, HNDLE * hDB,
          strlcpy(client_name_tmp, pheader->client[i].name, sizeof(client_name_tmp));
          client_pid = pheader->client[i].pid;
          
-         /* decrement notify_count for open records and clear exclusive mode */
-         for (k = 0; k < pheader->client[i].max_index; k++)
-            if (pheader->client[i].open_record[k].handle) {
-               pkey = (KEY *) ((char *) pheader + pheader->client[i].open_record[k].handle);
-               if (pkey->notify_count > 0)
-                  pkey->notify_count--;
-
-               printf("client %d, open rec %d, access more 0x%x\n", i, k, pheader->client[i].open_record[k].access_mode);
-               
-               if (pheader->client[i].open_record[k].access_mode & MODE_WRITE) {
-                  status = db_set_mode(handle + 1, pheader->client[i].open_record[k].handle, (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE), 2);
-                  printf("db_set_mode status %d\n", status);
-               }
-            }
+         // removed: /* decrement notify_count for open records and clear exclusive mode */
+         // open records are corrected later, by db_validate_open_records()
          
          /* clear entry from client structure in database header */
          memset(&(pheader->client[i]), 0, sizeof(DATABASE_CLIENT));
@@ -1133,6 +1257,13 @@ INT db_open_database(const char *xdatabase_name, INT database_size, HNDLE * hDB,
    /* setup dispatcher for updated records */
    ss_suspend_set_dispatch(CH_IPC, 0, (int (*)(void)) cm_dispatch_ipc);
    
+   status = db_validate_open_records(handle + 1);
+   if (status != DB_SUCCESS) {
+      db_unlock_database(handle + 1);
+      cm_msg(MERROR, "db_open_database", "Error: db_validate_open_records() status %d", status);
+      return status;
+   }
+
    db_unlock_database(handle + 1);
    
    if (shm_created)
@@ -2951,28 +3082,33 @@ INT db_get_path(HNDLE hDB, HNDLE hKey, char *path, INT buf_size)
 void db_find_open_records(HNDLE hDB, HNDLE hKey, KEY * key, INT level, void *result)
 {
 #ifdef LOCAL_ROUTINES
-   DATABASE_HEADER *pheader;
-   DATABASE_CLIENT *pclient;
-   INT i, j;
-   char line[256], str[80];
-
-   /* avoid compiler warning */
-   i = level;
-
    /* check if this key has notify count set */
    if (key->notify_count) {
-      db_get_path(hDB, hKey, str, sizeof(str));
-      sprintf(line, "%s open %d times by ", str, key->notify_count);
+      char line[256], path[80];
+      DATABASE_HEADER *pheader;
+      int i, j;
+      int count = 0;
+
+      db_get_path(hDB, hKey, path, sizeof(path));
+      sprintf(line, "%s open %d times by ", path, key->notify_count);
 
       db_lock_database(hDB);
       pheader = _database[hDB - 1].database_header;
 
       for (i = 0; i < pheader->max_client_index; i++) {
-         pclient = &pheader->client[i];
+         DATABASE_CLIENT *pclient = &pheader->client[i];
          for (j = 0; j < pclient->max_index; j++)
-            if (pclient->open_record[j].handle == hKey)
-               sprintf(line + strlen(line), "%s ", pclient->name);
+            if (pclient->open_record[j].handle == hKey) {
+               count++;
+               sprintf(line + strlen(line), "\"%s\" ", pclient->name);
+               //sprintf(line + strlen(line), ", handle %d, mode %d ", pclient->open_record[j].handle, pclient->open_record[j].access_mode);
+            }
       }
+
+      if (count < 1) {
+         sprintf(line + strlen(line), "a deleted client");
+      }
+
       strcat(line, "\n");
       strcat((char *) result, line);
 
