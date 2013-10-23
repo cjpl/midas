@@ -9046,6 +9046,8 @@ INT rpc_client_connect(const char *host_name, INT port, const char *client_name,
    _client_connection[idx].send_sock = sock;
    _client_connection[idx].connected = 0;
 
+   ss_mutex_release(mtx);
+
    /* connect to remote node */
    memset(&bind_addr, 0, sizeof(bind_addr));
    bind_addr.sin_family = AF_INET;
@@ -9064,13 +9066,10 @@ INT rpc_client_connect(const char *host_name, INT port, const char *client_name,
    if (phe == NULL) {
       cm_msg(MERROR, "rpc_client_connect", "cannot lookup host name \'%s\'", host_name);
       _client_connection[idx].send_sock = 0;
-      ss_mutex_release(mtx);
       return RPC_NET_ERROR;
    }
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
 #endif
-
-   ss_mutex_release(mtx);
 
 #ifdef OS_UNIX
    do {
