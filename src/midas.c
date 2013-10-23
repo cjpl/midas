@@ -4368,13 +4368,26 @@ INT tr_main_thread(void *param)
 /* wrapper around cm_transition1() for detached multi-threaded transitions */
 INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size, INT async_flag, INT debug_flag)
 {
+   int mflag = async_flag & MTHREAD;
+   int sflag = async_flag & SYNC;
    midas_thread_t tr_main;
 
-   if (async_flag & MTHREAD) {
+   if (mflag) {
       _trp.transition = transition;
       _trp.run_number = run_number;
-      _trp.errstr = errstr;
-      _trp.errstr_size = errstr_size;
+      if (sflag) {
+         /* in MTHREAD|SYNC mode, we wait until the main thread finishes and it is safe for it to write into errstr */
+         _trp.errstr = errstr;
+         _trp.errstr_size = errstr_size;
+      } else {
+         /* in normal MTHREAD mode, we return right away and
+          * if errstr is a local variable in the caller and they return too,
+          * errstr becomes a stale reference and writing into it will corrupt the stack
+          * in the mlogger, errstr is a local variable in "start_the_run", "stop_the_run"
+          * and we definitely corrupt mlogger memory with out this: */
+         _trp.errstr = NULL;
+         _trp.errstr_size = 0;
+      }
       _trp.async_flag = async_flag;
       _trp.debug_flag = debug_flag;
       _trp.status = 0;
@@ -4384,7 +4397,7 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
          *errstr = 0; // null error string
       
       tr_main = ss_thread_create(tr_main_thread, &_trp);
-      if (async_flag & SYNC) {
+      if (sflag) {
          
          /* wait until main thread has finished */
          do {
