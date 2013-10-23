@@ -3698,7 +3698,9 @@ int cm_transition_call_direct(TR_CLIENT *tr_client)
       if (tr_client->debug_flag == 2)
          cm_msg(MINFO, "cm_transition_call_direct", "cm_transition: Local transition callback finished, status %d", transition_status);
    }
-   
+
+   tr_client->status = transition_status;
+
    /* put error string into client entry in ODB */
    status = db_find_key(hDB, 0, "/System/Clients", &hKey);
    if (status == DB_SUCCESS && hKey) {
@@ -4110,9 +4112,11 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
                tr_client[n_tr_clients].pred = NULL;
                strlcpy(tr_client[n_tr_clients].key_name, subkey.name, sizeof(tr_client[n_tr_clients].key_name));
 
-               if (hSubkey == hKeylocal) {
+               if (hSubkey == hKeylocal && ((async_flag & MTHREAD) == 0)) {
                   /* remember own client */
                   tr_client[n_tr_clients].port = 0;
+                  strlcpy(tr_client[n_tr_clients].client_name, "(localclient)", sizeof(tr_client[n_tr_clients].client_name));
+                  strlcpy(tr_client[n_tr_clients].host_name, "(localhost)", sizeof(tr_client[n_tr_clients].host_name));
                } else {
                   /* get client info */
                   size = sizeof(client_name);
@@ -4125,7 +4129,7 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
 
                   size = sizeof(host_name);
                   db_get_value(hDB, hSubkey, "Host", host_name, &size, TID_STRING, TRUE);
-                  strcpy(tr_client[n_tr_clients].host_name, host_name);
+                  strlcpy(tr_client[n_tr_clients].host_name, host_name, sizeof(tr_client[n_tr_clients].host_name));
                }
 
                n_tr_clients++;
