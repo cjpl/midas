@@ -2396,7 +2396,7 @@ int stop_the_run(int restart)
 {
    int status;
    char errstr[256];
-   int size, flag, trans_flag;
+   int size, flag, mflag, trans_flag;
 
    if (restart) {
       size = sizeof(BOOL);
@@ -2415,8 +2415,14 @@ int stop_the_run(int restart)
    flag = FALSE;
    db_get_value(hDB, 0, "/Logger/Async transitions", &flag, &size, TID_BOOL, TRUE);
 
+   size = sizeof(BOOL);
+   mflag = TRUE;
+   db_get_value(hDB, 0, "/Logger/Multithread transitions", &mflag, &size, TID_BOOL, TRUE);
+
    if (flag)
       trans_flag = ASYNC;
+   else if (mflag)
+      trans_flag = MTHREAD;
    else
       trans_flag = DETACH;
 
@@ -2432,7 +2438,7 @@ int stop_the_run(int restart)
 int start_the_run()
 {
    int status, size, state, run_number;
-   int flag, trans_flag;
+   int flag, mflag, trans_flag;
    char errstr[256];
 
    start_requested = FALSE;
@@ -2472,8 +2478,14 @@ int start_the_run()
    flag = FALSE;
    db_get_value(hDB, 0, "/Logger/Async transitions", &flag, &size, TID_BOOL, TRUE);
 
+   size = sizeof(BOOL);
+   mflag = TRUE;
+   db_get_value(hDB, 0, "/Logger/Multithread transitions", &mflag, &size, TID_BOOL, TRUE);
+
    if (flag)
       trans_flag = ASYNC;
+   else if (mflag)
+      trans_flag = MTHREAD;
    else
       trans_flag = DETACH;
 
@@ -2947,7 +2959,14 @@ INT open_history()
    }
 
    if (global_per_variable_history) {
-      cm_msg(MINFO, "open_history", "Per-variable history is enabled");
+      static int previous = -1;
+      if (global_per_variable_history != previous) {
+         if (global_per_variable_history)
+            cm_msg(MINFO, "open_history", "Per-variable history is enabled");
+         else
+            ;//cm_msg(MINFO, "open_history", "Per-variable history is disabled");
+      }
+      previous = global_per_variable_history;
    }
 
    // setup history links
