@@ -213,6 +213,8 @@ INT frontend_init()
 {
    int status;
 
+   cm_msg(MINFO, "frontend_init", "Frontend init");
+
    //cm_set_watchdog_params (FALSE, 0);
 
    status = rpc_register_functions(rpc_list, NULL);
@@ -233,46 +235,50 @@ INT frontend_init()
 
 INT frontend_exit()
 {
-  return SUCCESS;
+   cm_msg(MINFO, "frontend_exit", "Frontend exit");
+   return SUCCESS;
 }
 
 /*-- Begin of Run --------------------------------------------------*/
 
 INT begin_of_run(INT run_number, char *error)
 {
-  printf("Begin run %d\n", run_number);
-  gbl_run_number = run_number;
+   cm_msg(MINFO, "begin_of_run", "Begin run %d", run_number);
 
-  configure();
+   gbl_run_number = run_number;
 
-  count_slow = 0;
-
-  return SUCCESS;
+   configure();
+   
+   count_slow = 0;
+   
+   return SUCCESS;
 }
 
 /*-- End of Run ----------------------------------------------------*/
 
 INT end_of_run(INT run_number, char *error)
 {
-  printf("End run %d!\n", run_number);
+   cm_msg(MINFO, "end_of_run", "End run %d", run_number);
 
-  cm_msg(MINFO, frontend_name, "read %d slow events", count_slow);
+   cm_msg(MINFO, frontend_name, "read %d slow events", count_slow);
 
-  return SUCCESS;
+   return SUCCESS;
 }
 
 /*-- Pause Run -----------------------------------------------------*/
 
 INT pause_run(INT run_number, char *error)
 {
-  return SUCCESS;
+   cm_msg(MINFO, "pause_run", "Pause run %d", run_number);
+   return SUCCESS;
 }
 
 /*-- Resume Run ----------------------------------------------------*/
 
 INT resume_run(INT run_number, char *error)
 {
-  return SUCCESS;
+   cm_msg(MINFO, "resume_run", "Resume run %d", run_number);
+   return SUCCESS;
 }
 
 /*-- Frontend Loop -------------------------------------------------*/
