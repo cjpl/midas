@@ -4872,7 +4872,7 @@ BM_MEMSIZE_MISMATCH Buffer size conflicts with an existing buffer of
 different size <br>
 BM_INVALID_PARAM Invalid parameter
 */
-INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
+INT bm_open_buffer(const char *buffer_name, INT buffer_size, INT * buffer_handle)
 {
    INT status;
 
@@ -4896,6 +4896,11 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
 
       if (!buffer_name || !buffer_name[0]) {
          cm_msg(MERROR, "bm_open_buffer", "cannot open buffer with zero name");
+         return BM_INVALID_PARAM;
+      }
+
+      if (strlen(buffer_name) >= NAME_LENGTH) {
+         cm_msg(MERROR, "bm_open_buffer", "buffer name \"%s\" is longer than %d bytes", buffer_name, NAME_LENGTH);
          return BM_INVALID_PARAM;
       }
 
@@ -4964,9 +4969,6 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
       }
 
       handle = i;
-
-      if (strlen(buffer_name) >= NAME_LENGTH)
-         buffer_name[NAME_LENGTH] = 0;
 
       /* reduce buffer size is larger than maximum */
 #ifdef MAX_SHM_SIZE
