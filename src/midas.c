@@ -3418,7 +3418,7 @@ typedef struct tr_client {
    char  host_name[HOST_NAME_LENGTH];
    char  client_name[NAME_LENGTH];
    int   port;
-   HNDLE hKey;
+   char  key_name[NAME_LENGTH]; /* this client key name in /System/Clients */
    int   status;
    char  errorstr[256];
 } TR_CLIENT;
@@ -3526,7 +3526,7 @@ int cm_transition_detach(INT transition, INT run_number, char *errstr, INT errst
 int cm_transition_call(void *param)
 {
    INT old_timeout, status, i, t1, t0, size, n_wait;
-   HNDLE hDB, hConn;
+   HNDLE hDB, hConn, hKey;
    int connect_timeout = 10000;
    int timeout = 120000;
    TR_CLIENT *tr_client;
@@ -3654,12 +3654,19 @@ int cm_transition_call(void *param)
    if (status != CM_SUCCESS && strlen(tr_client->errorstr) < 2)
       sprintf(tr_client->errorstr, "Unknown error %d from client \'%s\' on host %s", status, tr_client->client_name, tr_client->host_name);
 
-   /* put error string into client entry in ODB */
-   db_set_mode(hDB, tr_client->hKey, MODE_READ | MODE_WRITE, TRUE);
-   db_set_value(hDB, tr_client->hKey, "Error", tr_client->errorstr, sizeof(tr_client->errorstr), 1, TID_STRING);
-   db_set_mode(hDB, tr_client->hKey, MODE_READ, TRUE);
-
    tr_client->status = status;
+
+   /* put error string into client entry in ODB */
+   status = db_find_key(hDB, 0, "/System/Clients", &hKey);
+   if (status == DB_SUCCESS && hKey) {
+      status = db_find_key(hDB, hKey, tr_client->key_name, &hKey);
+      if (status == DB_SUCCESS) {
+         db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE, TRUE);
+         db_set_value(hDB, hKey, "Error", tr_client->errorstr, sizeof(tr_client->errorstr), 1, TID_STRING);
+         db_set_mode(hDB, hKey, MODE_READ, TRUE);
+      }
+   }
+
    return CM_SUCCESS;
 }
 
@@ -3668,7 +3675,8 @@ int cm_transition_call(void *param)
 int cm_transition_call_direct(TR_CLIENT *tr_client)
 {
    int i, status;
-   HNDLE hDB;
+   int transition_status = CM_SUCCESS;
+   HNDLE hDB, hKey;
    
    cm_get_experiment_database(&hDB, NULL);
    
@@ -3683,21 +3691,28 @@ int cm_transition_call_direct(TR_CLIENT *tr_client)
       if (tr_client->debug_flag == 2)
          cm_msg(MINFO, "cm_transition_call_direct", "cm_transition: Calling local transition callback");
       
-      status = _trans_table[i].func(tr_client->run_number, tr_client->errorstr);
+      transition_status = _trans_table[i].func(tr_client->run_number, tr_client->errorstr);
       
       if (tr_client->debug_flag == 1)
-         printf("Local transition callback finished\n");
+         printf("Local transition callback finished, status %d\n", transition_status);
       if (tr_client->debug_flag == 2)
-         cm_msg(MINFO, "cm_transition_call_direct", "cm_transition: Local transition callback finished");
-   } else
-      status = CM_SUCCESS;
-   
-   /* put error string into client entry in ODB */
-   db_set_mode(hDB, tr_client->hKey, MODE_READ | MODE_WRITE, TRUE);
-   db_set_value(hDB, tr_client->hKey, "Error", tr_client->errorstr, sizeof(tr_client->errorstr), 1, TID_STRING);
-   db_set_mode(hDB, tr_client->hKey, MODE_READ, TRUE);
+         cm_msg(MINFO, "cm_transition_call_direct", "cm_transition: Local transition callback finished, status %d", transition_status);
+   }
 
-   return status;
+   tr_client->status = transition_status;
+
+   /* put error string into client entry in ODB */
+   status = db_find_key(hDB, 0, "/System/Clients", &hKey);
+   if (status == DB_SUCCESS && hKey) {
+      status = db_find_key(hDB, hKey, tr_client->key_name, &hKey);
+      if (status == DB_SUCCESS) {
+         db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE, TRUE);
+         db_set_value(hDB, hKey, "Error", tr_client->errorstr, sizeof(tr_client->errorstr), 1, TID_STRING);
+         db_set_mode(hDB, hKey, MODE_READ, TRUE);
+      }
+   }
+
+   return transition_status;
 }
 
 /********************************************************************/
@@ -4061,9 +4076,13 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
    tr_client = NULL;
 
    for (i = 0, status = 0;; i++) {
+      KEY subkey;
       status = db_enum_key(hDB, hRootKey, i, &hSubkey);
       if (status == DB_NO_MORE_SUBKEYS)
          break;
+
+      status = db_get_key(hDB, hSubkey, &subkey);
+      assert(status == DB_SUCCESS);
 
       if (status == DB_SUCCESS) {
          status = db_find_key(hDB, hSubkey, tr_key_name, &hKeyTrans);
@@ -4091,17 +4110,18 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
                tr_client[n_tr_clients].status = 0;
                tr_client[n_tr_clients].n_pred  = 0;
                tr_client[n_tr_clients].pred = NULL;
+               strlcpy(tr_client[n_tr_clients].key_name, subkey.name, sizeof(tr_client[n_tr_clients].key_name));
 
-               if (hSubkey == hKeylocal) {
+               if (hSubkey == hKeylocal && ((async_flag & MTHREAD) == 0)) {
                   /* remember own client */
                   tr_client[n_tr_clients].port = 0;
-                  tr_client[n_tr_clients].hKey = hKeylocal;
+                  strlcpy(tr_client[n_tr_clients].client_name, "(localclient)", sizeof(tr_client[n_tr_clients].client_name));
+                  strlcpy(tr_client[n_tr_clients].host_name, "(localhost)", sizeof(tr_client[n_tr_clients].host_name));
                } else {
                   /* get client info */
-                  tr_client[n_tr_clients].hKey = hSubkey;
                   size = sizeof(client_name);
                   db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING, TRUE);
-                  strcpy(tr_client[n_tr_clients].client_name, client_name);
+                  strlcpy(tr_client[n_tr_clients].client_name, client_name, sizeof(tr_client[n_tr_clients].client_name));
 
                   size = sizeof(port);
                   db_get_value(hDB, hSubkey, "Server Port", &port, &size, TID_INT, TRUE);
@@ -4109,7 +4129,7 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
 
                   size = sizeof(host_name);
                   db_get_value(hDB, hSubkey, "Host", host_name, &size, TID_STRING, TRUE);
-                  strcpy(tr_client[n_tr_clients].host_name, host_name);
+                  strlcpy(tr_client[n_tr_clients].host_name, host_name, sizeof(tr_client[n_tr_clients].host_name));
                }
 
                n_tr_clients++;
@@ -4348,13 +4368,26 @@ INT tr_main_thread(void *param)
 /* wrapper around cm_transition1() for detached multi-threaded transitions */
 INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size, INT async_flag, INT debug_flag)
 {
+   int mflag = async_flag & MTHREAD;
+   int sflag = async_flag & SYNC;
    midas_thread_t tr_main;
 
-   if (async_flag & MTHREAD) {
+   if (mflag) {
       _trp.transition = transition;
       _trp.run_number = run_number;
-      _trp.errstr = errstr;
-      _trp.errstr_size = errstr_size;
+      if (sflag) {
+         /* in MTHREAD|SYNC mode, we wait until the main thread finishes and it is safe for it to write into errstr */
+         _trp.errstr = errstr;
+         _trp.errstr_size = errstr_size;
+      } else {
+         /* in normal MTHREAD mode, we return right away and
+          * if errstr is a local variable in the caller and they return too,
+          * errstr becomes a stale reference and writing into it will corrupt the stack
+          * in the mlogger, errstr is a local variable in "start_the_run", "stop_the_run"
+          * and we definitely corrupt mlogger memory with out this: */
+         _trp.errstr = NULL;
+         _trp.errstr_size = 0;
+      }
       _trp.async_flag = async_flag;
       _trp.debug_flag = debug_flag;
       _trp.status = 0;
@@ -4364,7 +4397,7 @@ INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size,
          *errstr = 0; // null error string
       
       tr_main = ss_thread_create(tr_main_thread, &_trp);
-      if (async_flag & SYNC) {
+      if (sflag) {
          
          /* wait until main thread has finished */
          do {
@@ -4839,7 +4872,7 @@ BM_MEMSIZE_MISMATCH Buffer size conflicts with an existing buffer of
 different size <br>
 BM_INVALID_PARAM Invalid parameter
 */
-INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
+INT bm_open_buffer(const char *buffer_name, INT buffer_size, INT * buffer_handle)
 {
    INT status;
 
@@ -4863,6 +4896,11 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
 
       if (!buffer_name || !buffer_name[0]) {
          cm_msg(MERROR, "bm_open_buffer", "cannot open buffer with zero name");
+         return BM_INVALID_PARAM;
+      }
+
+      if (strlen(buffer_name) >= NAME_LENGTH) {
+         cm_msg(MERROR, "bm_open_buffer", "buffer name \"%s\" is longer than %d bytes", buffer_name, NAME_LENGTH);
          return BM_INVALID_PARAM;
       }
 
@@ -4931,9 +4969,6 @@ INT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle)
       }
 
       handle = i;
-
-      if (strlen(buffer_name) >= NAME_LENGTH)
-         buffer_name[NAME_LENGTH] = 0;
 
       /* reduce buffer size is larger than maximum */
 #ifdef MAX_SHM_SIZE
@@ -9013,6 +9048,8 @@ INT rpc_client_connect(const char *host_name, INT port, const char *client_name,
    _client_connection[idx].send_sock = sock;
    _client_connection[idx].connected = 0;
 
+   ss_mutex_release(mtx);
+
    /* connect to remote node */
    memset(&bind_addr, 0, sizeof(bind_addr));
    bind_addr.sin_family = AF_INET;
@@ -9031,13 +9068,10 @@ INT rpc_client_connect(const char *host_name, INT port, const char *client_name,
    if (phe == NULL) {
       cm_msg(MERROR, "rpc_client_connect", "cannot lookup host name \'%s\'", host_name);
       _client_connection[idx].send_sock = 0;
-      ss_mutex_release(mtx);
       return RPC_NET_ERROR;
    }
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
 #endif
-
-   ss_mutex_release(mtx);
 
 #ifdef OS_UNIX
    do {

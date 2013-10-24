@@ -427,10 +427,10 @@ function ODBGetAlarms()
 
 function ODBEdit(path)
 {
-   var value = ODBGet(path);
+   var value = ODBGet(encodeURIComponent(path));
    var new_value = prompt('Please enter new value', value);
    if (new_value != undefined) {
-      ODBSet(path, new_value);
+      ODBSet(encodeURIComponent(path), new_value);
       window.location.reload();
    }
 }
@@ -447,7 +447,7 @@ function ODBFinishInlineEdit(p, path)
    else
       value = p.childNodes[0].value;
 
-   ODBSet(path, value);
+   ODBSet(encodeURIComponent(path), value);
    p.ODBsent = true;
    
    var link = document.createElement('a');
@@ -472,7 +472,7 @@ function ODBInlineEditKeydown(event, p, path)
       /* cancel editing */
       p.ODBsent = true;
 
-      var value = ODBGet(path);
+      var value = ODBGet(encodeURIComponent(path));
       var link = document.createElement('a');
       if (value == "")
          value = "(empty)";
@@ -499,7 +499,7 @@ function ODBInlineEditKeydown(event, p, path)
 
 function ODBInlineEdit(p, odb_path)
 {
-   var cur_val = ODBGet(odb_path);
+   var cur_val = ODBGet(encodeURIComponent(odb_path));
    var size = cur_val.length+10;
    var index;
    
@@ -507,7 +507,7 @@ function ODBInlineEdit(p, odb_path)
    if (odb_path.indexOf('[') > 0) {
       index = odb_path.substr(odb_path.indexOf('['));
    
-      p.innerHTML = index+"&nbsp;<input type=\"text\" size=\""+size+"\" value=\""+cur_val+"\" onKeydown=\"return ODBInlineEditKeydown(this.parentNode,\'"+odb_path+"\');\" onBlur=\"ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\');\" >";
+      p.innerHTML = index+"&nbsp;<input type=\"text\" size=\""+size+"\" value=\""+cur_val+"\" onKeydown=\"return ODBInlineEditKeydown(event, this.parentNode,\'"+odb_path+"\');\" onBlur=\"ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\');\" >";
       setTimeout(function(){p.childNodes[1].focus();p.childNodes[1].select();}, 10); // needed for Firefox
    } else {
       p.innerHTML = "<input type=\"text\" size=\""+size+"\" value=\""+cur_val+"\" onKeydown=\"return ODBInlineEditKeydown(event, this.parentNode,\'"+odb_path+"\');\" onBlur=\"ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\');\" >";

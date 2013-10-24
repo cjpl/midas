@@ -6023,7 +6023,7 @@ void ss_printf(INT x, INT y, const char *format, ...)
 }
 
 /*------------------------------------------------------------------*/
-char *ss_getpass(char *prompt)
+char *ss_getpass(const char *prompt)
 /********************************************************************\
 
   Routine: ss_getpass

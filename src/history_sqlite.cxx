@@ -55,6 +55,63 @@ typedef std::map<std::string, StringMap>    StringMapMap;
 #define STRLCPY(dst, src) strlcpy((dst), (src), sizeof(dst))
 #define FREE(x) { if (x) free(x); (x) = NULL; }
 
+static std::string TimeToString(time_t t)
+{
+   const char* sign = "";
+
+   if (t == 0)
+      return "0";
+
+   time_t tt = t;
+
+   if (t < 0) {
+      sign = "-";
+      tt = -t;
+   }
+      
+   assert(tt > 0);
+
+   std::string v;
+   while (tt) {
+      char c = '0' + tt%10;
+      tt /= 10;
+      v = c + v;
+   }
+
+   v = sign + v;
+
+   //printf("time %.0f -> %s\n", (double)t, v.c_str());
+
+   return v;
+}
+
+static std::string SmallIntToString(int i)
+{
+   int ii = i;
+
+   if (i == 0)
+      return "0";
+
+   assert(i > 0);
+
+   std::string v;
+   while (i) {
+      char c = '0' + i%10;
+      i /= 10;
+      v = c + v;
+   }
+
+   printf("SmallIntToString: %d -> %s\n", ii, v.c_str());
+
+   return v;
+}
+
+static void xcmp(const std::string& x, const char* y)
+{
+   printf("->%s<-\n", y);
+   printf("=>%s<=\n", x.c_str());
+}
+
 ////////////////////////////////////////
 // Definitions extracted from midas.c //
 ////////////////////////////////////////
@@ -529,8 +586,10 @@ int Sqlite::ListColumns(const char* table, std::vector<std::string> *plist)
    if (fDebug)
       printf("Sqlite::ListColumns for table \'%s\'\n", table);
 
-   char cmd[256];
-   sprintf(cmd, "PRAGMA table_info(%s);", table);
+   std::string cmd;
+   cmd = "PRAGMA table_info(";
+   cmd += table;
+   cmd += ");";
 
    int status;
 
@@ -538,7 +597,7 @@ int Sqlite::ListColumns(const char* table, std::vector<std::string> *plist)
 
    sqlite3_stmt* st;
 
-   status = Prepare(table, cmd, &st);
+   status = Prepare(table, cmd.c_str(), &st);
    if (status != DB_SUCCESS)
       return status;
 
@@ -730,21 +789,26 @@ int WriteEvent(Sqlite* sql, Event *e, time_t t, const char*buf, int size)
    // 2001-02-16 20:38:40.1
    char s[1024];
    strftime(s,sizeof(s)-1,"%Y-%m-%d %H:%M:%S.0",localtime(&t));
-   
-   char sss[102400];
-   sprintf(sss, "INSERT INTO \'%s\' (_t_time, _i_time%s) VALUES (\'%s\', \'%d\'%s);",
-           table_name,
-           tags.c_str(),
-           s,
-           (int)t,
-           values.c_str());
+
+   std::string cmd;
+   cmd = "INSERT INTO \'";
+   cmd += table_name;
+   cmd += "\' (_t_time, _i_time";
+   cmd += tags;
+   cmd += ") VALUES (\'";
+   cmd += s;
+   cmd += "\', \'";
+   cmd += TimeToString(t);
+   cmd += "\'";
+   cmd += values;
+   cmd += ");";
 
    if (e->transactionCount == 0)
       sql->OpenTransaction(table_name);
 
    e->transactionCount++;
    
-   int status = sql->Exec(table_name, sss);
+   int status = sql->Exec(table_name, cmd.c_str());
 
    if (e->transactionCount > 100000) {
       //printf("flush table %s\n", table_name);
@@ -857,12 +921,17 @@ public:
    std::string GetEventName(const char* table_name)
    {
       int status;
-      char cmd[1024];
-      sprintf(cmd, "SELECT event_name, _i_time FROM \'_event_name_%s\' WHERE table_name='%s' ORDER BY _i_time ASC;", table_name, table_name);
+
+      std::string cmd;
+      cmd = "SELECT event_name, _i_time FROM \'_event_name_";
+      cmd += table_name;
+      cmd += "\' WHERE table_name='";
+      cmd += table_name;
+      cmd += "' ORDER BY _i_time ASC;";
 
       sqlite3_stmt* st;
 
-      status = fSql->Prepare(table_name, cmd, &st);
+      status = fSql->Prepare(table_name, cmd.c_str(), &st);
       
       if (status != DB_SUCCESS) {
          return table_name;
@@ -923,12 +992,16 @@ public:
 
    int GetColumnNames(const char* table_name, StringMap *ptag2col, StringMap *pcol2tag)
    {
-      char cmd[1024];
-      sprintf(cmd, "SELECT column_name, tag_name, _i_time FROM \'_column_names_%s\' WHERE table_name='%s' ORDER BY _i_time ASC;", table_name, table_name);
+      std::string cmd;
+      cmd = "SELECT column_name, tag_name, _i_time FROM \'_column_names_";
+      cmd += table_name;
+      cmd += "\' WHERE table_name='";
+      cmd += table_name;
+      cmd += "' ORDER BY _i_time ASC;";
 
       sqlite3_stmt* st;
       
-      int status = fSql->Prepare(table_name, cmd, &st);
+      int status = fSql->Prepare(table_name, cmd.c_str(), &st);
       
       if (status != DB_SUCCESS) {
          return status;
@@ -1039,29 +1112,53 @@ public:
       if (columns.size() <= 0) {
          // SQL table does not exist
 
-         char buf[1024];
+         std::string cmd;
 
-         sprintf(buf, "CREATE TABLE \'%s\' (_t_time TIMESTAMP NOT NULL, _i_time INTEGER NOT NULL);", e->table_name.c_str());
-         status = fSql->Exec(e->table_name.c_str(), buf);
+         cmd = "CREATE TABLE \'";
+         cmd += e->table_name;
+         cmd += "\' (_t_time TIMESTAMP NOT NULL, _i_time INTEGER NOT NULL);";
+
+         status = fSql->Exec(e->table_name.c_str(), cmd.c_str());
          
-         sprintf(buf, "CREATE INDEX \'%s_i_time_index\' ON \'%s\' (_i_time ASC);", e->table_name.c_str(), e->table_name.c_str());
-         status = fSql->Exec(e->table_name.c_str(), buf);
+         cmd = "CREATE INDEX \'";
+         cmd += e->table_name;
+         cmd += "_i_time_index\' ON \'";
+         cmd += e->table_name;
+         cmd += "\' (_i_time ASC);";
+
+         status = fSql->Exec(e->table_name.c_str(), cmd.c_str());
          
-         sprintf(buf, "CREATE INDEX \'%s_t_time_index\' ON \'%s\' (_t_time);", e->table_name.c_str(), e->table_name.c_str());
-         status = fSql->Exec(e->table_name.c_str(), buf);
+         cmd = "CREATE INDEX \'";
+         cmd += e->table_name;
+         cmd += "_t_time_index\' ON \'";
+         cmd += e->table_name;
+         cmd += "\' (_t_time);";
+
+         status = fSql->Exec(e->table_name.c_str(), cmd.c_str());
          
-         sprintf(buf, "CREATE TABLE \'_event_name_%s\' (table_name TEXT NOT NULL, event_name TEXT NOT NULL, _i_time INTEGER NOT NULL);", e->table_name.c_str());
-         status = fSql->Exec(e->table_name.c_str(), buf);
+         cmd = "CREATE TABLE \'_event_name_";
+         cmd += e->table_name;
+         cmd += "\' (table_name TEXT NOT NULL, event_name TEXT NOT NULL, _i_time INTEGER NOT NULL);";
+
+         status = fSql->Exec(e->table_name.c_str(), cmd.c_str());
          
-         sprintf(buf, "INSERT INTO \'_event_name_%s\' (table_name, event_name, _i_time) VALUES (\'%s\', \'%s\', \'%.0f\');",
-                 e->table_name.c_str(),
-                 e->table_name.c_str(),
-                 e->event_name.c_str(),
-                 now);
-         status = fSql->Exec(e->table_name.c_str(), buf);
+         cmd = "INSERT INTO \'_event_name_";
+         cmd += e->table_name;
+         cmd += "\' (table_name, event_name, _i_time) VALUES (\'";
+         cmd += e->table_name;
+         cmd += "\', \'";
+         cmd += e->event_name;
+         cmd += "\', \'";
+         cmd += TimeToString(now);
+         cmd += "\');";
+
+         status = fSql->Exec(e->table_name.c_str(), cmd.c_str());
          
-         sprintf(buf, "CREATE TABLE \'_column_names_%s\' (table_name TEXT NOT NULL, column_name TEXT NOT NULL, tag_name TEXT NOT NULL, tag_type TEXT NOT NULL, column_type TEXT NOT NULL, _i_time INTEGER NOT NULL);", e->table_name.c_str());
-         status = fSql->Exec(e->table_name.c_str(), buf);
+         cmd = "CREATE TABLE \'_column_names_";
+         cmd += e->table_name;
+         cmd += "\' (table_name TEXT NOT NULL, column_name TEXT NOT NULL, tag_name TEXT NOT NULL, tag_type TEXT NOT NULL, column_type TEXT NOT NULL, _i_time INTEGER NOT NULL);";
+
+         status = fSql->Exec(e->table_name.c_str(), cmd.c_str());
       }
 
       int offset = 0;
@@ -1139,16 +1236,23 @@ public:
 
             // if column name had changed (or is not listed in _column_names), add it
             if (colname != colnames[tagname]) {
-               char buf[1024];
-               sprintf(buf, "INSERT INTO \'_column_names_%s\' (table_name, column_name, tag_name, tag_type, column_type, _i_time) VALUES (\'%s\', \'%s\', \'%s\', \'%s\', \'%s\', \'%.0f\');",
-                       e->table_name.c_str(),
-                       e->table_name.c_str(),
-                       colname.c_str(),
-                       tagname.c_str(),
-                       midasTypeName(tagtype),
-                       coltype.c_str(),
-                       now);
-               status = fSql->Exec(e->table_name.c_str(), buf);
+               std::string cmd;
+               cmd = "INSERT INTO \'_column_names_";
+               cmd += e->table_name;
+               cmd += "\' (table_name, column_name, tag_name, tag_type, column_type, _i_time) VALUES (\'";
+               cmd += e->table_name;
+               cmd += "\', \'";
+               cmd += colname;
+               cmd += "\', \'";
+               cmd += tagname;
+               cmd += "\', \'";
+               cmd += midasTypeName(tagtype);
+               cmd += "\', \'";
+               cmd += coltype;
+               cmd += "\', \'";
+               cmd += TimeToString(now);
+               cmd += "\');";
+               status = fSql->Exec(e->table_name.c_str(), cmd.c_str());
             }
 
             // if SQL column does not exist, create it
@@ -1162,14 +1266,16 @@ public:
             }
 
             if (!column_exists) {
-               char buf[1024];
-            
-               sprintf(buf, "ALTER TABLE \'%s\' ADD COLUMN \'%s\' %s;",
-                       e->table_name.c_str(),
-                       colname.c_str(),
-                       coltype.c_str());
+               std::string cmd;
+               cmd = "ALTER TABLE \'";
+               cmd += e->table_name;
+               cmd += "\' ADD COLUMN \'";
+               cmd += colname;
+               cmd += "\' ";
+               cmd += coltype;
+               cmd += ";";
                
-               status = fSql->Exec(e->table_name.c_str(), buf);
+               status = fSql->Exec(e->table_name.c_str(), cmd.c_str());
                
                if (status != DB_SUCCESS) {
                   e->active = false;
@@ -1564,12 +1670,18 @@ public:
             const char* tn = xitem[j].tableName.c_str();
             const char* cn = xitem[j].columnName.c_str();
 
-            char cmd[256];
-            sprintf(cmd, "SELECT _i_time, \"%s\" FROM \'%s\' WHERE _i_time <= %.0f ORDER BY _i_time DESC LIMIT 2;", cn, tn, dstart_time);
+            std::string cmd;
+            cmd = "SELECT _i_time, \"";
+            cmd += cn;
+            cmd += "\" FROM \'";
+            cmd += tn;
+            cmd += "\' WHERE _i_time <= ";
+            cmd += TimeToString(dstart_time);
+            cmd += " ORDER BY _i_time DESC LIMIT 2;";
 
             sqlite3_stmt *st;
             
-            int status = fSql->Prepare(tn, cmd, &st);
+            int status = fSql->Prepare(tn, cmd.c_str(), &st);
             
             if (fDebug) {
                printf("hs_get_last_written: event \"%s\", tag \"%s\", index %d: Read table \"%s\" column \"%s\": status %d\n",
@@ -1658,7 +1770,7 @@ public:
                colindex.push_back(i);
 
                if (collist.length() > 0)
-                  collist += ",";
+                  collist += ", ";
                collist += std::string("\"") + vvv[i][j].columnName + "\"";
             }
          }
@@ -1673,16 +1785,24 @@ public:
          }
       }
 
-      char cmd[256];
-      sprintf(cmd, "SELECT _i_time, %s FROM \'%s\' WHERE _i_time>=%.0f and _i_time<=%.0f ORDER BY _i_time;", collist.c_str(), tn.c_str(), start_time, end_time);
+      std::string cmd;
+      cmd += "SELECT _i_time, ";
+      cmd += collist;
+      cmd += " FROM \'";
+      cmd += tn;
+      cmd += "\' WHERE _i_time>=";
+      cmd += TimeToString(start_time);
+      cmd += " and _i_time<=";
+      cmd += TimeToString(end_time);
+      cmd += " ORDER BY _i_time;";
 
       if (fDebug) {
-         printf("hs_read_table: cmd %s\n", cmd);
+         printf("hs_read_table: cmd %s\n", cmd.c_str());
       }
       
       sqlite3_stmt *st;
       
-      int status = fSql->Prepare(tn.c_str(), cmd, &st);
+      int status = fSql->Prepare(tn.c_str(), cmd.c_str(), &st);
       
       if (fDebug) {
          printf("hs_read_table: Read table \"%s\" columns \"%s\": status %d\n", tn.c_str(), collist.c_str(), status);

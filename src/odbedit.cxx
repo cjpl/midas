@@ -13,7 +13,7 @@
 #include "msystem.h"
 #include <assert.h>
 
-extern INT cmd_edit(char *prompt, char *cmd, INT(*dir) (char *, INT *), INT(*idle) ());
+extern INT cmd_edit(const char *prompt, char *cmd, INT(*dir) (char *, INT *), INT(*idle) ());
 
 BOOL need_redraw;
 BOOL in_cmd_edit;
@@ -956,7 +956,7 @@ void del_tree(HNDLE hDB, HNDLE hKey, INT level)
 
 /*------------------------------------------------------------------*/
 
-void create_experim_h(HNDLE hDB, char *analyzer_name)
+void create_experim_h(HNDLE hDB, const char *analyzer_name)
 {
    INT i, index, subindex, hfile, status, size;
    HNDLE hKey, hKeyRoot, hKeyEq, hDefKey, hKeyBank, hKeyPar;
@@ -987,7 +987,7 @@ void create_experim_h(HNDLE hDB, char *analyzer_name)
    char experim_h_comment2[] =
        "\\********************************************************************/\n\n";
 
-   char *file_name = "experim.h";
+   const char *file_name = "experim.h";
 
    /* create file */
    hfile = open(file_name, O_WRONLY | O_CREAT | O_TRUNC, 0644);
@@ -1204,8 +1204,8 @@ void assemble_prompt(char *prompt, int psize, char *host_name, char *exp_name, c
    char *pp, *pm, *pc;
    time_t now;
 
-   char *state_char[] = { "U", "S", "P", "R" };
-   char *state_str[] = { "Unknown", "Stopped", "Paused", "Running" };
+   const char *state_char[] = { "U", "S", "P", "R" };
+   const char *state_str[] = { "Unknown", "Stopped", "Paused", "Running" };
 
    cm_get_experiment_database(&hDB, NULL);
 
@@ -1349,24 +1349,24 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
       do {
          if (*pc == '"') {
             pc++;
-            for (i = 0; *pc && *pc != '"' && i<sizeof(param[0])-1; i++)
+            for (i = 0; *pc && *pc != '"' && i<(int)sizeof(param[0])-1; i++)
                param[nparam][i] = *pc++;
             if (*pc)
                pc++;
          } else if (*pc == '\'') {
             pc++;
-            for (i = 0; *pc && *pc != '\'' && i<sizeof(param[0])-1; i++)
+            for (i = 0; *pc && *pc != '\'' && i<(int)sizeof(param[0])-1; i++)
                param[nparam][i] = *pc++;
             if (*pc)
                pc++;
          } else if (*pc == '`') {
             pc++;
-            for (i = 0; *pc && *pc != '`' && i<sizeof(param[0])-1; i++)
+            for (i = 0; *pc && *pc != '`' && i<(int)sizeof(param[0])-1; i++)
                param[nparam][i] = *pc++;
             if (*pc)
                pc++;
          } else
-            for (i = 0; *pc && *pc != ' ' && i<sizeof(param[0])-1; i++)
+            for (i = 0; *pc && *pc != ' ' && i<(int)sizeof(param[0])-1; i++)
                param[nparam][i] = *pc++;
          param[nparam][i] = 0;
          while (*pc == ' ')
