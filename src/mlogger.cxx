@@ -2428,7 +2428,7 @@ int stop_the_run(int restart)
 
    status = cm_transition(TR_STOP, 0, errstr, sizeof(errstr), trans_flag, verbose);
    if (status != CM_SUCCESS) {
-      cm_msg(MERROR, "log_write", "cannot stop the run: %s", errstr);
+      cm_msg(MERROR, "stop_the_run", "cannot stop the run, cm_transition() status %d, error: %s", status, errstr);
       return status;
    }
 
@@ -2450,7 +2450,7 @@ int start_the_run()
    db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL, TRUE);
 
    if (!flag) {
-      cm_msg(MINFO, "main", "Run auto restart canceled");
+      cm_msg(MINFO, "start_the_run", "Run auto restart canceled");
       return SUCCESS;
    }
 
@@ -2458,19 +2458,32 @@ int start_the_run()
    size = sizeof(state);
    status = db_get_value(hDB, 0, "Runinfo/State", &state, &size, TID_INT, TRUE);
    if (status != DB_SUCCESS) {
-      cm_msg(MERROR, "main", "cannot get Runinfo/State in database");
+      cm_msg(MERROR, "start_the_run", "cannot get Runinfo/State in database, db_get_value() status %d", status);
       return status;
    }
   
-   if (state != STATE_STOPPED)
+   static int backoff = 1;
+
+   if (state != STATE_STOPPED) {
+      cm_msg(MINFO, "start_the_run", "Runinfo/State %d is not STATE_STOPPED, will try again in %d seconds", state, backoff);
+      auto_restart = ss_time() + backoff; /* try again later */
+      if (backoff < 1)
+         backoff = 1;
+      else if (backoff > 1*60)
+         backoff = 1*60;
+      else
+         backoff *= 2;
       return SUCCESS;
+   }
+
+   backoff = 1;
 
    size = sizeof(run_number);
    status = db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
    assert(status == SUCCESS);
     
    if (run_number <= 0) {
-      cm_msg(MERROR, "main", "aborting on attempt to use invalid run number %d", run_number);
+      cm_msg(MERROR, "start_the_run", "aborting on attempt to use invalid run number %d", run_number);
       abort();
    }
     
@@ -2489,10 +2502,10 @@ int start_the_run()
    else
       trans_flag = DETACH;
 
-   cm_msg(MTALK, "main", "starting new run");
+   cm_msg(MTALK, "start_the_run", "starting new run");
    status = cm_transition(TR_START, run_number + 1, errstr, sizeof(errstr), trans_flag, verbose);
    if (status != CM_SUCCESS)
-      cm_msg(MERROR, "main", "cannot restart run: %s", errstr);
+      cm_msg(MERROR, "start_the_run", "cannot restart run: cm_transition() status %d, error: %s", status, errstr);
 
    return status;
 }
