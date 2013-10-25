@@ -4255,7 +4255,7 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
    size = sizeof(state);
    status = db_set_value(hDB, 0, "Runinfo/State", &state, size, 1, TID_INT);
    if (status != DB_SUCCESS)
-      cm_msg(MERROR, "cm_transition", "cannot set Runinfo/State in database");
+      cm_msg(MERROR, "cm_transition", "cannot set Runinfo/State in database, db_set_value() status %d", status);
 
    /* send notification message */
    str[0] = 0;
@@ -8972,7 +8972,7 @@ INT rpc_client_connect(const char *host_name, INT port, const char *client_name,
 
 \********************************************************************/
 {
-   INT i, status, idx;
+   INT i, status, idx, size;
    struct sockaddr_in bind_addr;
    INT sock;
    INT remote_hw_type, hw_type;
@@ -9084,8 +9084,7 @@ INT rpc_client_connect(const char *host_name, INT port, const char *client_name,
 #endif
 
    if (status != 0) {
-      /* cm_msg(MERROR, "rpc_client_connect", "cannot connect");
-         message should be displayed by application */
+      cm_msg(MERROR, "rpc_client_connect", "cannot connect to host \"%s\", port %d: connect() returned %d, errno %d (%s)", host_name, port, status, errno, strerror(errno));
       _client_connection[idx].send_sock = 0;
       return RPC_NET_ERROR;
    }
@@ -9103,7 +9102,12 @@ INT rpc_client_connect(const char *host_name, INT port, const char *client_name,
    hw_type = rpc_get_option(0, RPC_OHW_TYPE);
    sprintf(str, "%d %s %s %s", hw_type, cm_get_version(), local_prog_name, local_host_name);
 
-   send(sock, str, strlen(str) + 1, 0);
+   size = strlen(str) + 1;
+   i = send(sock, str, size, 0);
+   if (i < 0 || i != size) {
+      cm_msg(MERROR, "rpc_client_connect", "cannot send %d bytes, send() returned %d, errno %d (%s)", size, i, errno, strerror(errno));
+      return RPC_NET_ERROR;
+   }
 
    /* receive remote computer info */
    i = recv_string(sock, str, sizeof(str), _rpc_connect_timeout);
