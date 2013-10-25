@@ -1809,8 +1809,12 @@ extern "C" {
                             const char *string_name, BOOL append);
    INT EXPRT db_save_xml(HNDLE hDB, HNDLE hKey, const char *file_name);
    INT EXPRT db_copy_xml(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size);
+
    INT EXPRT db_save_json(HNDLE hDB, HNDLE hKey, const char *file_name);
    INT EXPRT db_copy_json(HNDLE hDB, HNDLE hKey, char **buffer, int *buffer_size, int *buffer_end, int save_keys, int follow_links);
+
+   INT EXPRT db_load_json(HNDLE hdb, HNDLE key_handle, const char *filename);
+   INT EXPRT db_paste_json(HNDLE hDB, HNDLE hKeyRoot, const char *buffer);
 
    INT EXPRT db_sprintf(char *string, const void *data, INT data_size, INT index, DWORD type);
    INT EXPRT db_sprintff(char *string, const char *format, const void *data, INT data_size, INT index, DWORD type);

@@ -9,9 +9,12 @@
 
 \********************************************************************/
 
+#include <stdio.h>
 #include "midas.h"
 #include "msystem.h"
 #include <assert.h>
+
+#include <string>
 
 extern INT cmd_edit(const char *prompt, char *cmd, INT(*dir) (char *, INT *), INT(*idle) ());
 
@@ -1821,7 +1824,12 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
          size = sizeof(old_dir);
          db_get_value(hDB, 0, "/Logger/Data dir", old_dir, &size, TID_STRING, TRUE);
 
-         db_load(hDB, hKey, param[1], FALSE);
+         std::string filename = param[1];
+         if (filename.compare(filename.size()-3, 3, ".js")==0 || filename.compare(filename.size()-5, 5, ".json")==0) {
+            db_load_json(hDB, hKey, filename.c_str());
+         } else {
+            db_load(hDB, hKey, param[1], FALSE);
+         }
 
          str[0] = 0;
          size = sizeof(str);
