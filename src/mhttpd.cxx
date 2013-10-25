@@ -11143,14 +11143,18 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
       strlcpy(tag_name[i], str, sizeof(tag_name[0]));
 
       /* split varname in event, variable and index */
-      if (strchr(tag_name[i], ':')) {
+      char *tp = strchr(tag_name[i], ':');
+      if (tp) {
          strlcpy(event_name[i], tag_name[i], sizeof(event_name[0]));
-         *strchr(event_name[i], ':') = 0;
-         strlcpy(var_name[i], strchr(tag_name[i], ':') + 1, sizeof(var_name[0]));
+         char *ep = strchr(event_name[i], ':');
+         if (ep)
+            *ep = 0;
+         strlcpy(var_name[i], tp+1, sizeof(var_name[0]));
          var_index[i] = 0;
-         if (strchr(var_name[i], '[')) {
-            var_index[i] = atoi(strchr(var_name[i], '[') + 1);
-            *strchr(var_name[i], '[') = 0;
+         char *vp = strchr(var_name[i], '[');
+         if (vp) {
+            var_index[i] = atoi(vp + 1);
+            *vp = 0;
          }
       } else {
          sprintf(str, "Tag \"%s\" has wrong format in panel \"%s\"", tag_name[i], panel);
