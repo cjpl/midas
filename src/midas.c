@@ -11764,6 +11764,10 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
    return_buffer = tls_buffer[i].buffer;
    assert(return_buffer);
 
+   // make valgrind happy - the RPC parameter encoder skips the alignement padding bytes
+   // and valgrind complains that we transmit uninitialized data
+   //memset(return_buffer, 0, return_buffer_size);
+
    /* extract pointer array to parameters */
    nc_in = (NET_COMMAND *) buffer;
 
@@ -12027,6 +12031,9 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
       rpc_convert_single(&nc_out->header.routine_id, TID_DWORD, RPC_OUTGOING, convert_flags);
       rpc_convert_single(&nc_out->header.param_size, TID_DWORD, RPC_OUTGOING, convert_flags);
    }
+
+   // valgrind complains about sending uninitialized data, if you care about this, uncomment
+   // the memset(return_buffer,0) call above (search for "valgrind"). K.O.
 
    status = send_tcp(sock, return_buffer, sizeof(NET_COMMAND_HEADER) + param_size, 0);
 
