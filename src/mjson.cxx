@@ -581,23 +581,11 @@ MJsonNode* MJsonNode::Parse(const char* jsonstring)
    return parse_something(jsonstring, &sout);
 }
 
-std::vector<std::string> MJsonNode::GetKeys(const MJsonNodeMap& map) /// helper: get array keys
-{
-   std::vector<std::string> v;
-   for(MJsonNodeMap::const_iterator it = map.begin(); it != map.end(); ++it)
-      v.push_back(it->first);
-      return v;
-}
-
 MJsonNode::~MJsonNode() // dtor
 {
-   for (unsigned i=0; i<arrayvalue.size(); i++)
-      delete arrayvalue[i];
-   arrayvalue.clear();
-
-   for (MJsonNodeMap::iterator iter = objectvalue.begin(); iter != objectvalue.end(); iter++)
-      delete iter->second;
-   objectvalue.clear();
+   for (unsigned i=0; i<subnodes.size(); i++)
+      delete subnodes[i];
+   subnodes.clear();
 
    // poison deleted nodes
    type = MJSON_NONE;
@@ -651,10 +639,10 @@ std::string MJsonNode::Stringify(int flags) const
    case MJSON_ARRAY: {
       std::string v;
       v += "[";
-      for (unsigned i=0; i<arrayvalue.size(); i++) {
+      for (unsigned i=0; i<subnodes.size(); i++) {
          if (i > 0)
             v += ",";
-         v += arrayvalue[i]->Stringify(flags);
+         v += subnodes[i]->Stringify(flags);
       }
       v += "]";
       return v;
@@ -662,13 +650,12 @@ std::string MJsonNode::Stringify(int flags) const
    case MJSON_OBJECT: {
       std::string v;
       v += "{";
-      int i=0;
-      for (MJsonNodeMap::const_iterator iter = objectvalue.begin(); iter != objectvalue.end(); iter++, i++) {
+      for (unsigned i=0; i<objectnames.size(); i++) {
          if (i > 0)
             v += ",";
-         v += std::string("\"") + quote(iter->first.c_str()) + "\"";
+         v += std::string("\"") + quote(objectnames[i].c_str()) + "\"";
          v += ":";
-         v += iter->second->Stringify(flags);
+         v += subnodes[i]->Stringify(flags);
       }
       v += "}";
       return v;
@@ -759,7 +746,7 @@ MJsonNode* MJsonNode::MakeNull()
 void MJsonNode::AddToArray(MJsonNode* node)
 {
    if (type == MJSON_ARRAY) {
-      arrayvalue.push_back(node);
+      subnodes.push_back(node);
       return;
    }
 
@@ -769,7 +756,9 @@ void MJsonNode::AddToArray(MJsonNode* node)
 void MJsonNode::AddToObject(const char* name, MJsonNode* node) /// add node to an object
 {
    if (type == MJSON_OBJECT) {
-      objectvalue[name] = node;
+      objectnames.push_back(name);
+      subnodes.push_back(node);
+      //objectvalue[name] = node;
       return;
    }
 
@@ -784,17 +773,35 @@ int MJsonNode::GetType() const /// get node type: MJSON_xxx
 const MJsonNodeVector* MJsonNode::GetArray() const
 {
    if (type == MJSON_ARRAY || type == MJSON_NULL)
-      return &arrayvalue;
+      return &subnodes;
    else
       return NULL;
 }
 
-const MJsonNodeMap* MJsonNode::GetObject() const
+const MJsonStringVector* MJsonNode::GetObjectNames() const
 {
    if (type == MJSON_OBJECT || type == MJSON_NULL)
-      return &objectvalue;
+      return &objectnames;
    else
       return NULL;
+}
+
+const MJsonNodeVector* MJsonNode::GetObjectNodes() const
+{
+   if (type == MJSON_OBJECT || type == MJSON_NULL)
+      return &subnodes;
+   else
+      return NULL;
+}
+
+const MJsonNode* MJsonNode::FindObjectNode(const char* name) const
+{
+   if (type != MJSON_OBJECT)
+      return NULL;
+   for (unsigned i=0; i<objectnames.size(); i++)
+      if (strcmp(objectnames[i].c_str(), name) == 0)
+         return subnodes[i];
+   return NULL;
 }
 
 std::string MJsonNode::GetString() const
@@ -811,6 +818,7 @@ int MJsonNode::GetInt() const
       return intvalue;
    else if (type == MJSON_STRING) {
       // FIXME: maybe hex number
+      printf("GetInt from string [%s]\n", stringvalue.c_str());
       return 0;
    } else
       return 0;
@@ -877,18 +885,18 @@ void MJsonNode::Dump(int nest) const // debug
    case MJSON_BOOL: printf(", value %d\n", intvalue); break;
    case MJSON_ARRAY:
       printf("\n");
-      for (unsigned i=0; i<arrayvalue.size(); i++) {
+      for (unsigned i=0; i<subnodes.size(); i++) {
          pnest(nest);
          printf("element %d: ", i);
-         arrayvalue[i]->Dump(nest+1);
+         subnodes[i]->Dump(nest+1);
       }
       break;
    case MJSON_OBJECT:
       printf("\n");
-      for (MJsonNodeMap::const_iterator iter = objectvalue.begin(); iter != objectvalue.end(); iter++) {
+      for (unsigned i=0; i<objectnames.size(); i++) {
          pnest(nest);
-         printf("%s: ", iter->first.c_str());
-         iter->second->Dump(nest+1);
+         printf("%s: ", objectnames[i].c_str());
+         subnodes[i]->Dump(nest+1);
       }
       break;
    }

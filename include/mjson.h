@@ -25,14 +25,14 @@
 
 class MJsonNode;
 
+typedef std::vector<std::string> MJsonStringVector;
 typedef std::vector<MJsonNode*> MJsonNodeVector;
-typedef std::map<std::string, MJsonNode*> MJsonNodeMap;
 
 class MJsonNode {
  protected:
    int type;
-   MJsonNodeVector arrayvalue;
-   MJsonNodeMap    objectvalue;
+   MJsonNodeVector   subnodes;
+   MJsonStringVector objectnames;
    std::string     stringvalue;
    int             intvalue;
    double          numbervalue;
@@ -62,13 +62,16 @@ class MJsonNode {
  public: // public "get" methods
    int                    GetType() const;   /// get node type: MJSON_xxx
    const MJsonNodeVector* GetArray() const;  /// get array value, NULL if not array, empty array if value is JSON "null"
-   const MJsonNodeMap*    GetObject() const; /// get object value, NULL if not object, empty object if value is JSON "null"
+   //const MJsonNodeMap*    GetObject() const; /// get object value, NULL if not object, empty object if value is JSON "null"
+   const MJsonStringVector* GetObjectNames() const; /// get array of object names, NULL if not object, empty array if value is JSON "null"
+   const MJsonNodeVector*   GetObjectNodes() const; /// get array of object subnodes, NULL if not object, empty array if value is JSON "null"
+   const MJsonNode*       FindObjectNode(const char* name) const; /// find subnode with given name, NULL if not object, FIXME: NULL is name not found, FIXME: empty object if value is JSON "null"
    std::string            GetString() const; /// get string value, "" if not string or value is JSON "null"
    int                    GetInt() const;    /// get integer value, 0 if not an integer or value is JSON "null"
    double                 GetNumber() const; /// get number or integer value, 0 if not a number or value is JSON "null"
    bool                   GetBool() const;   /// get boolean value, false if not a boolean or value is JSON "null"
    
-   static std::vector<std::string> GetKeys(const MJsonNodeMap& map); /// helper: get array keys
+   //static std::vector<std::string> GetKeys(const MJsonNodeMap& map); /// helper: get array keys
 
  public: // public helper and debug methods
    static const char* TypeToString(int type); /// return node type as string

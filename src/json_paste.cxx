@@ -70,9 +70,23 @@ INT EXPRT db_load_json(HNDLE hDB, HNDLE hKey, const char *filename)
 
 static int tid_from_key(const MJsonNode* key)
 {
-   // FIXME: read from key
-   //const MJsonNodeMap* jmap = objnode->GetObject();
-   //iassert(jmap!=NULL);
+   const MJsonNode* n = key->FindObjectNode("type");
+   if (!n)
+      return 0;
+   int tid = n->GetInt();
+   if (tid > 0)
+      return tid;
+   return 0;
+}
+
+static int item_size_from_key(const MJsonNode* key)
+{
+   const MJsonNode* n = key->FindObjectNode("item_size");
+   if (!n)
+      return 0;
+   int item_size = n->GetInt();
+   if (item_size > 0)
+      return item_size;
    return 0;
 }
 
@@ -107,17 +121,17 @@ static int paste_array(HNDLE hDB, HNDLE hKey, const char* path, const MJsonNode*
       return DB_FILE_ERROR;
    }
 
-   int slength = 32; // FIXME: read from key
-
-   printf("paste array %s, tid %d, size %d, string length %d\n", path, tid, (int)a->size(), slength);
+   int slength = item_size_from_key(key);
+   if (slength == 0)
+      slength = NAME_LENGTH;
 
    for (unsigned i=0; i<a->size(); i++) {
       MJsonNode* n = (*a)[i];
       if (!n)
          continue;
       status = paste_node(hDB, hKey, path, i, n, tid, slength, key);
-      //if (status != DB_SUCCESS)
-      //return status;
+      if (status != DB_SUCCESS)
+         return status;
    }
 
    return DB_SUCCESS;
@@ -126,14 +140,15 @@ static int paste_array(HNDLE hDB, HNDLE hKey, const char* path, const MJsonNode*
 static int paste_object(HNDLE hDB, HNDLE hKey, const char* path, const MJsonNode* objnode)
 {
    int status;
-   const MJsonNodeMap* jmap = objnode->GetObject();
-   if (jmap==NULL) {
+   const MJsonStringVector* names = objnode->GetObjectNames();
+   const MJsonNodeVector* nodes = objnode->GetObjectNodes();
+   if (names==NULL||nodes==NULL||names->size()!=nodes->size()) {
       cm_msg(MERROR, "db_paste_json", "invalid object at \"%s\"", path);
       return DB_FILE_ERROR;
    }
-   for(MJsonNodeMap::const_iterator it = jmap->begin(); it != jmap->end(); ++it) {
-      const char* name = it->first.c_str();
-      const MJsonNode* node = it->second;
+   for(unsigned i=0; i<names->size(); i++) {
+      const char* name = (*names)[i].c_str();
+      const MJsonNode* node = (*nodes)[i];
       const MJsonNode* key = NULL;
       if (strchr(name, '/')) // skip special entries
          continue;
@@ -141,7 +156,7 @@ static int paste_object(HNDLE hDB, HNDLE hKey, const char* path, const MJsonNode
       if (node->GetType() == MJSON_OBJECT)
          tid = TID_KEY;
       else {
-         key = jmap->at(std::string(name) + "/key");
+         key = objnode->FindObjectNode((std::string(name) + "/key").c_str());
          tid = tid_from_key(key);
          if (!tid)
             tid = guess_tid(node);
@@ -149,18 +164,49 @@ static int paste_object(HNDLE hDB, HNDLE hKey, const char* path, const MJsonNode
       }
 
       status = db_create_key(hDB, hKey, name, tid);
+
+      if (status == DB_KEY_EXIST) {
+         HNDLE hSubkey;
+         KEY key;
+         status = db_find_link(hDB, hKey, name, &hSubkey);
+         if (status != DB_SUCCESS) {
+            cm_msg(MERROR, "db_paste_json", "key exists, but cannot find it \"%s\" of type %d in \"%s\", db_find_link() status %d", name, tid, path, status);
+            return status;
+         }
+
+         status = db_get_key(hDB, hSubkey, &key);
+         if (status != DB_SUCCESS) {
+            cm_msg(MERROR, "db_paste_json", "cannot create \"%s\" of type %d in \"%s\", db_create_key() status %d", name, tid, path, status);
+            return status;
+         }
+
+         if ((int)key.type == tid) {
+            // existing item is of the same type, continue with overwriting it
+            status = DB_SUCCESS;
+         } else {
+            // FIXME: delete wrong item, create item with correct tid
+            cm_msg(MERROR, "db_paste_json", "cannot overwrite existing item \"%s\" of type %d in \"%s\" with new tid %d", name, key.type, path, tid);
+            return status;
+         }
+      }
+
       if (status != DB_SUCCESS) {
          cm_msg(MERROR, "db_paste_json", "cannot create \"%s\" of type %d in \"%s\", db_create_key() status %d", name, tid, path, status);
          return status;
       }
 
       HNDLE hSubkey;
-      status = db_find_key(hDB, hKey, name, &hSubkey);
-      assert(status==DB_SUCCESS);
+      status = db_find_link(hDB, hKey, name, &hSubkey);
+      if (status != DB_SUCCESS) {
+         cm_msg(MERROR, "db_paste_json", "cannot find \"%s\" of type %d in \"%s\", db_find_link() status %d", name, tid, path, status);
+         return status;
+      }
 
       status = paste_node(hDB, hSubkey, (std::string(path)+"/"+name).c_str(), 0, node, tid, 0, key);
-      //if (status != DB_SUCCESS)
-      //return status;
+      if (status != DB_SUCCESS) {
+         //cm_msg(MERROR, "db_paste_json", "cannot..."); // paste_node() reports it's own failures
+         return status;
+      }
    }
    return DB_SUCCESS;
 }
@@ -182,11 +228,25 @@ static int paste_value(HNDLE hDB, HNDLE hKey, const char* path, int index, const
 {
    // FIXME: this is incomplete
    int status;
-   if (tid == TID_STRING) {
+   //printf("paste_value: path [%s], index %d, tid %d, slength %d, key %p\n", path, index, tid, string_length, key);
+
+   if (tid == TID_LINK) {
+      const char* value = node->GetString().c_str();
+      int size = strlen(value) + 1;
+
+      status = db_set_data(hDB, hKey, value, size, 1, TID_LINK);
+
+      if (status != DB_SUCCESS) {
+         cm_msg(MERROR, "db_paste_json", "cannot set TID_LINK value for \"%s\", db_set_data() status %d", path, status);
+         return status;
+      }
+   } else if (tid == TID_STRING) {
       char* buf = NULL;
       const char* ptr = NULL;
       int size = 0;
       const std::string value = node->GetString();
+      if (string_length == 0)
+         string_length = item_size_from_key(key);
       if (string_length) {
          buf = new char[string_length];
          strlcpy(buf, value.c_str(), string_length);
@@ -217,19 +277,17 @@ static int paste_node(HNDLE hDB, HNDLE hKey, const char* path, int index, const 
 {
    //node->Dump();
    switch (node->GetType()) {
-   case MJSON_ARRAY: return paste_array(hDB, hKey, path, node, tid, key);
+   case MJSON_ARRAY:  return paste_array(hDB, hKey, path, node, tid, key);
    case MJSON_OBJECT: return paste_object(hDB, hKey, path, node);
-   case MJSON_STRING:
-   case MJSON_INT:
-   case MJSON_NUMBER:
-      return paste_value(hDB, hKey, path, index, node, tid, string_length, key);
-   case MJSON_BOOL:
-      return paste_bool(hDB, hKey, path, index, node);
+   case MJSON_STRING: return paste_value(hDB, hKey, path, index, node, tid, string_length, key);
+   case MJSON_INT:    return paste_value(hDB, hKey, path, index, node, tid, 0, key);
+   case MJSON_NUMBER: return paste_value(hDB, hKey, path, index, node, tid, 0, key);
+   case MJSON_BOOL:   return paste_bool(hDB, hKey, path, index, node);
    default:
       cm_msg(MERROR, "db_paste_json", "unexpected JSON node type %d (%s)", node->GetType(), MJsonNode::TypeToString(node->GetType()));
       return DB_FILE_ERROR;
    }
-   return DB_SUCCESS;
+   // NOT REACHED
 }
 
 INT EXPRT db_paste_json(HNDLE hDB, HNDLE hKeyRoot, const char *buffer)
