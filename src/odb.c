@@ -7001,11 +7001,10 @@ static void json_write(char **buffer, int* buffer_size, int* buffer_end, int lev
    assert(remain > 0);
 }
 
-INT db_save_json_key(HNDLE hDB, HNDLE hKey, INT level, char **buffer, int* buffer_size, int* buffer_end, int save_keys, int follow_links)
+INT db_save_json_key(HNDLE hDB, HNDLE hKey, INT level, char **buffer, int* buffer_size, int* buffer_end, int save_keys, int follow_links, int recurse)
 {
-   INT i, idx, size, status;
+   INT i, size, status;
    char *data;
-   HNDLE hSubkey;
    KEY key;
 
    if (follow_links)
@@ -7017,33 +7016,52 @@ INT db_save_json_key(HNDLE hDB, HNDLE hKey, INT level, char **buffer, int* buffe
       return status;
 
    if (key.type == TID_KEY) {
+      int idx = 0;
+      HNDLE hSubkey;
 
       if (level > 0) {
          json_write(buffer, buffer_size, buffer_end, level, key.name, 1);
          json_write(buffer, buffer_size, buffer_end, 0, " : {\n", 0);
       }
 
-      for (idx = 0;; idx++) {
-         if (follow_links)
-            db_enum_key(hDB, hKey, idx, &hSubkey);
-         else
-            db_enum_link(hDB, hKey, idx, &hSubkey);
-
-         if (!hSubkey)
-            break;
-
-         if (idx != 0) {
-            json_write(buffer, buffer_size, buffer_end, 0, ",\n", 0);
-         }
-
-         /* save subtree */
-         status = db_save_json_key(hDB, hSubkey, level + 1, buffer, buffer_size, buffer_end, save_keys, follow_links);
+      if (level > 100) {
+         char path[MAX_ODB_PATH];
+         status = db_get_path(hDB, hKey, path, sizeof(path));
          if (status != DB_SUCCESS)
-            return status;
+            strlcpy(path, "(path unknown)", sizeof(path));
+
+         json_write(buffer, buffer_size, buffer_end, 0, "/error", 1);
+         json_write(buffer, buffer_size, buffer_end, 0, " : ", 0);
+         json_write(buffer, buffer_size, buffer_end, 0, "max nesting level exceed", 1);
+
+         cm_msg(MERROR, "db_save_json_key", "max nesting level exceeded at \"%s\", check for symlink loops in this subtree", path);
+
+      } else if (recurse || level==0) {
+
+         for (;; idx++) {
+            if (follow_links)
+               db_enum_key(hDB, hKey, idx, &hSubkey);
+            else
+               db_enum_link(hDB, hKey, idx, &hSubkey);
+
+            if (!hSubkey)
+               break;
+
+            if (idx != 0) {
+               json_write(buffer, buffer_size, buffer_end, 0, ",\n", 0);
+            }
+
+            /* save subtree */
+            status = db_save_json_key(hDB, hSubkey, level + 1, buffer, buffer_size, buffer_end, save_keys, follow_links, recurse);
+            if (status != DB_SUCCESS)
+               return status;
+         }
+      
       }
 
       if (level > 0) {
-         json_write(buffer, buffer_size, buffer_end, 0, "\n", 0);
+         if (idx > 0)
+            json_write(buffer, buffer_size, buffer_end, 0, "\n", 0);
          json_write(buffer, buffer_size, buffer_end, level, "}", 0);
       }
 
@@ -7254,11 +7272,11 @@ Copy an ODB subtree in JSON format to a buffer
 @param buffer_end returns number of bytes contained in buffer
 @return DB_SUCCESS, DB_NO_MEMORY
 */
-INT db_copy_json(HNDLE hDB, HNDLE hKey, char **buffer, int* buffer_size, int* buffer_end, int save_keys, int follow_links)
+INT db_copy_json(HNDLE hDB, HNDLE hKey, char **buffer, int* buffer_size, int* buffer_end, int save_keys, int follow_links, int recurse)
 {
    json_write(buffer, buffer_size, buffer_end, 0, "{\n", 0);
 
-   db_save_json_key(hDB, hKey, 0, buffer, buffer_size, buffer_end, save_keys, follow_links);
+   db_save_json_key(hDB, hKey, 0, buffer, buffer_size, buffer_end, save_keys, follow_links, recurse);
 
    json_write(buffer, buffer_size, buffer_end, 0, "\n}\n", 0);
    
@@ -7282,7 +7300,7 @@ INT db_save_json(HNDLE hDB, HNDLE hKey, const char *filename)
 #ifdef LOCAL_ROUTINES
    {
       INT status;
-      char str[256];
+      char path[MAX_ODB_PATH];
       FILE *fp;
 
       /* open file */
@@ -7292,17 +7310,37 @@ INT db_save_json(HNDLE hDB, HNDLE hKey, const char *filename)
          return DB_FILE_ERROR;
       }
 
-      db_get_path(hDB, hKey, str, sizeof(str));
-
-      fprintf(fp, "# MIDAS ODB JSON\n");
-      fprintf(fp, "# FILE %s\n", filename);
-      fprintf(fp, "# PATH %s\n", str);
+      db_get_path(hDB, hKey, path, sizeof(path));
 
       char* buffer = NULL;
       int buffer_size = 0;
       int buffer_end = 0;
 
-      status = db_copy_json(hDB, hKey, &buffer, &buffer_size, &buffer_end, 1, 0);
+      json_write(&buffer, &buffer_size, &buffer_end, 0, "{\n", 0);
+
+      json_write(&buffer, &buffer_size, &buffer_end, 1, "/MIDAS version", 1);
+      json_write(&buffer, &buffer_size, &buffer_end, 0, " : ", 0);
+      json_write(&buffer, &buffer_size, &buffer_end, 0, MIDAS_VERSION, 1);
+      json_write(&buffer, &buffer_size, &buffer_end, 0, ",\n", 0);
+
+      json_write(&buffer, &buffer_size, &buffer_end, 1, "/MIDAS git revision", 1);
+      json_write(&buffer, &buffer_size, &buffer_end, 0, " : ", 0);
+      json_write(&buffer, &buffer_size, &buffer_end, 0, GIT_REVISION, 1);
+      json_write(&buffer, &buffer_size, &buffer_end, 0, ",\n", 0);
+
+      json_write(&buffer, &buffer_size, &buffer_end, 1, "/filename", 1);
+      json_write(&buffer, &buffer_size, &buffer_end, 0, " : ", 0);
+      json_write(&buffer, &buffer_size, &buffer_end, 0, filename, 1);
+      json_write(&buffer, &buffer_size, &buffer_end, 0, ",\n", 0);
+
+      json_write(&buffer, &buffer_size, &buffer_end, 1, "/ODB path", 1);
+      json_write(&buffer, &buffer_size, &buffer_end, 0, " : ", 0);
+      json_write(&buffer, &buffer_size, &buffer_end, 0, path, 1);
+      json_write(&buffer, &buffer_size, &buffer_end, 0, ",\n", 0);
+
+      db_save_json_key(hDB, hKey, 0, &buffer, &buffer_size, &buffer_end, 1, 0, 1);
+
+      json_write(&buffer, &buffer_size, &buffer_end, 0, "\n}\n", 0);
 
       if (status == DB_SUCCESS) {
          if (buffer)
