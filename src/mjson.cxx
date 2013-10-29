@@ -165,9 +165,9 @@ static std::string xparse_string(const char* s, const char** sout, bool *error)
    // NOT REACHED
 }
 
-static MJsonNode* parse_something(const char* s, const char** sout);
+static MJsonNode* parse_something(const char* sin, const char* s, const char** sout);
 
-static MJsonNode* parse_array(const char* s, const char** sout)
+static MJsonNode* parse_array(const char* sin, const char* s, const char** sout)
 {
    //printf("array-->%s\n", s);
    MJsonNode *n = MJsonNode::MakeArray();
@@ -176,20 +176,22 @@ static MJsonNode* parse_array(const char* s, const char** sout)
       s = skip_spaces(s);
       
       if (*s == 0) {
-         // error
          *sout = s;
-         return n;
+         return MJsonNode::MakeError(n, "unexpected end of string while parsing array", sin, s);
       } else if (*s == ']') {
          // end of array
          *sout = s+1;
          return n;
       }
 
-      MJsonNode *p = parse_something(s, sout);
+      MJsonNode *p = parse_something(sin, s, sout);
       if (p == NULL) {
-         // error
          // sout set by parse_something()
-         return n;
+         return MJsonNode::MakeError(n, "cannot parse array element", sin, *sout);
+      }
+      if (p->GetType() == MJSON_ERROR) {
+         // sout set by parse_something()
+         return MJsonNode::MakeError(n, "error parsing array element", sin, *sout);
       }
 
       n->AddToArray(p);
@@ -207,15 +209,14 @@ static MJsonNode* parse_array(const char* s, const char** sout)
          continue;
       }
 
-      // error
       *sout = s;
-      return n;
+      return MJsonNode::MakeError(n, "unexpected char after array element, should be \',\' or \']\'", sin, s);
    }
 
    // NOT REACHED
 }
 
-static MJsonNode* parse_object(const char* s, const char** sout)
+static MJsonNode* parse_object(const char* sin, const char* s, const char** sout)
 {
    //printf("object-->%s\n", s);
 
@@ -227,44 +228,42 @@ static MJsonNode* parse_object(const char* s, const char** sout)
       //printf("xobject-->%s\n", s);
       
       if (*s == 0) {
-         // error
          *sout = s;
-         return n;
+         return MJsonNode::MakeError(n, "unexpected end of string while parsing object", sin, s);
       } else if (*s == '}') {
          // end of object
          *sout = s+1;
          return n;
       } else if (*s != '\"') {
-         // error
          *sout = s;
-         return n;
+         return MJsonNode::MakeError(n, "unexpected char while parsing object, should be \"\"\"", sin, s);
       }
 
       bool error = false;
       std::string name = xparse_string(s+1, sout, &error);
       if (error || name.length() < 1) {
-         // error
          // sout set by parse_something()
-         return n;
+         return MJsonNode::MakeError(n, "cannot parse name of object element", sin, *sout);
       }
 
       s = skip_spaces(*sout);
 
       if (*s == 0) {
-         // error
          *sout = s;
-         return n;
+         return MJsonNode::MakeError(n, "unexpected end of string after name of object element", sin, s);
       } else if (*s != ':') {
-         // error
          *sout = s;
-         return n;
+         return MJsonNode::MakeError(n, "unexpected char after name of object element, should be \":\"", sin, s);
       }
 
-      MJsonNode *p = parse_something(s+1, sout);
+      MJsonNode *p = parse_something(sin, s+1, sout);
       if (p == NULL) {
-         // error
          // sout set by parse_something()
-         return n;
+         return MJsonNode::MakeError(n, "cannot parse object element", sin, *sout);
+      }
+      if (p->GetType() == MJSON_ERROR) {
+         // sout set by parse_something()
+         return MJsonNode::MakeError(n, "error parsing object element", sin, *sout);
       }
 
       n->AddToObject(name.c_str(), p);
@@ -286,22 +285,21 @@ static MJsonNode* parse_object(const char* s, const char** sout)
 
       // error
       *sout = s;
-      return n;
+      return MJsonNode::MakeError(n, "unexpected char after object element, should be \"}\" or \",\"", sin, s);
    }
 
    // NOT REACHED
 }
 
-static MJsonNode* parse_string(const char* s, const char** sout)
+static MJsonNode* parse_string(const char* sin, const char* s, const char** sout)
 {
    //printf("string-->%s\n", s);
 
    bool error = false;
    std::string v = xparse_string(s, sout, &error);
 
-   // error
    if (error)
-      return NULL;
+      return MJsonNode::MakeError(NULL, "cannot parse string", sin, *sout);
 
    return MJsonNode::MakeString(v.c_str());
 }
@@ -370,7 +368,7 @@ static void test_atoi_with_overflow()
    test_atoi_with_overflow_value("999999999999999999999999999999999999999999999999999999", -1);
 }
 
-static MJsonNode* parse_number(const char* s, const char** sout)
+static MJsonNode* parse_number(const char* sin, const char* s, const char** sout)
 {
    //printf("number-->%s\n", s);
 
@@ -426,6 +424,11 @@ static MJsonNode* parse_number(const char* s, const char** sout)
 
       if (*s == '-') {
          expsign = -1;
+         s++;
+      }
+
+      if (*s == '+') {
+         expsign = +1;
          s++;
       }
 
@@ -506,79 +509,74 @@ static MJsonNode* parse_number(const char* s, const char** sout)
       return MJsonNode::MakeInt(v);
    }
 
-   // error
    *sout = s;
-   return NULL;
+   return MJsonNode::MakeError(NULL, "cannot parse number", sin, s);
 }
 
-static MJsonNode* parse_null(const char* s, const char** sout)
+static MJsonNode* parse_null(const char* sin, const char* s, const char** sout)
 {
    if (s[0] == 'n' && s[1] == 'u' && s[2] == 'l' && s[3] == 'l') {
       *sout = s+4;
       return MJsonNode::MakeNull();
    }
 
-   // error
    *sout = s;
-   return NULL;
+   return MJsonNode::MakeError(NULL, "cannot parse \"null\"", sin, s);
 }
 
-static MJsonNode* parse_true(const char* s, const char** sout)
+static MJsonNode* parse_true(const char* sin, const char* s, const char** sout)
 {
    if (s[0] == 't' && s[1] == 'r' && s[2] == 'u' && s[3] == 'e') {
       *sout = s+4;
       return MJsonNode::MakeBool(true);
    }
 
-   // error
    *sout = s;
-   return NULL;
+   return MJsonNode::MakeError(NULL, "cannot parse \"true\"", sin, s);
 }
 
-static MJsonNode* parse_false(const char* s, const char** sout)
+static MJsonNode* parse_false(const char* sin, const char* s, const char** sout)
 {
    if (s[0] == 'f' && s[1] == 'a' && s[2] == 'l' && s[3] == 's' && s[4] == 'e') {
       *sout = s+5;
       return MJsonNode::MakeBool(false);
    }
 
-   // error
    *sout = s;
-   return NULL;
+   return MJsonNode::MakeError(NULL, "cannot parse \"false\"", sin, s);
 }
 
 
-static MJsonNode* parse_something(const char* s, const char** sout)
+static MJsonNode* parse_something(const char* sin, const char* s, const char** sout)
 {
    s = skip_spaces(s);
    
    if (*s == '[') {
-      return parse_array(s+1, sout);
+      return parse_array(sin, s+1, sout);
    } else if (*s == '{') {
-      return parse_object(s+1, sout);
+      return parse_object(sin, s+1, sout);
    } else if (*s == '\"') {
-      return parse_string(s+1, sout);
+      return parse_string(sin, s+1, sout);
    } else if (*s == '-') {
-      return parse_number(s, sout);
+      return parse_number(sin, s, sout);
    } else if (*s >= '0' && *s <= '9') {
-      return parse_number(s, sout);
+      return parse_number(sin, s, sout);
    } else if (*s == 'n') {
-      return parse_null(s, sout);
+      return parse_null(sin, s, sout);
    } else if (*s == 't') {
-      return parse_true(s, sout);
+      return parse_true(sin, s, sout);
    } else if (*s == 'f') {
-      return parse_false(s, sout);
+      return parse_false(sin, s, sout);
    }
 
-   // error
    *sout = s;
-   return NULL;
+   return MJsonNode::MakeError(NULL, "unexpected char at top level", sin, s);
 }
 
 MJsonNode* MJsonNode::Parse(const char* jsonstring)
 {
    const char*sout;
-   return parse_something(jsonstring, &sout);
+   return parse_something(jsonstring, jsonstring, &sout);
 }
 
 MJsonNode::~MJsonNode() // dtor
@@ -680,12 +678,45 @@ std::string MJsonNode::Stringify(int flags) const
          return "false";
    case MJSON_NULL:
       return "null";
+   case MJSON_ERROR:
+      return std::string("json parse error: ") + stringvalue;
    default:
       assert(!"should not come here");
       return ""; // NOT REACHED
    }
 }
-   
+
+MJsonNode* MJsonNode::MakeError(MJsonNode* errornode, const char* errormessage, const char* sin, const char* serror)
+{
+   MJsonNode* n = new MJsonNode();
+   n->type = MJSON_ERROR;
+   if (errornode)
+      n->subnodes.push_back(errornode);
+   n->stringvalue = errormessage;
+   if (sin && serror) {
+      char msg[256];
+      char sample[32];
+      strncpy(sample, serror, 31);
+      sample[31] = 0;
+      int offset = serror-sin;
+      int lineno = 1;
+      int lineoff = 0;
+      for (const char* s = sin; s != serror; s++) {
+         if (*s == 0)
+            break;
+         if (*s == '\n') {
+            lineno++;
+            lineoff=0;
+         } else {
+            lineoff++;
+         }
+      }
+      sprintf(msg, " at char \"%c\" file offset %d, line %d position %d, around text \"%s\"", *serror, offset, lineno, lineoff, sample);
+      n->stringvalue += msg;
+   }
+   return n;
+}
+
 MJsonNode* MJsonNode::MakeArray()
 {
    MJsonNode* n = new MJsonNode();
@@ -816,11 +847,7 @@ int MJsonNode::GetInt() const
 {
    if (type == MJSON_INT)
       return intvalue;
-   else if (type == MJSON_STRING) {
-      // FIXME: maybe hex number
-      printf("GetInt from string [%s]\n", stringvalue.c_str());
-      return 0;
-   } else
+   else
       return 0;
 }
 
@@ -845,6 +872,14 @@ bool MJsonNode::GetBool() const /// get boolean value, false if not a boolean or
       return false;
 }
 
+std::string MJsonNode::GetError() const
+{
+   if (type == MJSON_ERROR)
+      return stringvalue;
+   else
+      return "";
+}
+
 MJsonNode::MJsonNode() // private constructor
 {
    // C++ does not know how to initialize elemental types, we have to do it by hand:
@@ -857,6 +892,7 @@ const char* MJsonNode::TypeToString(int type)
 {
    switch (type) {
    default: return "UNKNOWN";
+   case MJSON_ERROR: return "ERROR";
    case MJSON_NONE: return "NONE";
    case MJSON_ARRAY: return "ARRAY";
    case MJSON_OBJECT: return "OBJECT";
@@ -896,6 +932,14 @@ void MJsonNode::Dump(int nest) const // debug
       for (unsigned i=0; i<objectnames.size(); i++) {
          pnest(nest);
          printf("%s: ", objectnames[i].c_str());
+         subnodes[i]->Dump(nest+1);
+      }
+      break;
+   case MJSON_ERROR:
+      printf(": %s\n", stringvalue.c_str());
+      for (unsigned i=0; i<subnodes.size(); i++) {
+         pnest(nest);
+         printf("errorelement %d: ", i);
          subnodes[i]->Dump(nest+1);
       }
       break;

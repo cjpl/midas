@@ -14,8 +14,8 @@ int main(int argc, char* argv[])
       sin += buf;
    }
 
-   printf("Input string:\n");
-   printf("%s\n", sin.c_str());
+   //printf("Input string:\n");
+   //printf("%s\n", sin.c_str());
 
    MJsonNode* n = MJsonNode::Parse(sin.c_str());
    if (n==NULL) {
