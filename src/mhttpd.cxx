@@ -6624,6 +6624,7 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
       bool fmt_jsonp = false;
       int follow_links = 1;
       int save_keys = 1;
+      int recurse = 1;
       const char* fmt = NULL;
       const char* jsonp_callback = "callback";
       
@@ -6655,6 +6656,8 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
             save_keys = 2;
          if (fmt_json && strstr(fmt, "-nolastwritten"))
             save_keys = 0;
+         if (fmt_json && strstr(fmt, "-norecurse"))
+            recurse = 0;
       }
       
       if (isparam("odb")) {
@@ -6676,7 +6679,7 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
             if (fmt_xml)
                db_copy_xml(hDB, hkey, buf, &bufsize);
             else if (fmt_json)
-               db_copy_json(hDB, hkey, &buf, &bufsize, &end, save_keys, follow_links);
+               db_copy_json(hDB, hkey, &buf, &bufsize, &end, save_keys, follow_links, recurse);
             else
                db_copy(hDB, hkey, buf, &bufsize, (char *)"");
             
@@ -6746,7 +6749,7 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
                   s = buf;
                rsputs(s);
             } else if (fmt_json) {
-               db_copy_json(hDB, hkey, &buf, &bufsize, &end, save_keys, follow_links);
+               db_copy_json(hDB, hkey, &buf, &bufsize, &end, save_keys, follow_links, recurse);
                rsputs(buf);
             } else {
                db_copy(hDB, hkey, buf, &bufsize, (char *)"");
