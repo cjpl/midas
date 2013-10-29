@@ -224,23 +224,117 @@ static int paste_bool(HNDLE hDB, HNDLE hKey, const char* path, int index, const 
    return DB_SUCCESS;
 }
 
+static DWORD GetDWORD(const MJsonNode* node, const char* path)
+{
+   switch (node->GetType()) {
+   default:
+      cm_msg(MERROR, "db_paste_json", "GetDWORD: unexpeted node type %d at \"%s\"", node->GetType(), path);
+      return 0;
+   case MJSON_INT:
+      return node->GetInt();
+   case MJSON_STRING:
+      return strtoul(node->GetString().c_str(), NULL, 0);
+   }
+}
+
 static int paste_value(HNDLE hDB, HNDLE hKey, const char* path, int index, const MJsonNode* node, int tid, int string_length, const MJsonNode* key)
 {
-   // FIXME: this is incomplete
    int status;
    //printf("paste_value: path [%s], index %d, tid %d, slength %d, key %p\n", path, index, tid, string_length, key);
 
-   if (tid == TID_LINK) {
-      const char* value = node->GetString().c_str();
-      int size = strlen(value) + 1;
-
-      status = db_set_data(hDB, hKey, value, size, 1, TID_LINK);
-
+   switch (tid) {
+   default:
+      cm_msg(MERROR, "db_paste_json", "do not know what to do with tid %d at \"%s\"", tid, path);
+      return DB_FILE_ERROR;
+   case TID_BITFIELD:
+      cm_msg(MERROR, "db_paste_json", "paste of TID_BITFIELD is not implemented at \"%s\"", path);
+      return DB_SUCCESS;
+   case TID_CHAR: {
+      const std::string value = node->GetString();
+      int size = 1;
+      status = db_set_data_index(hDB, hKey, value.c_str(), size, index, TID_CHAR);
       if (status != DB_SUCCESS) {
-         cm_msg(MERROR, "db_paste_json", "cannot set TID_LINK value for \"%s\", db_set_data() status %d", path, status);
+         cm_msg(MERROR, "db_paste_json", "cannot set TID_CHAR value for \"%s\", db_set_data_index() status %d", path, status);
          return status;
       }
-   } else if (tid == TID_STRING) {
+      return DB_SUCCESS;
+   }
+   case TID_BOOL: {
+      DWORD dw = GetDWORD(node, path);
+      BOOL v;
+      if (dw) v = TRUE;
+      else v = FALSE;
+      int size = sizeof(v);
+      status = db_set_data_index(hDB, hKey, &v, size, index, TID_BOOL);
+      if (status != DB_SUCCESS) {
+         cm_msg(MERROR, "db_paste_json", "cannot set TID_BOOL value for \"%s\", db_set_data_index() status %d", path, status);
+         return status;
+      }
+      return DB_SUCCESS;
+   }
+   case TID_BYTE:
+   case TID_SBYTE: {
+      char v = node->GetInt();
+      int size = sizeof(v);
+      status = db_set_data_index(hDB, hKey, &v, size, index, tid);
+      if (status != DB_SUCCESS) {
+         cm_msg(MERROR, "db_paste_json", "cannot set TID_BYTE/TID_SBYTE value for \"%s\", db_set_data_index() status %d", path, status);
+         return status;
+      }
+      return DB_SUCCESS;
+   }
+   case TID_WORD:
+   case TID_SHORT: {
+      WORD v = GetDWORD(node, path);
+      int size = sizeof(v);
+      status = db_set_data_index(hDB, hKey, &v, size, index, tid);
+      if (status != DB_SUCCESS) {
+         cm_msg(MERROR, "db_paste_json", "cannot set TID_WORD/TID_SHORT value for \"%s\", db_set_data_index() status %d", path, status);
+         return status;
+      }
+      return DB_SUCCESS;
+   }
+   case TID_DWORD: {
+      DWORD v = GetDWORD(node, path);
+      int size = sizeof(v);
+      status = db_set_data_index(hDB, hKey, &v, size, index, TID_DWORD);
+      if (status != DB_SUCCESS) {
+         cm_msg(MERROR, "db_paste_json", "cannot set TID_DWORD value for \"%s\", db_set_data_index() status %d", path, status);
+         return status;
+      }
+      return DB_SUCCESS;
+   }
+   case TID_INT: {
+      int v = node->GetInt();
+      int size = sizeof(v);
+      status = db_set_data_index(hDB, hKey, &v, size, index, TID_INT);
+      if (status != DB_SUCCESS) {
+         cm_msg(MERROR, "db_paste_json", "cannot set TID_INT value for \"%s\", db_set_data_index() status %d", path, status);
+         return status;
+      }
+      return DB_SUCCESS;
+   }
+   case TID_FLOAT: {
+      float v = node->GetNumber();
+      int size = sizeof(v);
+      status = db_set_data_index(hDB, hKey, &v, size, index, TID_FLOAT);
+      if (status != DB_SUCCESS) {
+         cm_msg(MERROR, "db_paste_json", "cannot set TID_FLOAT value for \"%s\", db_set_data_index() status %d", path, status);
+         return status;
+      }
+      return DB_SUCCESS;
+   }
+   case TID_DOUBLE: {
+      double v = node->GetNumber();
+      int size = sizeof(v);
+      status = db_set_data_index(hDB, hKey, &v, size, index, TID_DOUBLE);
+      if (status != DB_SUCCESS) {
+         cm_msg(MERROR, "db_paste_json", "cannot set TID_DOUBLE value for \"%s\", db_set_data_index() status %d", path, status);
+         return status;
+      }
+      return DB_SUCCESS;
+   }
+   case TID_STRING: {
       char* buf = NULL;
       const char* ptr = NULL;
       int size = 0;
@@ -266,11 +360,24 @@ static int paste_value(HNDLE hDB, HNDLE hKey, const char* path, int index, const
          cm_msg(MERROR, "db_paste_json", "cannot set TID_STRING value for \"%s\", db_set_data_index() status %d", path, status);
          return status;
       }
-   } if (tid == TID_DWORD) {
-      //DWORD value = ...;
-   }
 
-   return DB_SUCCESS;
+      return DB_SUCCESS;
+   }
+   case TID_LINK: {
+      const char* value = node->GetString().c_str();
+      int size = strlen(value) + 1;
+
+      status = db_set_data(hDB, hKey, value, size, 1, TID_LINK);
+
+      if (status != DB_SUCCESS) {
+         cm_msg(MERROR, "db_paste_json", "cannot set TID_LINK value for \"%s\", db_set_data() status %d", path, status);
+         return status;
+      }
+
+      return DB_SUCCESS;
+   }
+   }
+   // NOT REACHED
 }
 
 static int paste_node(HNDLE hDB, HNDLE hKey, const char* path, int index, const MJsonNode* node, int tid, int string_length, const MJsonNode* key)
@@ -283,6 +390,9 @@ static int paste_node(HNDLE hDB, HNDLE hKey, const char* path, int index, const 
    case MJSON_INT:    return paste_value(hDB, hKey, path, index, node, tid, 0, key);
    case MJSON_NUMBER: return paste_value(hDB, hKey, path, index, node, tid, 0, key);
    case MJSON_BOOL:   return paste_bool(hDB, hKey, path, index, node);
+   case MJSON_ERROR:
+      cm_msg(MERROR, "db_paste_json", "JSON parse error: %s", node->GetError().c_str());
+      return DB_FILE_ERROR;
    default:
       cm_msg(MERROR, "db_paste_json", "unexpected JSON node type %d (%s)", node->GetType(), MJsonNode::TypeToString(node->GetType()));
       return DB_FILE_ERROR;
