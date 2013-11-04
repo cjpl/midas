@@ -16324,6 +16324,166 @@ void server_loop()
 
 /*------------------------------------------------------------------*/
 
+#define HAVE_MG 1
+
+#ifdef HAVE_MG
+
+#include "mongoose.h"
+#include "mongoose.c"
+
+static const char* find_header_mg(const struct mg_event *event, const char* name)
+{
+   for (int i=0; i<event->request_info->num_headers; i++) {
+      if (strcmp(event->request_info->http_headers[i].name, name) == 0)
+         return event->request_info->http_headers[i].value;
+   }
+   return NULL;
+}
+
+// This function will be called by mongoose on every new request.
+static int event_handler_mg(struct mg_event *event)
+{
+   printf("mongoose event %d: ", event->type);
+
+   switch (event->type) {
+   case MG_REQUEST_BEGIN: {
+      printf("MG_REQUEST_BEGIN, method [%s], uri [%s], query [%s]\n", event->request_info->request_method, event->request_info->uri, event->request_info->query_string);
+
+      for (int i=0; i<event->request_info->num_headers; i++) {
+         printf("Header %d: [%s] = [%s]\n", i, event->request_info->http_headers[i].name, event->request_info->http_headers[i].value);
+      }
+
+      // prepare return buffer
+      memset(return_buffer, 0, return_size);
+      strlen_retbuf = 0;
+      return_length = 0;
+
+      // fudge cookies
+      char* cookie_pwd = "";
+      char* cookie_wpwd = "";
+      char* cookie_cpwd = "";
+
+      // fudge refresh rate
+      int refresh = 0;
+
+      // reassemble the request
+      int uri_length = strlen(event->request_info->uri);
+      int query_length = 0;
+      if (event->request_info->query_string) {
+         query_length = strlen(event->request_info->query_string);
+      }
+      int len = uri_length+1+query_length+1;
+      char buf[len];
+      strlcpy(buf, event->request_info->uri, len);
+      if (query_length) {
+         strlcat(buf, "?", len);
+         strlcat(buf, event->request_info->query_string, len);
+      }
+      printf("len %d, buf [%s]\n", len, buf);
+
+      if (strcmp( event->request_info->request_method, "GET") == 0) {
+         decode_get(buf, cookie_pwd, cookie_wpwd, cookie_cpwd, refresh);
+      } else if (strcmp( event->request_info->request_method, "POST") == 0) {
+
+         int max_post_data = 1024*1024;
+         char post_data[max_post_data];
+         // User has submitted a form, show submitted data and a variable value
+         int post_data_len = mg_read(event->conn, post_data, sizeof(post_data));
+
+         char boundary[256];
+         boundary[0] = 0;
+         const char* ct = find_header_mg(event, "Content-Type");
+         if (ct) {
+            const char* s = strstr(ct, "boundary=");
+            if (s)
+               strlcpy(boundary, s+9, sizeof(boundary));
+         }
+
+         printf("post_data_len %d, data [%s], boundary [%s]\n", post_data_len, post_data, boundary);
+
+         decode_post(buf, post_data, boundary, post_data_len, cookie_pwd, cookie_wpwd, refresh);
+      }
+
+      printf("Return buffer length %d bytes (%d)\n", return_length, strlen(return_buffer));
+
+      if (return_length != -1) {
+         if (return_length == 0)
+            return_length = strlen(return_buffer);
+         
+         printf("Return buffer length %d bytes\n", return_length);
+         
+         mg_write(event->conn, return_buffer, return_length);
+         return 1;
+      }
+
+      return 0;
+      
+      // Returning non-zero tells mongoose that our function has replied to
+      // the client, and mongoose should not send client any more data.
+      // return 1; // return value "1" means we send reply to client. return value "0" means we do not know what to do with this.
+   }
+   case MG_REQUEST_END:
+      printf("MG_REQUEST_END\n");
+      return 0; // return value ignored
+   case MG_HTTP_ERROR:
+      printf("MG_HTTP_ERROR, error code %d", (int)(long)event->event_param);
+      if (event->request_info)
+         printf(", method [%s], uri [%s]", event->request_info->request_method, event->request_info->uri);
+      printf("\n");
+      return 0; // return value "1" means we have sent our own custon error response, value "0" means mongoose sends it's default response
+   case MG_EVENT_LOG:
+      printf("MG_EVENT_LOG, message: %s\n", (const char*)event->event_param);
+      return 1; // return value "1" means we logged the message, value "0" means mongoose logs the message somewhere we do not know where
+   case MG_THREAD_BEGIN:
+      printf("MG_THREAD_BEGIN\n");
+      return 0; // return value ignored
+   case MG_THREAD_END:
+      printf("MG_THREAD_END\n");
+      return 0; // return value ignored
+   default:
+      printf("unknown request\n");
+      return 0; // not handled by us
+   }
+
+   // NOT REACHED
+   // We do not handle any other event
+   return 0;
+}
+
+static struct mg_context *ctx_mg = NULL;
+
+int start_mg()
+{
+   printf("start_mg!\n");
+
+   signal(SIGPIPE, SIG_IGN);
+
+   // List of options. Last element must be NULL.
+   const char *options[] = {"num_threads", "1", "listening_ports", "8081,8043s", "ssl_certificate", "ssl_cert.pem", NULL};
+
+   // Start the web server.
+   ctx_mg = mg_start(options, &event_handler_mg, NULL);
+
+   printf("start_mg: ctx %p\n", ctx_mg);
+
+   return SUCCESS;
+}
+
+int stop_mg()
+{
+   printf("stop_mg!\n");
+   // Stop the server.
+   if (ctx_mg)
+      mg_stop(ctx_mg);
+   ctx_mg = NULL;
+   printf("stop_mg done!\n");
+   return SUCCESS;
+}
+
+#endif
+
+/*------------------------------------------------------------------*/
+
 int main(int argc, char *argv[])
 {
    int i, status;
@@ -16419,8 +16579,16 @@ int main(int argc, char *argv[])
 
    /* initialize sequencer */
    init_sequencer();
+
+#ifdef HAVE_MG
+   start_mg();
+#endif
    
    server_loop();
+
+#ifdef HAVE_MG
+   stop_mg();
+#endif
 
    return 0;
 }
