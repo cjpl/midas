@@ -234,7 +234,9 @@ struct pollfd {
 #ifndef O_BINARY
 #define O_BINARY  0
 #endif // O_BINARY
+#ifndef closesocket
 #define closesocket(a) close(a)
+#endif
 #define mg_mkdir(x, y) mkdir(x, y)
 #define mg_remove(x) remove(x)
 #define mg_sleep(x) usleep((x) * 1000)
@@ -5022,7 +5024,7 @@ static void process_new_connection(struct mg_connection *conn) {
 
     if (ebuf[0] == '\0') {
       handle_request(conn);
-      call_user(MG_REQUEST_END, conn, (void *) (int *) conn->status_code);
+      call_user(MG_REQUEST_END, conn, (void *)(long)conn->status_code);
       log_access(conn);
     }
     if (ri->remote_user != NULL) {

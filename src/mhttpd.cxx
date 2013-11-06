@@ -16359,9 +16359,9 @@ static int event_handler_mg(struct mg_event *event)
       return_length = 0;
 
       // fudge cookies
-      char* cookie_pwd = "";
-      char* cookie_wpwd = "";
-      char* cookie_cpwd = "";
+      char* cookie_pwd = (char *)"";
+      char* cookie_wpwd = (char *)"";
+      char* cookie_cpwd = (char *)"";
 
       // fudge refresh rate
       int refresh = 0;
@@ -16404,7 +16404,7 @@ static int event_handler_mg(struct mg_event *event)
          decode_post(buf, post_data, boundary, post_data_len, cookie_pwd, cookie_wpwd, refresh);
       }
 
-      printf("Return buffer length %d bytes (%d)\n", return_length, strlen(return_buffer));
+      printf("Return buffer length %d bytes (%d)\n", return_length, (int)strlen(return_buffer));
 
       if (return_length != -1) {
          if (return_length == 0)
