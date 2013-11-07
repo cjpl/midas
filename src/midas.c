@@ -3545,7 +3545,13 @@ int cm_transition_call(void *param)
                n_wait++;
                if (tr_client->debug_flag == 1)
                   printf("Client \"%s\" waits for client \"%s\"\n", tr_client->client_name, tr_client->pred[i]->client_name);
-               ss_sleep(100);
+               ss_sleep(100); // FIXME: check if transition was canceled
+            } else {
+               if (tr_client->pred[i]->status != SUCCESS && tr_client->transition != TR_STOP) {
+                  cm_msg(MERROR, "cm_transition_call", "Transition %d aborted: client \"%s\" returned status %d", tr_client->transition, tr_client->pred[i]->client_name, tr_client->pred[i]->status);
+                  tr_client->status = -1;
+                  return CM_SUCCESS;
+               }
             }
          }
       } while (n_wait > 0);
@@ -4192,6 +4198,12 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
             /* if other client call transition via RPC layer */
             status = cm_transition_call(&tr_client[idx]);
          }
+
+         if (status == CM_SUCCESS && transition != TR_STOP)
+            if (tr_client[idx].status != SUCCESS) {
+               cm_msg(MERROR, "cm_transition", "transition %s aborted: client \"%s\" returned status %d", trname, tr_client[idx].client_name, tr_client[idx].status);
+               break;
+            }
       }
       
       if (status != CM_SUCCESS)
@@ -4201,7 +4213,7 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
    if (async_flag & MTHREAD) {
       /* wait until all threads have finished */
       do {
-         ss_sleep(10);
+         ss_sleep(10); // FIXME: check if transition was canceled
          for (idx = 0 ; idx < n_tr_clients ; idx++)
             if (tr_client[idx].status == 0)
                break;
