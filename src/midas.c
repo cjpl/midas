@@ -3789,8 +3789,10 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
    if (i == TRUE && transition == TR_START) {
       al_check();
       if (al_get_alarms(str, sizeof(str)) > 0) {
-         cm_msg(MERROR, "cm_transition", "Run start abort due to %s", str);
-         strlcpy(errstr, str, errstr_size);
+         cm_msg(MERROR, "cm_transition", "Run start abort due to alarms: %s", str);
+         if (errstr) {
+            strlcpy(errstr, str, errstr_size);
+         }
          return AL_TRIGGERED;
       }
    }
@@ -3829,7 +3831,8 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
                str[strlen(key.name)] = 0;
                if (!equal_ustring(str, key.name) && cm_exist(key.name, FALSE) == CM_NO_CLIENT) {
                   cm_msg(MERROR, "cm_transition", "Run start abort due to program %s not running", key.name);
-                  sprintf(errstr, "Run start abort due to program %s not running", key.name);
+                  if (errstr)
+                     sprintf(errstr, "Run start abort due to program %s not running", key.name);
                   return AL_TRIGGERED;
                }
             }
