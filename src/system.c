@@ -4158,6 +4158,68 @@ INT ss_resume(INT port, char *message)
 \********************************************************************/
 
 /*------------------------------------------------------------------*/
+int ss_wait_socket(int sock, INT millisec)
+/********************************************************************\
+
+  Routine: ss_wait_socket
+
+  Purpose: Wait for data available to read from a socket
+
+  Input:
+    INT   sock               Socket which was previosly opened.
+    INT   millisec           Timeout in ms
+
+  Function value:
+    INT                      SS_TIMEOUT=timeout, SS_SOCKET_ERROR=error, SS_SUCCESS=data is available
+
+\********************************************************************/
+{
+   INT status;
+   fd_set readfds;
+   struct timeval timeout;
+   struct timeval timeout0;
+   DWORD start_time = 0; // start_time is only used for BSD select() behaviour (MacOS)
+   DWORD end_time = 0;
+
+   FD_ZERO(&readfds);
+   FD_SET(sock, &readfds);
+
+   timeout.tv_sec = millisec / 1000;
+   timeout.tv_usec = (millisec % 1000) * 1000;
+
+   timeout0 = timeout;
+
+   while (1) {
+      status = select(sock+1, &readfds, NULL, NULL, &timeout);
+      printf("ss_wait_socket: millisec %d, tv_sec %d, tv_usec %d, isset %d, status %d, errno %d (%s)\n", millisec, timeout.tv_sec, timeout.tv_usec, FD_ISSET(sock, &readfds), status, errno, strerror(errno));
+      if (status<0 && errno==EINTR) { /* watchdog alarm signal */
+         /* need to determine if select() updates "timeout" (Linux) or not (BSD) */
+         if (timeout.tv_sec == timeout0.tv_sec) {
+            DWORD now = ss_time();
+            if (start_time == 0) {
+               start_time = now;
+               end_time = start_time + (millisec+999)/1000;
+            }
+            printf("ss_wait_socket: EINTR: now %d, timeout %d, wait time %d\n", now, end_time, end_time - now);
+            if (now > end_time)
+               return SS_TIMEOUT;
+         }
+         continue;
+      }
+      if (status < 0) { /* select() syscall error */
+         cm_msg(MERROR, "ss_wait_socket", "unexpected error, select() returned %d, errno: %d (%s)", status, errno, strerror(errno));
+         return SS_SOCKET_ERROR;
+      }
+      if (status == 0) /* timeout */
+         return SS_TIMEOUT;
+      if (!FD_ISSET(sock, &readfds))
+         return SS_TIMEOUT;
+      return SS_SUCCESS;
+   }
+   /* NOT REACHED */
+}
+
+/*------------------------------------------------------------------*/
 INT send_tcp(int sock, char *buffer, DWORD buffer_size, INT flags)
 /********************************************************************\
 
@@ -4400,6 +4462,160 @@ INT recv_tcp(int sock, char *net_buffer, DWORD buffer_size, INT flags)
    } while (n_received < param_size);
 
    return sizeof(NET_COMMAND_HEADER) + param_size;
+}
+
+/*------------------------------------------------------------------*/
+INT recv_tcp2(int sock, char *net_buffer, int buffer_size, int timeout_ms)
+/********************************************************************\
+
+  Routine: recv_tcp2
+
+  Purpose: Receive network data over TCP port. Since sockets are
+     operated in stream mode, a single transmission via send
+     may not transfer the full data. Therefore, one has to check
+     at the receiver side if the full data is received. If not,
+     one has to issue several recv() commands.
+
+     The length of the data is determined by the data header,
+     which consists of two DWORDs. The first is the command code
+     (or function id), the second is the size of the following
+     parameters in bytes. From that size recv_tcp() determines
+     how much data to receive.
+
+  Input:
+    INT   sock               Socket which was previosly opened.
+    char  *net_buffer        Buffer to store data to
+    int   buffer_size        Size of the buffer in bytes.
+    int   flags              Flags passed to recv()
+    int   timeout_ms         Timeout in milliseconds
+
+  Output:
+    char  *buffer            Network receive buffer.
+
+  Function value:
+    INT                      number of bytes received, 0=timeout, -1=socket error
+
+\********************************************************************/
+{
+   int n_received = 0;
+   int flags = 0;
+   int n;
+
+   printf("recv_tcp2: %p+%d bytes, timeout %d ms!\n", net_buffer + n_received, buffer_size - n_received, timeout_ms);
+
+   while (n_received != buffer_size) {
+
+      if (timeout_ms > 0) {
+         int status = ss_wait_socket(sock, timeout_ms);
+         if (status == SS_TIMEOUT)
+            return 0;
+         if (status != SS_SUCCESS)
+            return -1;
+      }
+
+      n = recv(sock, net_buffer + n_received, buffer_size - n_received, flags);
+
+      printf("recv_tcp2: %p+%d bytes, returned %d, errno %d (%s)\n", net_buffer + n_received, buffer_size - n_received, n, errno, strerror(errno));
+
+#ifdef EINTR
+      /* don't return if an alarm signal was cought */
+      if (n == -1 && errno == EINTR)
+         continue;
+#endif
+
+      if (n == 0) {
+         // socket closed
+         cm_msg(MERROR, "recv_tcp2", "unexpected connection closure");
+         return -1;
+      }
+
+      if (n < 0) {
+         // socket error
+         cm_msg(MERROR, "recv_tcp2", "unexpected connection error, recv() errno %d (%s)", errno, strerror(errno));
+         return -1;
+      }
+
+      n_received += n;
+   }
+
+   return n_received;
+}
+
+/*------------------------------------------------------------------*/
+INT ss_recv_net_command(int sock, DWORD* routine_id, DWORD* param_size, char **param_ptr, int timeout_ms)
+/********************************************************************\
+
+  Routine: ss_recv_net_command
+
+  Purpose: Receive MIDAS data packet from a TCP port. MIDAS data packet
+     is defined by NET_COMMAND_HEADER
+     which consists of two DWORDs. The first is the command code
+     (or function id), the second is the size of the following
+     parameters in bytes. From that size recv_tcp() determines
+     how much data to receive.
+
+  Input:
+    int    sock              Socket which was previosly opened.
+    DWORD* routine_id        routine_id from NET_COMMAND_HEADER
+    DWORD* param_size        param_size from NET_COMMAND_HEADER, size of allocated data buffer
+    char** param_ptr         pointer to allocated data buffer
+    int    timeout_ms        timeout in milliseconds
+
+  Function value:
+    INT                      SS_SUCCESS, SS_NO_MEMORY, SS_SOCKET_ERROR
+
+\********************************************************************/
+{
+   NET_COMMAND_HEADER ncbuf;
+   int n;
+
+   /* first receive header */
+   n = recv_tcp2(sock, (char*)&ncbuf, sizeof(ncbuf), timeout_ms);
+
+   if (n == 0) {
+      cm_msg(MERROR, "ss_recv_net_command", "timeout receiving network command header");
+      return SS_TIMEOUT;
+   }
+
+   if (n != sizeof(ncbuf)) {
+      cm_msg(MERROR, "ss_recv_net_command", "error receiving network command header, see messages");
+      return SS_SOCKET_ERROR;
+   }
+
+   // FIXME: where is the big-endian/little-endian conversion?
+   *routine_id = ncbuf.routine_id;
+   *param_size = ncbuf.param_size;
+
+   if (*param_size == 0) {
+      *param_ptr = NULL;
+      return SS_SUCCESS;
+   }
+
+   *param_ptr = malloc(*param_size);
+
+   if (*param_ptr == NULL) {
+      cm_msg(MERROR, "ss_recv_net_command", "error allocating %d bytes for network command data", *param_size);
+      return SS_NO_MEMORY;
+   }
+
+   /* first receive header */
+   n = recv_tcp2(sock, *param_ptr, *param_size, timeout_ms);
+
+   if (n == 0) {
+      cm_msg(MERROR, "ss_recv_net_command", "timeout receiving network command data");
+      free(*param_ptr);
+      *param_ptr = NULL;
+      return SS_TIMEOUT;
+   }
+
+   if (n != *param_size) {
+      cm_msg(MERROR, "ss_recv_net_command", "error receiving network command data, see messages");
+      free(*param_ptr);
+      *param_ptr = NULL;
+      return SS_SOCKET_ERROR;
+   }
+
+   return SS_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
