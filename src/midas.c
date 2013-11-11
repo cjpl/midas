@@ -4073,6 +4073,9 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
       i = 0;
    }
 
+   /* check for broken RPC connections */
+   rpc_client_check();
+
    if (debug_flag == 1)
       printf("---- Transition %s started ----\n", trname);
    if (debug_flag == 2)
@@ -9021,16 +9024,24 @@ INT rpc_client_connect(const char *host_name, INT port, const char *client_name,
    
    ss_mutex_wait_for(mtx, 10000);
    
-   /* check for broken connections */
-   rpc_client_check();
+   if (0)
+      for (i = 0; i < MAX_RPC_CONNECTION; i++)
+         if (_client_connection[i].send_sock != 0)
+            printf("connection %d: client \"%s\" on host \"%s\" port %d, socket %d, connected %d\n", i, _client_connection[i].client_name, _client_connection[i].host_name, _client_connection[i].port, _client_connection[i].send_sock, _client_connection[i].connected);
 
    /* check if connection already exists */
    for (i = 0; i < MAX_RPC_CONNECTION; i++)
       if (_client_connection[i].send_sock != 0 &&
           strcmp(_client_connection[i].host_name, host_name) == 0 && _client_connection[i].port == port) {
-         *hConnection = i + 1;
-         ss_mutex_release(mtx);
-         return RPC_SUCCESS;
+         status = ss_socket_wait(_client_connection[i].send_sock, 0);
+         if (status == SS_TIMEOUT) { // socket should be empty
+            *hConnection = i + 1;
+            ss_mutex_release(mtx);
+            return RPC_SUCCESS;
+         }
+         //cm_msg(MINFO, "rpc_client_connect", "Stale connection to \"%s\" on host %s is closed", _client_connection[i].client_name, _client_connection[i].host_name);
+         closesocket(_client_connection[i].send_sock);
+         _client_connection[i].send_sock = 0;
       }
 
    /* search for free entry */
@@ -9165,12 +9176,6 @@ void rpc_client_check()
 
   Purpose: Check all client connections if remote client closed link
 
-  Function value:
-    RPC_SUCCESS              Successful completion
-    RPC_NET_ERROR            Error in socket call
-    RPC_NO_CONNECTION        Maximum number of connections reached
-    RPC_NOT_REGISTERED       cm_connect_experiment was not called properly
-
 \********************************************************************/
 {
    INT i, status;
@@ -9233,6 +9238,10 @@ void rpc_client_check()
 
          if (ok)
             continue;
+
+         //cm_msg(MINFO, "rpc_client_check",
+         //       "Connection to \"%s\" on host %s closed",
+         //       _client_connection[i].client_name, _client_connection[i].host_name);
 
          // connection lost, close the socket
          closesocket(sock);
