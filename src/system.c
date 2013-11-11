@@ -4158,6 +4158,70 @@ INT ss_resume(INT port, char *message)
 \********************************************************************/
 
 /*------------------------------------------------------------------*/
+int ss_socket_wait(int sock, INT millisec)
+/********************************************************************\
+
+  Routine: ss_socket_wait
+
+  Purpose: Wait for data available to read from a socket
+
+  Input:
+    INT   sock               Socket which was previosly opened.
+    INT   millisec           Timeout in ms
+
+  Function value:
+    SS_SUCCESS               Data is available
+    SS_TIMEOUT               Timeout
+    SS_SOCKET_ERROR          Error
+
+\********************************************************************/
+{
+   INT status;
+   fd_set readfds;
+   struct timeval timeout;
+   struct timeval timeout0;
+   DWORD start_time = 0; // start_time is only used for BSD select() behaviour (MacOS)
+   DWORD end_time = 0;
+
+   FD_ZERO(&readfds);
+   FD_SET(sock, &readfds);
+
+   timeout.tv_sec = millisec / 1000;
+   timeout.tv_usec = (millisec % 1000) * 1000;
+
+   timeout0 = timeout;
+
+   while (1) {
+      status = select(sock+1, &readfds, NULL, NULL, &timeout);
+      //printf("ss_socket_wait: millisec %d, tv_sec %d, tv_usec %d, isset %d, status %d, errno %d (%s)\n", millisec, timeout.tv_sec, timeout.tv_usec, FD_ISSET(sock, &readfds), status, errno, strerror(errno));
+      if (status<0 && errno==EINTR) { /* watchdog alarm signal */
+         /* need to determine if select() updates "timeout" (Linux) or keeps original value (BSD) */
+         if (timeout.tv_sec == timeout0.tv_sec) {
+            DWORD now = ss_time();
+            if (start_time == 0) {
+               start_time = now;
+               end_time = start_time + (millisec+999)/1000;
+            }
+            //printf("ss_socket_wait: EINTR: now %d, timeout %d, wait time %d\n", now, end_time, end_time - now);
+            if (now > end_time)
+               return SS_TIMEOUT;
+         }
+         continue;
+      }
+      if (status < 0) { /* select() syscall error */
+         cm_msg(MERROR, "ss_socket_wait", "unexpected error, select() returned %d, errno: %d (%s)", status, errno, strerror(errno));
+         return SS_SOCKET_ERROR;
+      }
+      if (status == 0) /* timeout */
+         return SS_TIMEOUT;
+      if (!FD_ISSET(sock, &readfds))
+         return SS_TIMEOUT;
+      return SS_SUCCESS;
+   }
+   /* NOT REACHED */
+}
+
+/*------------------------------------------------------------------*/
 INT send_tcp(int sock, char *buffer, DWORD buffer_size, INT flags)
 /********************************************************************\
 
