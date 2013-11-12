@@ -905,7 +905,7 @@ INT tape_open(char *dev, INT * handle)
 
 INT ftp_error(char *message)
 {
-   cm_msg(MERROR, "ftp_error", message);
+   cm_msg(MERROR, "ftp_error", "%s", message);
    return 1;
 }
 
@@ -1363,8 +1363,7 @@ EVENT_DEF *db_get_event_definition(short int event_id)
       /* search for client with specific name */
       status = db_enum_key(hDB, hKeyRoot, i, &hKey);
       if (status == DB_NO_MORE_SUBKEYS) {
-         sprintf(str, "Cannot find event id %d under /equipment", event_id);
-         cm_msg(MERROR, "db_get_event_definition", str);
+         cm_msg(MERROR, "db_get_event_definition", "Cannot find event id %d under /equipment", event_id);
          return NULL;
       }
 
@@ -3889,14 +3888,14 @@ INT tr_start(INT run_number, char *error)
       status = db_create_record(hDB, 0, "/Logger/Channels/0/", strcomb(chn_settings_str));
       if (status != DB_SUCCESS) {
          strcpy(error, "Cannot create channel entry in database");
-         cm_msg(MERROR, "tr_start", error);
+         cm_msg(MERROR, "tr_start", "%s", error);
          return 0;
       }
 
       status = db_find_key(hDB, 0, "/Logger/Channels", &hKeyRoot);
       if (status != DB_SUCCESS) {
          strcpy(error, "Cannot create channel entry in database");
-         cm_msg(MERROR, "tr_start", error);
+         cm_msg(MERROR, "tr_start", "%s", error);
          return 0;
       }
    }
@@ -3933,7 +3932,7 @@ INT tr_start(INT run_number, char *error)
          status = db_find_key(hDB, hKeyChannel, "Settings", &log_chn[index].settings_hkey);
          if (status != DB_SUCCESS) {
             strcpy(error, "Cannot find channel settings info");
-            cm_msg(MERROR, "tr_start", error);
+            cm_msg(MERROR, "tr_start", "%s", error);
             return 0;
          }
 
@@ -3941,7 +3940,7 @@ INT tr_start(INT run_number, char *error)
          status = db_find_key(hDB, hKeyChannel, "Statistics", &log_chn[index].stats_hkey);
          if (status != DB_SUCCESS) {
             strcpy(error, "Cannot find channel statistics info");
-            cm_msg(MERROR, "tr_start", error);
+            cm_msg(MERROR, "tr_start", "%s", error);
             return 0;
          }
 
@@ -3962,7 +3961,7 @@ INT tr_start(INT run_number, char *error)
          status = db_get_record(hDB, log_chn[index].settings_hkey, chn_settings, &size, 0);
          if (status != DB_SUCCESS) {
             strcpy(error, "Cannot read channel info");
-            cm_msg(MERROR, "tr_start", error);
+            cm_msg(MERROR, "tr_start", "%s", error);
             return 0;
          }
 
@@ -3971,7 +3970,7 @@ INT tr_start(INT run_number, char *error)
              chn_settings->tape_capacity > 0 &&
              log_chn[index].statistics.bytes_written_total >= chn_settings->tape_capacity) {
             strcpy(error, "Tape capacity reached. Please load new tape");
-            cm_msg(MERROR, "tr_start", error);
+            cm_msg(MERROR, "tr_start", "%s", error);
             return 0;
          }
 
@@ -3990,7 +3989,7 @@ INT tr_start(INT run_number, char *error)
             sprintf(error,
                     "Invalid channel type \"%s\", pease use \"Tape\", \"FTP\" or \"Disk\"",
                     chn_settings->type);
-            cm_msg(MERROR, "tr_start", error);
+            cm_msg(MERROR, "tr_start", "%s", error);
             return 0;
          }
 
@@ -4041,7 +4040,7 @@ INT tr_start(INT run_number, char *error)
                sprintf(error,
                        "Invalid data format, please use \"MIDAS\", \"ASCII\", \"DUMP\" or \"ROOT\"");
 
-            cm_msg(MERROR, "tr_start", error);
+            cm_msg(MERROR, "tr_start", "%s", error);
             return 0;
          }
 
@@ -4082,7 +4081,7 @@ INT tr_start(INT run_number, char *error)
          status = bm_open_buffer(chn_settings->buffer, 2 * MAX_EVENT_SIZE, &log_chn[index].buffer_handle);
          if (status != BM_SUCCESS && status != BM_CREATED) {
             sprintf(error, "Cannot open buffer %s", chn_settings->buffer);
-            cm_msg(MERROR, "tr_start", error);
+            cm_msg(MERROR, "tr_start", "%s", error);
             return 0;
          }
          bm_set_cache_size(log_chn[index].buffer_handle, 100000, 0);
@@ -4095,7 +4094,7 @@ INT tr_start(INT run_number, char *error)
 
          if (status != BM_SUCCESS) {
             sprintf(error, "Cannot place event request");
-            cm_msg(MERROR, "tr_start", error);
+            cm_msg(MERROR, "tr_start", "%s", error);
             return 0;
          }
 
@@ -4105,7 +4104,7 @@ INT tr_start(INT run_number, char *error)
                 bm_open_buffer((char*)MESSAGE_BUFFER_NAME, MESSAGE_BUFFER_SIZE, &log_chn[index].msg_buffer_handle);
             if (status != BM_SUCCESS && status != BM_CREATED) {
                sprintf(error, "Cannot open buffer %s", MESSAGE_BUFFER_NAME);
-               cm_msg(MERROR, "tr_start", error);
+               cm_msg(MERROR, "tr_start", "%s", error);
                return 0;
             }
 
@@ -4117,7 +4116,7 @@ INT tr_start(INT run_number, char *error)
 
             if (status != BM_SUCCESS) {
                sprintf(error, "Cannot place event request");
-               cm_msg(MERROR, "tr_start", error);
+               cm_msg(MERROR, "tr_start", "%s", error);
                return 0;
             }
          }
@@ -4133,7 +4132,7 @@ INT tr_start(INT run_number, char *error)
    status = open_history();
    if (status != CM_SUCCESS) {
       sprintf(error, "Error in history system, aborting run start");
-      cm_msg(MERROR, "tr_start", error);
+      cm_msg(MERROR, "tr_start", "%s", error);
       return 0;
    }
 

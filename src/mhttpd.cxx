@@ -7297,7 +7297,7 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
    if (equal_ustring(getparam("cmd"), "jgenmsg")) {
       
       if (*getparam("msg")) {
-         cm_msg(MINFO, "java_script_commands", getparam("msg"));
+         cm_msg(MINFO, "java_script_commands", "%s", getparam("msg"));
       }
       
       show_text_header();

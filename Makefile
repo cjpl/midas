@@ -286,6 +286,7 @@ PROGS = $(BIN_DIR)/mserver $(BIN_DIR)/mhttpd \
 	$(BIN_DIR)/mh2sql \
 	$(BIN_DIR)/mfe_link_test \
 	$(BIN_DIR)/mana_link_test \
+	$(BIN_DIR)/fal_link_test \
 	$(SPECIFIC_OS_PRG)
 
 ANALYZER = $(LIB_DIR)/mana.o
@@ -568,6 +569,9 @@ $(BIN_DIR)/mdump: $(UTL_DIR)/mdump.c $(SRC_DIR)/mdsupport.c
 
 $(BIN_DIR)/mfe_link_test: $(SRC_DIR)/mfe.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -DLINK_TEST -o $@ $(SRC_DIR)/mfe.c $(LIB) $(LIBS)
+
+$(BIN_DIR)/fal_link_test: $(SRC_DIR)/fal.c
+	$(CXX) $(CFLAGS) $(OSFLAGS) -DMANA_LITE -DLINK_TEST -o $@ $(SRC_DIR)/fal.c $(LIB)  $(MYSQL_LIBS) $(LIBS)
 
 $(BIN_DIR)/mana_link_test: $(SRC_DIR)/mana.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -DLINK_TEST -o $@ $(SRC_DIR)/mana.c $(LIB) $(LIBS)

@@ -128,6 +128,8 @@ const char *bstr = " ";
 
 CHN_SETTINGS_STR(chn_settings_str);
 
+#ifndef EQUIPMENT_COMMON_STR
+
 #define EQUIPMENT_COMMON_STR "\
 Event ID = WORD : 0\n\
 Trigger mask = WORD : 0\n\
@@ -145,6 +147,8 @@ Frontend host = STRING : [32] \n\
 Frontend name = STRING : [32] \n\
 Frontend file name = STRING : [256] \n\
 "
+
+#endif
 
 #define EQUIPMENT_STATISTICS_STR "\
 Events sent = DOUBLE : 0\n\
@@ -367,7 +371,7 @@ typedef struct {
    char data[256];
 } SQL_LIST;
 
-char *mname[] = {
+const char *mname[] = {
    "January",
    "February",
    "March",
@@ -5704,3 +5708,37 @@ int main(int argc, char *argv[])
 
    return 0;
 }
+
+#ifdef LINK_TEST
+int   odb_size;
+char* analyzer_name;
+int   analyzer_loop_period;
+ANALYZE_REQUEST analyze_request[1];
+int analyzer_init(void) { return 0; }
+int analyzer_loop(void) { return 0; }
+int analyzer_exit(void) { return 0; }
+int ana_end_of_run(INT run_number, char *error) { return 0; }
+int ana_begin_of_run(INT run_number, char *error) { return 0; }
+int ana_resume_run(INT run_number, char *error) { return 0; }
+int ana_pause_run(INT run_number, char *error) { return 0; }
+#endif
+#ifdef LINK_TEST
+char* frontend_name;
+char* frontend_file_name;
+BOOL  frontend_call_loop;
+int event_buffer_size;
+int max_event_size;
+int max_event_size_frag;
+int display_period;
+EQUIPMENT equipment[1];
+int frontend_init() { return 0; };
+int frontend_exit() { return 0; };
+int begin_of_run(int runno,char* errstr) { return 0; };
+int end_of_run(int runno,char* errstr) { return 0; };
+int pause_run(int runno,char* errstr) { return 0; };
+int resume_run(int runno,char* errstr) { return 0; };
+int interrupt_configure(INT cmd, INT source, POINTER_T adr) { return 0; };
+int frontend_loop() { return 0; };
+int poll_event(INT source, INT count, BOOL test) { return 0; };
+#endif
+
