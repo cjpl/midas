@@ -4317,25 +4317,14 @@ INT recv_string(int sock, char *buffer, DWORD buffer_size, INT millisec)
 {
    INT i, status;
    DWORD n;
-   fd_set readfds;
-   struct timeval timeout;
 
    n = 0;
    memset(buffer, 0, buffer_size);
 
    do {
       if (millisec > 0) {
-         FD_ZERO(&readfds);
-         FD_SET(sock, &readfds);
-
-         timeout.tv_sec = millisec / 1000;
-         timeout.tv_usec = (millisec % 1000) * 1000;
-
-         do {
-            status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
-         } while (status == -1);        /* dont return if an alarm signal was cought */
-
-         if (!FD_ISSET(sock, &readfds))
+         status = ss_socket_wait(sock, millisec);
+         if (status != SS_SUCCESS)
             break;
       }
 
@@ -4465,6 +4454,84 @@ INT recv_tcp(int sock, char *net_buffer, DWORD buffer_size, INT flags)
 
    return sizeof(NET_COMMAND_HEADER) + param_size;
 }
+
+INT recv_tcp2(int sock, char *net_buffer, int buffer_size, int timeout_ms)
+/********************************************************************\
+
+  Routine: recv_tcp2
+
+  Purpose: Receive network data over TCP port. Since sockets are
+     operated in stream mode, a single transmission via send
+     may not transfer the full data. Therefore, one has to check
+     at the receiver side if the full data is received. If not,
+     one has to issue several recv() commands.
+
+     The length of the data is determined by the data header,
+     which consists of two DWORDs. The first is the command code
+     (or function id), the second is the size of the following
+     parameters in bytes. From that size recv_tcp() determines
+     how much data to receive.
+
+  Input:
+    INT   sock               Socket which was previosly opened
+    char* net_buffer         Buffer to store data
+    int   buffer_size        Number of bytes to receive
+    int   timeout_ms         Timeout in milliseconds
+
+  Output:
+    char* net_buffer         Network receive buffer
+
+  Function value:
+    number of bytes received, or
+     0 : timeout
+    -1 : socket error
+
+\********************************************************************/
+{
+   int n_received = 0;
+   int flags = 0;
+   int n;
+
+   //printf("recv_tcp2: %p+%d bytes, timeout %d ms!\n", net_buffer + n_received, buffer_size - n_received, timeout_ms);
+
+   while (n_received != buffer_size) {
+
+      if (timeout_ms > 0) {
+         int status = ss_socket_wait(sock, timeout_ms);
+         if (status == SS_TIMEOUT)
+            return 0;
+         if (status != SS_SUCCESS)
+            return -1;
+      }
+
+      n = recv(sock, net_buffer + n_received, buffer_size - n_received, flags);
+
+      //printf("recv_tcp2: %p+%d bytes, returned %d, errno %d (%s)\n", net_buffer + n_received, buffer_size - n_received, n, errno, strerror(errno));
+
+#ifdef EINTR
+      /* don't return if an alarm signal was cought */
+      if (n == -1 && errno == EINTR)
+         continue;
+#endif
+
+      if (n == 0) {
+         // socket closed
+         cm_msg(MERROR, "recv_tcp2", "unexpected connection closure");
+         return -1;
+      }
+
+      if (n < 0) {
+         // socket error
+         cm_msg(MERROR, "recv_tcp2", "unexpected connection error, recv() errno %d (%s)", errno, strerror(errno));
+         return -1;
+      }
+
+      n_received += n;
+   }
+
+   return n_received;
+}
+
 
 /*------------------------------------------------------------------*/
 INT send_udp(int sock, char *buffer, DWORD buffer_size, INT flags)
