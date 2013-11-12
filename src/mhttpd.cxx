@@ -31,6 +31,8 @@ extern "C" {
 /* time until mhttpd disconnects from MIDAS */
 #define CONNECT_TIME  3600*24
 
+static MUTEX_T* request_mutex = NULL;
+
 /* size of buffer for incoming data, must fit sum of all attachments */
 #define WEB_BUFFER_SIZE (6*1024*1024)
 
@@ -15645,7 +15647,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
 
 /*------------------------------------------------------------------*/
 
-void decode_get(char *string, char *cookie_pwd, char *cookie_wpwd, char *cookie_cpwd, int refresh)
+void decode_get(char *string, const char *cookie_pwd, const char *cookie_wpwd, const char *cookie_cpwd, int refresh)
 {
    char path[256];
    char *p, *pitem;
@@ -15689,7 +15691,7 @@ void decode_get(char *string, char *cookie_pwd, char *cookie_wpwd, char *cookie_
 /*------------------------------------------------------------------*/
 
 void decode_post(char *header, char *string, char *boundary, int length,
-                 char *cookie_pwd, char *cookie_wpwd, int refresh)
+                 const char *cookie_pwd, const char *cookie_wpwd, int refresh)
 {
    char *pinit, *p, *pitem, *ptmp, file_name[256], str[256], path[256];
    int n;
@@ -16054,6 +16056,7 @@ void server_loop()
          header_length = 0;
          content_length = 0;
          n_error = 0;
+         bool locked = false;
          do {
             FD_ZERO(&readfds);
             FD_SET(_sock, &readfds);
@@ -16272,9 +16275,19 @@ void server_loop()
                goto error;
             *(strstr(net_buffer, "HTTP") - 1) = 0;
 
+            if (request_mutex) {
+               status = ss_mutex_wait_for(request_mutex, 0);
+               assert(status == SS_SUCCESS);
+               locked = true;
+            }
             /* decode command and return answer */
             decode_get(net_buffer + 4, cookie_pwd, cookie_wpwd, cookie_cpwd, refresh);
          } else {
+            if (request_mutex) {
+               status = ss_mutex_wait_for(request_mutex, 0);
+               assert(status == SS_SUCCESS);
+               locked = true;
+            }
             decode_post(net_buffer + 5, net_buffer + header_length, boundary,
                         content_length, cookie_pwd, cookie_wpwd, refresh);
          }
@@ -16304,6 +16317,10 @@ void server_loop()
 
             closesocket(_sock);
          }
+
+         if (locked) {
+            ss_mutex_release(request_mutex);
+         }
       }
 
       /* re-establish ctrl-c handler */
@@ -16331,6 +16348,8 @@ void server_loop()
 #include "mongoose.h"
 #include "mongoose.c"
 
+static int debug_mg = 0;
+
 static const char* find_header_mg(const struct mg_event *event, const char* name)
 {
    for (int i=0; i<event->request_info->num_headers; i++) {
@@ -16343,14 +16362,18 @@ static const char* find_header_mg(const struct mg_event *event, const char* name
 // This function will be called by mongoose on every new request.
 static int event_handler_mg(struct mg_event *event)
 {
-   printf("mongoose event %d: ", event->type);
+   int status;
+   if (debug_mg)
+      printf("mongoose event %d: ", event->type);
 
    switch (event->type) {
    case MG_REQUEST_BEGIN: {
-      printf("MG_REQUEST_BEGIN, method [%s], uri [%s], query [%s]\n", event->request_info->request_method, event->request_info->uri, event->request_info->query_string);
+      if (debug_mg) {
+         printf("MG_REQUEST_BEGIN, method [%s], uri [%s], query [%s]\n", event->request_info->request_method, event->request_info->uri, event->request_info->query_string);
 
-      for (int i=0; i<event->request_info->num_headers; i++) {
-         printf("Header %d: [%s] = [%s]\n", i, event->request_info->http_headers[i].name, event->request_info->http_headers[i].value);
+         for (int i=0; i<event->request_info->num_headers; i++) {
+            printf("Header %d: [%s] = [%s]\n", i, event->request_info->http_headers[i].name, event->request_info->http_headers[i].value);
+         }
       }
 
       // prepare return buffer
@@ -16359,9 +16382,9 @@ static int event_handler_mg(struct mg_event *event)
       return_length = 0;
 
       // fudge cookies
-      char* cookie_pwd = (char *)"";
-      char* cookie_wpwd = (char *)"";
-      char* cookie_cpwd = (char *)"";
+      const char* cookie_pwd = "";
+      const char* cookie_wpwd = "";
+      const char* cookie_cpwd = "";
 
       // fudge refresh rate
       int refresh = 0;
@@ -16379,9 +16402,14 @@ static int event_handler_mg(struct mg_event *event)
          strlcat(buf, "?", len);
          strlcat(buf, event->request_info->query_string, len);
       }
-      printf("len %d, buf [%s]\n", len, buf);
+      //printf("len %d, buf [%s]\n", len, buf);
+
+      bool locked = false;
 
       if (strcmp( event->request_info->request_method, "GET") == 0) {
+         status = ss_mutex_wait_for(request_mutex, 0);
+         assert(status == SS_SUCCESS);
+         locked = true;
          decode_get(buf, cookie_pwd, cookie_wpwd, cookie_cpwd, refresh);
       } else if (strcmp( event->request_info->request_method, "POST") == 0) {
 
@@ -16399,22 +16427,34 @@ static int event_handler_mg(struct mg_event *event)
                strlcpy(boundary, s+9, sizeof(boundary));
          }
 
-         printf("post_data_len %d, data [%s], boundary [%s]\n", post_data_len, post_data, boundary);
+         //printf("post_data_len %d, data [%s], boundary [%s]\n", post_data_len, post_data, boundary);
 
+         status = ss_mutex_wait_for(request_mutex, 0);
+         assert(status == SS_SUCCESS);
+         locked = true;
          decode_post(buf, post_data, boundary, post_data_len, cookie_pwd, cookie_wpwd, refresh);
       }
 
-      printf("Return buffer length %d bytes (%d)\n", return_length, (int)strlen(return_buffer));
+      if (debug_mg)
+         printf("mongoose: return buffer length %d bytes (%d)\n", return_length, (int)strlen(return_buffer));
 
       if (return_length != -1) {
          if (return_length == 0)
             return_length = strlen(return_buffer);
-         
-         printf("Return buffer length %d bytes\n", return_length);
+
+         if (debug_mg)
+            printf("mongoose: corrected return buffer length %d bytes\n", return_length);
          
          mg_write(event->conn, return_buffer, return_length);
+
+         if (locked)
+            ss_mutex_release(request_mutex);
+
          return 1;
       }
+
+      if (locked)
+         ss_mutex_release(request_mutex);
 
       return 0;
       
@@ -16423,25 +16463,34 @@ static int event_handler_mg(struct mg_event *event)
       // return 1; // return value "1" means we send reply to client. return value "0" means we do not know what to do with this.
    }
    case MG_REQUEST_END:
-      printf("MG_REQUEST_END\n");
+      if (debug_mg)
+         printf("MG_REQUEST_END\n");
       return 0; // return value ignored
    case MG_HTTP_ERROR:
-      printf("MG_HTTP_ERROR, error code %d", (int)(long)event->event_param);
-      if (event->request_info)
-         printf(", method [%s], uri [%s]", event->request_info->request_method, event->request_info->uri);
-      printf("\n");
+      // NOTE: messages with code 500 and no other information are generated when then client closes the connection
+      if (debug_mg) {
+         printf("MG_HTTP_ERROR, error code %d", (int)(long)event->event_param);
+         if (event->request_info)
+            printf(", method [%s], uri [%s]", event->request_info->request_method, event->request_info->uri);
+         printf("\n");
+      }
       return 0; // return value "1" means we have sent our own custon error response, value "0" means mongoose sends it's default response
    case MG_EVENT_LOG:
-      printf("MG_EVENT_LOG, message: %s\n", (const char*)event->event_param);
+      if (debug_mg)
+         printf("MG_EVENT_LOG, message: %s\n", (const char*)event->event_param);
+      cm_msg(MERROR, "mongoose", "mongoose web server error: %s", (const char*)event->event_param);
       return 1; // return value "1" means we logged the message, value "0" means mongoose logs the message somewhere we do not know where
    case MG_THREAD_BEGIN:
-      printf("MG_THREAD_BEGIN\n");
+      if (debug_mg)
+         printf("MG_THREAD_BEGIN\n");
       return 0; // return value ignored
    case MG_THREAD_END:
-      printf("MG_THREAD_END\n");
+      if (debug_mg)
+         printf("MG_THREAD_END\n");
       return 0; // return value ignored
    default:
-      printf("unknown request\n");
+      if (debug_mg)
+         printf("unknown request, event->type=%d\n", event->type);
       return 0; // not handled by us
    }
 
@@ -16452,31 +16501,153 @@ static int event_handler_mg(struct mg_event *event)
 
 static struct mg_context *ctx_mg = NULL;
 
-int start_mg()
+#include <vector>
+#include <string>
+
+static std::vector<std::string> options_mg;
+
+void add_option_mg(const char* name, const char* value)
 {
-   printf("start_mg!\n");
+   options_mg.push_back(name);
+   options_mg.push_back(value);
+}
+
+const char** get_options_mg()
+{
+   int size = options_mg.size();
+   const char** s = (const char**)malloc(sizeof(char*)*(size+1));
+   for (int i=0; i<size; i++)
+      s[i] = options_mg[i].c_str();
+   s[size] = NULL;
+   return s;
+}
+
+int start_mg(int argc, const char* argv[])
+{
+   int status;
+
+   if (0) {
+      for (int i=0; i<argc; i++) {
+         printf("mongoose argv[%d]: %s\n", i, argv[i]);
+      }
+   }
+
+   // List of options. Last element must be NULL.
+   //const char *options[] = {"num_threads", "5", "listening_ports", "8081,8043s", "ssl_certificate", "ssl_cert.pem", NULL};
+
+   bool have_ports = false;
+   bool need_cert_file = false;
+
+   add_option_mg("num_threads", "5");
+
+   for (int i=0; i<argc; i++) {
+      const char* arg = argv[i];
+      //printf("arg [%s]\n", arg);
+      if (strcmp(arg, "--mgdebug")==0) {
+         debug_mg = 1;
+      } else if (strncmp(arg, "--mgports=", 10)==0) {
+         const char* ports = arg + 10;
+         //printf("ports [%s]\n", ports);
+         add_option_mg("listening_ports", ports);
+         have_ports = true;
+         if (strchr(ports, 's'))
+            need_cert_file = true;
+         cm_msg(MINFO, "mongoose", "mongoose web server will listen on ports \"%s\"", ports);
+         printf("mongoose web server will listen on ports \"%s\" (use https:// for ports marked \'s\')\n", ports);
+      }
+   }
+
+   if (!have_ports)
+      return SS_FILE_ERROR;
+
+   if (need_cert_file) {
+      std::string default_name = "ssl_cert.pem";
+      std::string path;
+      FILE* fp = NULL;
+      while (1) { // this is not a loop!
+
+         path = default_name;
+         fp = fopen(path.c_str(), "r");
+         if (fp) {
+            // ok. found it
+            break;
+         }
+
+         const char* env;
+
+         env = getenv("MIDAS_DIR");
+         if (env && strlen(env) > 0) {
+            path = env;
+            if (path[path.length()-1] != DIR_SEPARATOR)
+               path += DIR_SEPARATOR_STR;
+            path += DIR_SEPARATOR_STR;
+            path += default_name;
+            fp = fopen(path.c_str(), "r");
+            if (fp)
+               break;
+         }
+
+         env = getenv("MIDASSYS");
+         if (env && strlen(env) > 0) {
+            path = env;
+            if (path[path.length()-1] != DIR_SEPARATOR)
+               path += std::string(DIR_SEPARATOR_STR);
+            path += default_name;
+            fp = fopen(path.c_str(), "r");
+            if (fp)
+               break;
+         }
+
+         // not found
+         path = "";
+         break;
+      }
+
+      if (fp)
+         fclose(fp);
+
+      if (path.length() < 1) {
+         cm_msg(MERROR, "mongoose", "cannot find SSL certificate file \"%s\"", default_name.c_str());
+         return SS_FILE_ERROR;
+      }
+
+      cm_msg(MINFO, "mongoose", "mongoose web server will use SSL certificate file \"%s\"", path.c_str());
+      add_option_mg("ssl_certificate", path.c_str());
+   }
+
+   //debug_mg = 1;
+
+   const char** options = get_options_mg();
+   
+   if (debug_mg)
+      printf("start_mg!\n");
 
    signal(SIGPIPE, SIG_IGN);
 
-   // List of options. Last element must be NULL.
-   const char *options[] = {"num_threads", "1", "listening_ports", "8081,8043s", "ssl_certificate", "ssl_cert.pem", NULL};
+   if (!request_mutex) {
+      status = ss_mutex_create(&request_mutex);
+      assert(status==SS_SUCCESS || status==SS_CREATED);
+   }
 
    // Start the web server.
    ctx_mg = mg_start(options, &event_handler_mg, NULL);
 
-   printf("start_mg: ctx %p\n", ctx_mg);
+   if (debug_mg)
+      printf("start_mg: ctx %p\n", ctx_mg);
 
    return SUCCESS;
 }
 
 int stop_mg()
 {
-   printf("stop_mg!\n");
+   if (debug_mg)
+      printf("stop_mg!\n");
    // Stop the server.
    if (ctx_mg)
       mg_stop(ctx_mg);
    ctx_mg = NULL;
-   printf("stop_mg done!\n");
+   if (debug_mg)
+      printf("stop_mg done!\n");
    return SUCCESS;
 }
 
@@ -16484,7 +16655,7 @@ int stop_mg()
 
 /*------------------------------------------------------------------*/
 
-int main(int argc, char *argv[])
+int main(int argc, const char *argv[])
 {
    int i, status;
    int daemon = FALSE;
@@ -16512,7 +16683,9 @@ int main(int argc, char *argv[])
          elog_mode = TRUE;
       else if (argv[i][0] == '-' && argv[i][1] == 'H')
          history_mode = TRUE;
-      else if (argv[i][0] == '-') {
+      else if (argv[i][0] == '-' && argv[i][1] == '-' && argv[i][2] == 'm' && argv[i][3] == 'g') {
+         // starts with "--mg" is for the mongoose web server
+      } else if (argv[i][0] == '-') {
          if (i + 1 >= argc || argv[i + 1][0] == '-')
             goto usage;
          if (argv[i][1] == 'p')
@@ -16581,7 +16754,7 @@ int main(int argc, char *argv[])
    init_sequencer();
 
 #ifdef HAVE_MG
-   start_mg();
+   start_mg(argc, argv);
 #endif
    
    server_loop();
