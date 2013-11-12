@@ -571,7 +571,7 @@ $(BIN_DIR)/mfe_link_test: $(SRC_DIR)/mfe.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -DLINK_TEST -o $@ $(SRC_DIR)/mfe.c $(LIB) $(LIBS)
 
 $(BIN_DIR)/fal_link_test: $(SRC_DIR)/fal.c
-	$(CXX) $(CFLAGS) $(OSFLAGS) -DMANA_LITE -DLINK_TEST -o $@ $(SRC_DIR)/fal.c $(LIB) $(LIBS)
+	$(CXX) $(CFLAGS) $(OSFLAGS) -DMANA_LITE -DLINK_TEST -o $@ $(SRC_DIR)/fal.c $(LIB)  $(MYSQL_LIBS) $(LIBS)
 
 $(BIN_DIR)/mana_link_test: $(SRC_DIR)/mana.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -DLINK_TEST -o $@ $(SRC_DIR)/mana.c $(LIB) $(LIBS)
