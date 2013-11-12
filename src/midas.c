@@ -10533,6 +10533,9 @@ INT rpc_call(const INT routine_id, ...)
    NET_COMMAND *nc;
    int send_sock;
    time_t start_time;
+   char* buf = NULL;
+   size_t buf_size = 0;
+   const char* rpc_name = NULL;
 
    send_sock = _server_connection.send_sock;
    transport = _server_connection.transport;
@@ -10554,11 +10557,7 @@ INT rpc_call(const INT routine_id, ...)
       return RPC_MUTEX_TIMEOUT;
    }
 
-   nc = (NET_COMMAND *) _net_send_buffer;
-   nc->header.routine_id = routine_id;
-
-   if (transport == RPC_FTCP)
-      nc->header.routine_id |= TCP_FAST;
+   /* find rpc definition */
 
    for (i = 0;; i++)
       if (rpc_list[i].id == routine_id || rpc_list[i].id == 0)
@@ -10570,6 +10569,24 @@ INT rpc_call(const INT routine_id, ...)
       cm_msg(MERROR, "rpc_call", str);
       return RPC_INVALID_ID;
    }
+
+   rpc_name = rpc_list[idx].name;
+
+   /* prepare output buffer */
+
+   buf_size = sizeof(NET_COMMAND) + 4*1024;
+   buf = malloc(buf_size);
+   if (buf == NULL) {
+      ss_mutex_release(_mutex_rpc);
+      cm_msg(MERROR, "rpc_call", "rpc \"%s\" cannot allocate %d bytes for transmit buffer", rpc_name, buf_size);
+      return RPC_NO_MEMORY;
+   }
+
+   nc = (NET_COMMAND *) buf;
+   nc->header.routine_id = routine_id;
+
+   if (transport == RPC_FTCP)
+      nc->header.routine_id |= TCP_FAST;
 
    /* examine variable argument list and convert it to parameter array */
    va_start(ap, routine_id);
@@ -10639,12 +10656,22 @@ INT rpc_call(const INT routine_id, ...)
          /* always align parameter size */
          param_size = ALIGN8(arg_size);
 
-         if ((POINTER_T) param_ptr - (POINTER_T) nc + param_size > _net_send_buffer_size) {
-            ss_mutex_release(_mutex_rpc);
-            cm_msg(MERROR, "rpc_call",
-                   "parameters (%d) too large for network buffer (%d)",
-                   (POINTER_T) param_ptr - (POINTER_T) nc + param_size, _net_send_buffer_size);
-            return RPC_EXCEED_BUFFER;
+         {
+            size_t param_offset = (char*)param_ptr - (char*)nc;
+
+            if (param_offset + param_size + 16 > buf_size) {
+               size_t new_size = param_offset + param_size + 1024;
+               buf = realloc(buf, new_size);
+               if (buf == NULL) {
+                  ss_mutex_release(_mutex_rpc);
+                  cm_msg(MERROR, "rpc_call", "rpc \"%s\" cannot resize the data buffer from %d bytes to %d bytes", rpc_name, buf_size, new_size);
+                  free(nc); // "nc" still points to the old value of "buf"
+                  return RPC_NO_MEMORY;
+               }
+               buf_size = new_size;
+               nc = (NET_COMMAND*)buf;
+               param_ptr = buf + param_offset;
+            }
          }
 
          if (bpointer)
@@ -10674,11 +10701,13 @@ INT rpc_call(const INT routine_id, ...)
 
       if (i != send_size) {
          ss_mutex_release(_mutex_rpc);
-         cm_msg(MERROR, "rpc_call", "send_tcp() failed");
+         cm_msg(MERROR, "rpc_call", "rpc \"%s\" error: send_tcp() failed", rpc_name);
+         free(buf);
          return RPC_NET_ERROR;
       }
 
       ss_mutex_release(_mutex_rpc);
+      free(buf);
       return RPC_SUCCESS;
    }
 
@@ -10686,9 +10715,14 @@ INT rpc_call(const INT routine_id, ...)
    i = send_tcp(send_sock, (char *) nc, send_size, 0);
    if (i != send_size) {
       ss_mutex_release(_mutex_rpc);
-      cm_msg(MERROR, "rpc_call", "send_tcp() failed");
+      cm_msg(MERROR, "rpc_call", "rpc \"%s\" error: send_tcp() failed", rpc_name);
+      free(buf);
       return RPC_NET_ERROR;
    }
+
+   free(buf);
+   buf = NULL;
+   nc = NULL;
 
    /* make some timeout checking */
    if (rpc_timeout > 0) {
@@ -10727,6 +10761,8 @@ INT rpc_call(const INT routine_id, ...)
       cm_msg(MERROR, "rpc_call", "recv_tcp() failed, routine = \"%s\"", rpc_list[idx].name);
       return RPC_NET_ERROR;
    }
+
+   nc = (NET_COMMAND*)_net_send_buffer;
 
    /* extract result variables and place it to argument list */
    status = nc->header.routine_id;
