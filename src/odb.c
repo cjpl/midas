@@ -5944,7 +5944,7 @@ key name = type[size] :
 @param path Internal use only, must be empty ("").
 @return DB_SUCCESS, DB_TRUNCATED, DB_NO_MEMORY
 */
-INT db_copy(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size, char *path)
+INT db_copy(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size, const char *path)
 {
    INT i, j, size, status;
    KEY key;
@@ -5953,7 +5953,7 @@ INT db_copy(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size, char *path)
    char *data, line[MAX_STRING_LENGTH * 2];
    BOOL bWritten;
 
-   strcpy(full_path, path);
+   strlcpy(full_path, path, sizeof(full_path));
 
    bWritten = FALSE;
 

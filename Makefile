@@ -435,8 +435,8 @@ $(BIN_DIR)/mlogger: $(BIN_DIR)/%: $(SRC_DIR)/%.cxx
 $(BIN_DIR)/%:$(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(LIBS)
 
-$(BIN_DIR)/odbedit: $(SRC_DIR)/odbedit.c $(SRC_DIR)/cmdedit.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(SRC_DIR)/odbedit.c $(SRC_DIR)/cmdedit.c $(LIB) $(LIBS)
+$(BIN_DIR)/odbedit: $(SRC_DIR)/odbedit.cxx $(SRC_DIR)/cmdedit.c
+	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $(SRC_DIR)/odbedit.cxx $(SRC_DIR)/cmdedit.c $(LIB) $(LIBS)
 
 
 ifdef NEED_MSCB

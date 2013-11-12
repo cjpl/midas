@@ -25,7 +25,7 @@ INT his_index = 0;
 
 #ifdef OS_VMS
 
-INT cmd_edit(char *prompt, char *cmd, INT(*dir) (char *, INT *), INT(*idle) ())
+INT cmd_edit(const char *prompt, char *cmd, INT(*dir) (char *, INT *), INT(*idle) ())
 {
    printf(prompt);
    ss_gets(cmd, 256);
@@ -35,7 +35,7 @@ INT cmd_edit(char *prompt, char *cmd, INT(*dir) (char *, INT *), INT(*idle) ())
 
 #else
 
-INT cmd_edit(char *prompt, char *cmd, INT(*dir) (char *, INT *), INT(*idle) ())
+INT cmd_edit(const char *prompt, char *cmd, INT(*dir) (char *, INT *), INT(*idle) ())
 {
    char line[LINE_LENGTH];
    INT i, j, k, c, hi;

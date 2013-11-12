@@ -1690,7 +1690,7 @@ extern "C" {
    BOOL EXPRT equal_ustring(const char *str1, const char *str2);
 
    /*---- buffer manager ----*/
-   INT EXPRT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle);
+   INT EXPRT bm_open_buffer(const char *buffer_name, INT buffer_size, INT * buffer_handle);
    INT EXPRT bm_close_buffer(INT buffer_handle);
    INT EXPRT bm_close_all_buffers(void);
    INT EXPRT bm_init_buffer_counters(INT buffer_handle);
@@ -1800,7 +1800,7 @@ extern "C" {
 
    INT EXPRT db_load(HNDLE hdb, HNDLE key_handle, const char *filename, BOOL bRemote);
    INT EXPRT db_save(HNDLE hdb, HNDLE key_handle, const char *filename, BOOL bRemote);
-   INT EXPRT db_copy(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size, char *path);
+   INT EXPRT db_copy(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size, const char *path);
    INT EXPRT db_paste(HNDLE hDB, HNDLE hKeyRoot, const char *buffer);
    INT EXPRT db_paste_xml(HNDLE hDB, HNDLE hKeyRoot, const char *buffer);
    INT EXPRT db_save_struct(HNDLE hDB, HNDLE hKey, const char *file_name,
@@ -1888,7 +1888,7 @@ extern "C" {
    void EXPRT ss_printf(INT x, INT y, const char *format, ...);
    void ss_set_screen_size(int x, int y);
 
-   char EXPRT *ss_getpass(char *prompt);
+   char EXPRT *ss_getpass(const char *prompt);
    INT EXPRT ss_getchar(BOOL reset);
    char EXPRT *ss_crypt(const char *key, const char *salt);
    char EXPRT *ss_gets(char *string, int size);

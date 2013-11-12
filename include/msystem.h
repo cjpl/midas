@@ -648,9 +648,11 @@ extern "C" {
    /*---- socket routines ----*/
    INT EXPRT send_tcp(int sock, char *buffer, DWORD buffer_size, INT flags);
    INT EXPRT recv_tcp(int sock, char *buffer, DWORD buffer_size, INT flags);
+   INT EXPRT recv_tcp2(int sock, char *buffer, int buffer_size, int timeout_ms);
    INT send_udp(int sock, char *buffer, DWORD buffer_size, INT flags);
    INT recv_udp(int sock, char *buffer, DWORD buffer_size, INT flags);
    INT EXPRT recv_string(int sock, char *buffer, DWORD buffer_size, INT flags);
+   INT EXPRT ss_socket_wait(int sock, int millisec);
 
    /*---- system logging ----*/
    INT EXPRT ss_syslog(const char *message);
