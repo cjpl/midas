@@ -384,7 +384,7 @@ INT al_trigger_class(const char *alarm_class, const char *alarm_message, BOOL fi
          sprintf(str, "General alarm: %s", alarm_message);
       else
          sprintf(str, "%s: %s", alarm_class, alarm_message);
-      cm_msg(MTALK, "al_trigger_class", str);
+      cm_msg(MTALK, "al_trigger_class", "%s", str);
       ac.system_message_last = now;
    }
 

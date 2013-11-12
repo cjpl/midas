@@ -159,7 +159,7 @@ void free_key(DATABASE_HEADER * pheader, void *address, INT size)
       while (pprev->next_free < (POINTER_T) address - (POINTER_T) pheader) {
          if (pprev->next_free <= 0) {
             cm_msg(MERROR, "free_key",
-                   "database is corrupted: pprev=0x%x, pprev->next_free=%d", pprev, pprev->next_free);
+                   "database is corrupted: pprev=%p, pprev->next_free=%d", pprev, pprev->next_free);
             return;
          }
          pprev = (FREE_DESCRIP *) ((char *) pheader + pprev->next_free);
@@ -280,7 +280,7 @@ void free_data(DATABASE_HEADER * pheader, void *address, INT size)
       while (pprev->next_free < (POINTER_T) address - (POINTER_T) pheader) {
          if (pprev->next_free <= 0) {
             cm_msg(MERROR, "free_data",
-                   "database is corrupted: pprev=0x%x, pprev->next_free=%d", pprev, pprev->next_free);
+                   "database is corrupted: pprev=%p, pprev->next_free=%d", pprev, pprev->next_free);
             return;
          }
 
@@ -724,7 +724,7 @@ static int db_validate_db(DATABASE_HEADER * pheader)
 
       if (pfree->next_free != 0 && nextpfree == pfree) {
          cm_msg(MERROR, "db_validate_db",
-                "Warning: database corruption, key area next_free 0x%08X is same as current free",
+                "Warning: database corruption, key area next_free %p is same as current free",
                 pfree - sizeof(DATABASE_HEADER));
          return 0;
       }
@@ -766,7 +766,7 @@ static int db_validate_db(DATABASE_HEADER * pheader)
 
       if (pfree->next_free != 0 && nextpfree == pfree) {
          cm_msg(MERROR, "db_validate_db",
-                "Warning: database corruption, data area next_free 0x%08X is same as current free",
+                "Warning: database corruption, data area next_free %p is same as current free",
                 pfree - sizeof(DATABASE_HEADER));
          return 0;
       }
@@ -6370,7 +6370,7 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
          status = db_find_link(hDB, hKeyRoot, mxml_get_attribute(node, "name"), &hKey);
          if (status != DB_SUCCESS) {
             cm_msg(MERROR, "db_paste_node",
-                   "cannot find key \"%s\" in ODB, status = %d", mxml_get_attribute(node, "name"));
+                   "cannot find key \"%s\" in ODB, status = %d", mxml_get_attribute(node, "name"), status);
             return status;
          }
       }

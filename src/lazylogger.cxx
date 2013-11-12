@@ -331,10 +331,10 @@ INT lazy_log_update(INT action, INT run, const char *label, const char *file, DW
    else if (action == REMOVE_ENTRY)
       sprintf(str, "%s run#%i entry REMOVED", label, run);
 
-   cm_msg(MINFO, "Lazy", str);
+   cm_msg(MINFO, "Lazy", "%s", str);
 
    /* Now add this info also to a special log file */
-   cm_msg1(MINFO, "lazy", "lazy_log_update", str);
+   cm_msg1(MINFO, "lazy", "lazy_log_update", "%s", str);
 
    return 0;
 }
@@ -670,7 +670,7 @@ Function value:      number of elements
    status = db_find_key(hDB, hLch, "List", &hKey);
 
    if (status != DB_SUCCESS) {
-      cm_msg(MERROR, "convert_done_list", "Cannot find \'/Lazy/%s/List\' db_find_key() status %d", key.name);
+      cm_msg(MERROR, "convert_done_list", "Cannot find \'/Lazy/%s/List\' db_find_key() status %d", key.name, status);
       cm_disconnect_experiment();
       exit(1);
    }
@@ -1237,9 +1237,9 @@ Function value:
       char str[MAX_FILE_PATH];
       sprintf(str, "Starting lazy job on %s at block %d", lazyst.backfile, blockn);
       if (msg_flag)
-         cm_msg(MTALK, "Lazy", str);
-      cm_msg(MINFO, "Lazy", str);
-      cm_msg1(MINFO, "lazy_log_update", "lazy", str);
+         cm_msg(MTALK, "Lazy", "%s", str);
+      cm_msg(MINFO, "Lazy", "%s", str);
+      cm_msg1(MINFO, "lazy_log_update", "lazy", "%s", str);
    }
 
    /* infinite loop while copying */
@@ -1452,9 +1452,9 @@ Function value:
       char str[MAX_FILE_PATH];
       sprintf(str, "Starting lazy_disk_copy \'%s\' to \'%s\'", infile, outfile);
       if (msg_flag)
-         cm_msg(MTALK, "Lazy", str);
-      cm_msg(MINFO, "lazy_disk_copy", str);
-      cm_msg1(MINFO, "lazy_log_update", "lazy", str);
+         cm_msg(MTALK, "Lazy", "%s", str);
+      cm_msg(MINFO, "lazy_disk_copy", "%s", str);
+      cm_msg1(MINFO, "lazy_log_update", "lazy", "%s", str);
    }
 
    double cpy_start_time = ss_millitime();
@@ -1532,9 +1532,9 @@ Function value:
       char str[MAX_FILE_PATH];
       sprintf(str, "Starting lazy job \'%s\'", cmd);
       if (msg_flag)
-         cm_msg(MTALK, "Lazy", str);
-      cm_msg(MINFO, "lazy_script_copy", str);
-      cm_msg1(MINFO, "lazy_log_update", "lazy", str);
+         cm_msg(MTALK, "Lazy", "%s", str);
+      cm_msg(MINFO, "lazy_script_copy", "%s", str);
+      cm_msg1(MINFO, "lazy_log_update", "lazy", "%s", str);
    }
 
    /* start the backup script */
@@ -1586,7 +1586,7 @@ Function value:
                if (q[0] == 0)   // check for end of line
                   q = NULL;
             }
-            cm_msg(MINFO, "lazy_script_copy", p);
+            cm_msg(MINFO, "lazy_script_copy", "%s", p);
             p = q;
          }
       }
@@ -2024,7 +2024,7 @@ Function value:
             char str[128];
 
             sprintf(str, "Tape %s is full with %d files", pre_label, lazyst.nfiles);
-            cm_msg(MINFO, "Lazy", str);
+            cm_msg(MINFO, "Lazy", "%s", str);
 
             /* Setup alarm */
             lazy.alarm[0] = 0;
