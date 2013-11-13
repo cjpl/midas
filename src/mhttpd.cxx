@@ -16626,6 +16626,7 @@ int start_mg(int argc, const char* argv[])
 
       if (status != SUCCESS) {
          cm_msg(MERROR, "mongoose", "cannot find SSL certificate file \"%s\"", path.c_str());
+         cm_msg(MERROR, "mongoose", "please create SSL certificate file: openssl genrsa -out privkey.pem; openssl req -new -key privkey.pem -out certreq.csr; openssl x509 -req -days 365 -in certreq.csr -signkey privkey.pem -out ssl_cert.pem; cat privkey.pem >> ssl_cert.pem");
          return SS_FILE_ERROR;
       }
 
