@@ -16346,7 +16346,6 @@ void server_loop()
 #ifdef HAVE_MG
 
 #include "mongoose.h"
-#include "mongoose.c"
 
 static int debug_mg = 0;
 
