@@ -25,6 +25,9 @@ extern "C" {
 #include "mscb.h"
 #endif
 
+#define STRLCPY(dst, src) strlcpy((dst), (src), sizeof(dst))
+#define STRLCAT(dst, src) strlcat((dst), (src), sizeof(dst))
+
 /* refresh times in seconds */
 #define DEFAULT_REFRESH 60
 
@@ -16521,6 +16524,61 @@ const char** get_options_mg()
    return s;
 }
 
+int try_file_mg(const char* try_dir, const char* filename, std::string& path, FILE** fpp, bool trace)
+{
+   if (fpp)
+      *fpp = NULL;
+   if (!try_dir)
+      return SS_FILE_ERROR;
+   if (strlen(try_dir) < 1)
+      return SS_FILE_ERROR;
+
+   path = try_dir;
+   if (path[path.length()-1] != DIR_SEPARATOR)
+      path += DIR_SEPARATOR_STR;
+   path += filename;
+
+   FILE* fp = fopen(path.c_str(), "r");
+
+   if (trace) {
+      if (fp)
+         printf("file \"%s\": OK!\n", path.c_str());
+      else
+         printf("file \"%s\": not found.\n", path.c_str());
+   }
+
+   if (!fp)
+      return SS_FILE_ERROR;
+   else if (fpp)
+      *fpp = fp;
+   else
+      fclose(fp);
+
+   return SUCCESS;
+}
+
+int find_file_mg(const char* filename, std::string& path, FILE** fpp, bool trace)
+{
+   char exptdir[256];
+   cm_get_path1(exptdir, sizeof(exptdir));
+
+   if (try_file_mg(".", filename, path, fpp, trace) == SUCCESS)
+      return SUCCESS;
+
+   if (try_file_mg(getenv("MIDAS_DIR"), filename, path, fpp, trace) == SUCCESS)
+      return SUCCESS;
+
+   if (try_file_mg(exptdir, filename, path, fpp, trace) == SUCCESS)
+      return SUCCESS;
+
+   if (try_file_mg(getenv("MIDASSYS"), filename, path, fpp, trace) == SUCCESS)
+      return SUCCESS;
+
+   // setup default filename
+   try_file_mg(exptdir, filename, path, NULL, false);
+   return SS_FILE_ERROR;
+}
+
 int start_mg(int argc, const char* argv[])
 {
    int status;
@@ -16536,6 +16594,7 @@ int start_mg(int argc, const char* argv[])
 
    bool have_ports = false;
    bool need_cert_file = false;
+   bool need_password_file = false;
 
    add_option_mg("num_threads", "5");
 
@@ -16549,10 +16608,12 @@ int start_mg(int argc, const char* argv[])
          //printf("ports [%s]\n", ports);
          add_option_mg("listening_ports", ports);
          have_ports = true;
-         if (strchr(ports, 's'))
+         if (strchr(ports, 's')) {
             need_cert_file = true;
+            need_password_file = true;
+         }
          cm_msg(MINFO, "mongoose", "mongoose web server will listen on ports \"%s\"", ports);
-         printf("mongoose web server will listen on ports \"%s\" (use https:// for ports marked \'s\')\n", ports);
+         //printf("mongoose web server will listen on ports \"%s\" (use https:// for ports marked \'s\')\n", ports);
       }
    }
 
@@ -16560,53 +16621,11 @@ int start_mg(int argc, const char* argv[])
       return SS_FILE_ERROR;
 
    if (need_cert_file) {
-      std::string default_name = "ssl_cert.pem";
       std::string path;
-      FILE* fp = NULL;
-      while (1) { // this is not a loop!
+      status = find_file_mg("ssl_cert.pem", path, NULL, debug_mg>0);
 
-         path = default_name;
-         fp = fopen(path.c_str(), "r");
-         if (fp) {
-            // ok. found it
-            break;
-         }
-
-         const char* env;
-
-         env = getenv("MIDAS_DIR");
-         if (env && strlen(env) > 0) {
-            path = env;
-            if (path[path.length()-1] != DIR_SEPARATOR)
-               path += DIR_SEPARATOR_STR;
-            path += DIR_SEPARATOR_STR;
-            path += default_name;
-            fp = fopen(path.c_str(), "r");
-            if (fp)
-               break;
-         }
-
-         env = getenv("MIDASSYS");
-         if (env && strlen(env) > 0) {
-            path = env;
-            if (path[path.length()-1] != DIR_SEPARATOR)
-               path += std::string(DIR_SEPARATOR_STR);
-            path += default_name;
-            fp = fopen(path.c_str(), "r");
-            if (fp)
-               break;
-         }
-
-         // not found
-         path = "";
-         break;
-      }
-
-      if (fp)
-         fclose(fp);
-
-      if (path.length() < 1) {
-         cm_msg(MERROR, "mongoose", "cannot find SSL certificate file \"%s\"", default_name.c_str());
+      if (status != SUCCESS) {
+         cm_msg(MERROR, "mongoose", "cannot find SSL certificate file \"%s\"", path.c_str());
          return SS_FILE_ERROR;
       }
 
@@ -16614,7 +16633,65 @@ int start_mg(int argc, const char* argv[])
       add_option_mg("ssl_certificate", path.c_str());
    }
 
-   //debug_mg = 1;
+   if (need_password_file) {
+      char realm[256];
+      realm[0] = 0;
+      cm_get_experiment_name(realm, sizeof(realm));
+
+      if (strlen(realm) < 1)
+         STRLCPY(realm, "midas");
+
+      std::string path;
+      FILE *fp;
+      status = find_file_mg("htpasswd.txt", path, &fp, debug_mg>0);
+
+      bool realm_ok = false;
+
+      if (fp) { // check that the password file has our realm name
+         while (1) {
+            char buf[256];
+            char* s = fgets(buf, sizeof(buf), fp);
+            if (!s)
+               break; // end of file
+            // format is: user:realm:password
+            //printf("[%s]\n", s);
+            char* ss = strchr(s, ':');
+            if (ss) {
+               ss++;
+               char* sss = strchr(ss, ':');
+               if (sss) {
+                  //printf("[%s] ss [%s] sss [%s]\n", s, ss, sss);
+                  *sss = 0;
+                  if (strcmp(ss, realm) == 0) {
+                     // found at least one entry with matching realm name
+                     realm_ok = true;
+                     break;
+                  }
+               }
+            }
+         }
+         fclose(fp);
+         fp = NULL;
+      }
+      
+      if (status != SUCCESS) {
+         cm_msg(MERROR, "mongoose", "mongoose web server cannot find password file \"%s\"", path.c_str());
+         cm_msg(MERROR, "mongoose", "please create password file: htdigest -c %s %s midas", path.c_str(), realm);
+         return SS_FILE_ERROR;
+      }
+
+      if (!realm_ok) {
+         cm_msg(MERROR, "mongoose", "mongoose web server password file \"%s\" has no passwords for realm \"%s\"", path.c_str(), realm);
+         cm_msg(MERROR, "mongoose", "please add passwords: htdigest %s %s midas", path.c_str(), realm);
+         return SS_FILE_ERROR;
+      }
+
+      // create or overwrite exiting password file: htdigest -c htpasswd.txt expt midas
+      add_option_mg("authentication_domain", realm);
+      add_option_mg("global_auth_file", path.c_str());
+
+      cm_msg(MINFO, "mongoose", "mongoose web server will use authentication realm \"%s\", password file \"%s\"", realm, path.c_str());
+   }
 
    const char** options = get_options_mg();
    
@@ -16743,19 +16820,19 @@ int main(int argc, const char *argv[])
       return 1;
    }
 
+   /* initialize sequencer */
+   init_sequencer();
+
+#ifdef HAVE_MG
+   status = start_mg(argc, argv);
+#endif
+   
    /* place a request for system messages */
    cm_msg_register(receive_message);
 
    /* redirect message display, turn on message logging */
    cm_set_msg_print(MT_ALL, MT_ALL, print_message);
 
-   /* initialize sequencer */
-   init_sequencer();
-
-#ifdef HAVE_MG
-   start_mg(argc, argv);
-#endif
-   
    server_loop();
 
 #ifdef HAVE_MG
