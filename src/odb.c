@@ -6122,7 +6122,10 @@ INT db_paste(HNDLE hDB, HNDLE hKeyRoot, const char *buffer)
                   pc++;
                while ((*pc == ' ' || *pc == ':') && *pc)
                   pc++;
-               strlcpy(data_str, pc, sizeof(data_str));
+
+               //strlcpy(data_str, pc, sizeof(data_str)); // MacOS 10.9 does not permit strlcpy() of overlapping strings
+               assert(strlen(pc) < sizeof(data_str)); // "pc" points at a substring inside "data_str"
+               memmove(data_str, pc, strlen(pc)+1);
 
                if (n_data > 1) {
                   data_str[0] = 0;
