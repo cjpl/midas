@@ -4265,7 +4265,7 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
       sprintf(str, "Run #%d start aborted", run_number);
 
    if (str[0])
-      cm_msg(MINFO, "cm_transition", str);
+      cm_msg(MINFO, "cm_transition", "%s", str);
 
    /* lock/unlock ODB values if present */
    db_find_key(hDB, 0, "/Experiment/Lock when running", &hKey);
@@ -5721,7 +5721,7 @@ INT cm_cleanup(const char *client_name, BOOL ignore_timeout)
 
                      /* display info message after unlocking buffer */
                      if (str[0])
-                        cm_msg(MINFO, "cm_cleanup", str);
+                        cm_msg(MINFO, "cm_cleanup", "%s", str);
 
                      /* go again through whole list */
                      j = 0;
@@ -8388,8 +8388,8 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
       /* check event size */
       if (pevent->data_size != sizeof(DWORD)) {
          cm_msg(MERROR, "bm_defragment_event",
-                "Received first event fragment with %s bytes instead of %d bytes, event ignored",
-                pevent->data_size, sizeof(DWORD));
+                "Received first event fragment with %d bytes instead of %d bytes, event ignored",
+                pevent->data_size, (int)sizeof(DWORD));
          return;
       }
 
@@ -9130,8 +9130,7 @@ INT rpc_client_connect(const char *host_name, INT port, const char *client_name,
          *strchr(strchr(str, '.') + 1, '.') = 0;
 
    if (strcmp(v1, str) != 0) {
-      sprintf(str, "remote MIDAS version \'%s\' differs from local version \'%s\'", version, cm_get_version());
-      cm_msg(MERROR, "rpc_client_connect", str);
+      cm_msg(MERROR, "rpc_client_connect", "remote MIDAS version \'%s\' differs from local version \'%s\'", version, cm_get_version());
    }
 
    *hConnection = idx + 1;
@@ -9440,8 +9439,7 @@ INT rpc_server_connect(const char *host_name, const char *exp_name)
          *strchr(strchr(str, '.') + 1, '.') = 0;
 
    if (strcmp(v1, str) != 0) {
-      sprintf(str, "remote MIDAS version \'%s\' differs from local version \'%s\'", version, cm_get_version());
-      cm_msg(MERROR, "rpc_server_connect", str);
+      cm_msg(MERROR, "rpc_server_connect", "remote MIDAS version \'%s\' differs from local version \'%s\'", version, cm_get_version());
    }
 
    /* wait for callback on send and recv socket with timeout */
@@ -10207,7 +10205,7 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
    buf_size = sizeof(NET_COMMAND) + 1024;
    buf = malloc(buf_size);
    if (buf == NULL) {
-      cm_msg(MERROR, "rpc_client_call", "call to \"%s\" on \"%s\" RPC \"%s\" cannot allocate %d bytes for transmit buffer", client_name, host_name, rpc_name, buf_size);
+      cm_msg(MERROR, "rpc_client_call", "call to \"%s\" on \"%s\" RPC \"%s\" cannot allocate %d bytes for transmit buffer", client_name, host_name, rpc_name, (int)buf_size);
       return RPC_NO_MEMORY;
    }
 
@@ -10292,7 +10290,7 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
                size_t new_size = param_offset + param_size + 1024;
                buf = realloc(buf, new_size);
                if (buf == NULL) {
-                  cm_msg(MERROR, "rpc_client_call", "call to \"%s\" on \"%s\" RPC \"%s\" cannot resize the data buffer from %d bytes to %d bytes", client_name, host_name, rpc_name, buf_size, new_size);
+                  cm_msg(MERROR, "rpc_client_call", "call to \"%s\" on \"%s\" RPC \"%s\" cannot resize the data buffer from %d bytes to %d bytes", client_name, host_name, rpc_name, (int)buf_size, (int)new_size);
                   free(nc); // "nc" still points to the old value of "buf"
                   return RPC_NO_MEMORY;
                }
@@ -10457,7 +10455,7 @@ INT rpc_call(const INT routine_id, ...)
    INT i, idx, status;
    INT param_size, arg_size, send_size;
    INT tid, flags;
-   char *param_ptr, str[80];
+   char *param_ptr;
    BOOL bpointer, bbig;
    NET_COMMAND *nc;
    int send_sock;
@@ -10489,8 +10487,7 @@ INT rpc_call(const INT routine_id, ...)
    idx = i;
    if (rpc_list[i].id == 0) {
       ss_mutex_release(_mutex_rpc);
-      sprintf(str, "invalid rpc ID (%d)", routine_id);
-      cm_msg(MERROR, "rpc_call", str);
+      cm_msg(MERROR, "rpc_call", "invalid rpc ID (%d)", routine_id);
       return RPC_INVALID_ID;
    }
 
@@ -10502,7 +10499,7 @@ INT rpc_call(const INT routine_id, ...)
    buf = malloc(buf_size);
    if (buf == NULL) {
       ss_mutex_release(_mutex_rpc);
-      cm_msg(MERROR, "rpc_call", "rpc \"%s\" cannot allocate %d bytes for transmit buffer", rpc_name, buf_size);
+      cm_msg(MERROR, "rpc_call", "rpc \"%s\" cannot allocate %d bytes for transmit buffer", rpc_name, (int)buf_size);
       return RPC_NO_MEMORY;
    }
 
@@ -10588,7 +10585,7 @@ INT rpc_call(const INT routine_id, ...)
                buf = realloc(buf, new_size);
                if (buf == NULL) {
                   ss_mutex_release(_mutex_rpc);
-                  cm_msg(MERROR, "rpc_call", "rpc \"%s\" cannot resize the data buffer from %d bytes to %d bytes", rpc_name, buf_size, new_size);
+                  cm_msg(MERROR, "rpc_call", "rpc \"%s\" cannot resize the data buffer from %d bytes to %d bytes", rpc_name, (int)buf_size, (int)new_size);
                   free(nc); // "nc" still points to the old value of "buf"
                   return RPC_NO_MEMORY;
                }
@@ -11911,7 +11908,7 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
             if (0)
                cm_msg(MINFO, "rpc_execute",
                       "rpc_execute: return parameters (%d) too large for network buffer (%d), new buffer size (%d)",
-                      (POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size, return_buffer_size, new_size);
+                      (int)((POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size), return_buffer_size, new_size);
 
             itls = return_buffer_tls;
 
@@ -12237,7 +12234,7 @@ INT rpc_execute_ascii(INT sock, char *buffer)
          if ((POINTER_T) out_param_ptr - (POINTER_T) buffer2 + param_size > ASCII_BUFFER_SIZE) {
             cm_msg(MERROR, "rpc_execute",
                    "return parameters (%d) too large for network buffer (%d)",
-                   (POINTER_T) out_param_ptr - (POINTER_T) buffer2 + param_size, ASCII_BUFFER_SIZE);
+                   (int)((POINTER_T) out_param_ptr - (POINTER_T) buffer2 + param_size), ASCII_BUFFER_SIZE);
             return RPC_EXCEED_BUFFER;
          }
 
@@ -12642,10 +12639,10 @@ INT rpc_server_accept(int lsock)
 
          if (strcmp(v1, str) != 0) {
             sprintf(str, "client MIDAS version %s differs from local version %s", version, cm_get_version());
-            cm_msg(MERROR, "rpc_server_accept", str);
+            cm_msg(MERROR, "rpc_server_accept", "%s", str);
 
             sprintf(str, "received string: %s", net_buffer + 2);
-            cm_msg(MERROR, "rpc_server_accept", str);
+            cm_msg(MERROR, "rpc_server_accept", "%s", str);
          }
 
          callback.host_port1 = (short) port1;
@@ -12686,7 +12683,7 @@ INT rpc_server_accept(int lsock)
 
             if (idx == MAX_EXPERIMENT || exptab[idx].name[0] == 0) {
                sprintf(str, "experiment \'%s\' not defined in exptab\r", callback.experiment);
-               cm_msg(MERROR, "rpc_server_accept", str);
+               cm_msg(MERROR, "rpc_server_accept", "%s", str);
 
                send(sock, "2", 2, 0);   /* 2 means exp. not found */
                closesocket(sock);
@@ -13248,7 +13245,7 @@ INT rpc_server_receive(INT idx, int sock, BOOL check)
 
       if (n_received == -1)
          cm_msg(MERROR, "rpc_server_receive",
-                "recv(%d,MSG_PEEK) returned %d, errno: %d (%s)", sizeof(test_buffer),
+                "recv(%d,MSG_PEEK) returned %d, errno: %d (%s)", (int)sizeof(test_buffer),
                 n_received, errno, strerror(errno));
 
       if (n_received <= 0)

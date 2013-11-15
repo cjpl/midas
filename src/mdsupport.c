@@ -521,7 +521,7 @@ SS_SUCCESS         Ok
       } while (status == -1 && errno == EINTR);
       *written = status;
       if (*written != nbytes) {
-         cm_msg(MERROR, "any_dev_os_write", strerror(errno));
+         cm_msg(MERROR, "any_dev_os_write", "write() status %d, errno %d (%s)", status, errno, strerror(errno));
          if (errno == EIO)
             return SS_IO_ERROR;
          if (errno == ENOSPC)
