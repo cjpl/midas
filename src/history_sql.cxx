@@ -1502,9 +1502,9 @@ public:
       if (columns.size() <= 0)
          create_event = true;
 
-      for (size_t i=0; i<e->tags.size(); i++) {
+      for (unsigned i=0; i<e->tags.size(); i++) {
          // check for duplicate column names
-         for (size_t j=i+1; j<e->tags.size(); j++)
+         for (unsigned j=i+1; j<e->tags.size(); j++)
             if (e->tags[i].column_name == e->tags[j].column_name) {
                cm_msg(MERROR, "hs_define_event", "Error: History event \'%s\': Duplicated column name \'%s\' from tags %d \'%s\' and %d \'%s\'", event_name, e->tags[i].column_name.c_str(), i, e->tags[i].tag.name, j, e->tags[j].tag.name);
                e->active = false;
