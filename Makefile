@@ -231,7 +231,7 @@ NEED_ZLIB=1
 
 OS_DIR = linux
 OSFLAGS += -DOS_LINUX -fPIC -Wno-unused-function
-LIBS = -lutil -lpthread -lrt
+LIBS = -lutil -lpthread -lrt -ldl
 SPECIFIC_OS_PRG = $(BIN_DIR)/mlxspeaker $(BIN_DIR)/dio
 endif
 
@@ -286,6 +286,7 @@ PROGS = $(BIN_DIR)/mserver $(BIN_DIR)/mhttpd \
 	$(BIN_DIR)/mh2sql \
 	$(BIN_DIR)/mfe_link_test \
 	$(BIN_DIR)/mana_link_test \
+	$(BIN_DIR)/fal_link_test \
 	$(BIN_DIR)/mjson_test \
 	$(SPECIFIC_OS_PRG)
 
@@ -443,10 +444,10 @@ $(BIN_DIR)/odbedit: $(SRC_DIR)/odbedit.cxx $(SRC_DIR)/cmdedit.c
 
 
 ifdef NEED_MSCB
-$(BIN_DIR)/mhttpd: $(LIB_DIR)/mhttpd.o $(LIB_DIR)/mgd.o $(LIB_DIR)/mscb.o $(LIB_DIR)/sequencer.o
+$(BIN_DIR)/mhttpd: $(LIB_DIR)/mhttpd.o $(LIB_DIR)/mongoose.o $(LIB_DIR)/mgd.o $(LIB_DIR)/mscb.o $(LIB_DIR)/sequencer.o
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(ODBC_LIBS) $(SQLITE_LIBS) $(LIBS) -lm
 else
-$(BIN_DIR)/mhttpd: $(LIB_DIR)/mhttpd.o $(LIB_DIR)/mgd.o $(LIB_DIR)/sequencer.o
+$(BIN_DIR)/mhttpd: $(LIB_DIR)/mhttpd.o $(LIB_DIR)/mongoose.o $(LIB_DIR)/mgd.o $(LIB_DIR)/sequencer.o
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(ODBC_LIBS) $(SQLITE_LIBS) $(LIBS) -lm
 endif
 
@@ -573,6 +574,9 @@ $(BIN_DIR)/mdump: $(UTL_DIR)/mdump.c $(SRC_DIR)/mdsupport.c
 
 $(BIN_DIR)/mfe_link_test: $(SRC_DIR)/mfe.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -DLINK_TEST -o $@ $(SRC_DIR)/mfe.c $(LIB) $(LIBS)
+
+$(BIN_DIR)/fal_link_test: $(SRC_DIR)/fal.c
+	$(CXX) $(CFLAGS) $(OSFLAGS) -DMANA_LITE -DLINK_TEST -o $@ $(SRC_DIR)/fal.c $(LIB)  $(MYSQL_LIBS) $(LIBS)
 
 $(BIN_DIR)/mana_link_test: $(SRC_DIR)/mana.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -DLINK_TEST -o $@ $(SRC_DIR)/mana.c $(LIB) $(LIBS)

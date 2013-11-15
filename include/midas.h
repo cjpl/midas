@@ -206,6 +206,12 @@ typedef INT midas_thread_t;
 #pragma warning( disable: 4996)
 #endif
 
+#if defined __GNUC__
+#define MATTRPRINTF(a, b) __attribute__ ((format (printf, a, b)))
+#else
+#define MATTRPRINTF(a, b)
+#endif
+
 /* mutex definitions */
 #if defined(OS_WINNT)
 typedef HANDLE MUTEX_T;
@@ -1678,10 +1684,8 @@ extern "C" {
    void EXPRT cm_ack_ctrlc_pressed();
 
    INT EXPRT cm_set_msg_print(INT system_mask, INT user_mask, int (*func) (const char *));
-   INT EXPRT cm_msg(INT message_type, const char *filename, INT line,
-                    const char *routine, const char *format, ...);
-   INT EXPRT cm_msg1(INT message_type, const char *filename, INT line,
-                     const char *facility, const char *routine, const char *format, ...);
+   INT EXPRT cm_msg(INT message_type, const char *filename, INT line, const char *routine, const char *format, ...) MATTRPRINTF(5,6);
+   INT EXPRT cm_msg1(INT message_type, const char *filename, INT line, const char *facility, const char *routine, const char *format, ...) MATTRPRINTF(6,7);
    INT EXPRT cm_msg_flush_buffer();
    INT EXPRT cm_msg_register(void (*func)
                               (HNDLE, HNDLE, EVENT_HEADER *, void *));
@@ -1989,8 +1993,10 @@ extern "C" {
    void EXPRT close_subfolder();
 
    /*---- functions in strlcpy.c ----*/
+#ifndef strlcpy
    size_t EXPRT strlcpy(char *dst, const char *src, size_t size);
    size_t EXPRT strlcat(char *dst, const char *src, size_t size);
+#endif
 
 #ifdef __cplusplus
 }
