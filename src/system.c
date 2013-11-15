@@ -3873,7 +3873,7 @@ INT ss_suspend(INT millisec, INT msg)
    INT idx, status, i, return_status;
    unsigned int size;
    struct sockaddr from_addr;
-   char str[100], buffer[80], buffer_tmp[80];
+   char buffer[80], buffer_tmp[80];
 
    /* get index to _suspend_struct for this thread */
    status = ss_suspend_get_index(&idx);
@@ -4018,8 +4018,7 @@ INT ss_suspend(INT millisec, INT msg)
             }
 
             if (status == SS_ABORT) {
-               sprintf(str, "Server connection broken to \'%s\'", _suspend_struct[idx].server_connection->host_name);
-               cm_msg(MINFO, "ss_suspend", str);
+               cm_msg(MINFO, "ss_suspend", "Server connection broken to \'%s\'", _suspend_struct[idx].server_connection->host_name);
 
                /* close client connection if link broken */
                closesocket(_suspend_struct[idx].server_connection->send_sock);
@@ -4947,7 +4946,7 @@ INT ss_tape_open(char *path, INT oflag, INT * channel)
    cm_enable_watchdog(TRUE);
 
    if (*channel < 0)
-      cm_msg(MERROR, "ss_tape_open", strerror(errno));
+      cm_msg(MERROR, "ss_tape_open", "open() returned %d, errno %d (%s)", *channel, errno, strerror(errno));
 
    if (*channel < 0) {
       if (errno == EIO)
@@ -5033,7 +5032,7 @@ INT ss_tape_close(INT channel)
    status = close(channel);
 
    if (status < 0) {
-      cm_msg(MERROR, "ss_tape_close", strerror(errno));
+      cm_msg(MERROR, "ss_tape_close", "close() returned %d, errno %d (%s)", status, errno, strerror(errno));
       return errno;
    }
 #endif                          /* OS_UNIX */
@@ -5167,7 +5166,7 @@ INT ss_tape_write(INT channel, void *pdata, INT count)
    } while (status == -1 && errno == EINTR);
 
    if (status != count) {
-      cm_msg(MERROR, "ss_tape_write", strerror(errno));
+      cm_msg(MERROR, "ss_tape_write", "write() returned %d, errno %d (%s)", status, errno, strerror(errno));
 
       if (errno == EIO)
          return SS_IO_ERROR;
@@ -6936,3 +6935,10 @@ void ss_stack_history_dump(char *filename)
 
          /** @} *//* end of msfunctionc */
          /** @} *//* end of msystemincludecode */
+/* emacs
+ * Local Variables:
+ * tab-width: 8
+ * c-basic-offset: 3
+ * indent-tabs-mode: nil
+ * End:
+ */
