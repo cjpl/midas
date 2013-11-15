@@ -1004,7 +1004,7 @@ INT tape_open(char *dev, INT * handle)
 
 INT ftp_error(char *message)
 {
-   cm_msg(MERROR, "ftp_error", message);
+   cm_msg(MERROR, "ftp_error", "%s", message);
    return 1;
 }
 
@@ -1339,8 +1339,7 @@ EVENT_DEF *db_get_event_definition(short int event_id)
       /* search for client with specific name */
       status = db_enum_key(hDB, hKeyRoot, i, &hKey);
       if (status == DB_NO_MORE_SUBKEYS) {
-         sprintf(str, "Cannot find event id %d under /equipment", event_id);
-         cm_msg(MERROR, "db_get_event_definition", str);
+         cm_msg(MERROR, "db_get_event_definition", "Cannot find event id %d under /equipment", event_id);
          return NULL;
       }
 
@@ -2409,8 +2408,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
        log_chn->statistics.events_written >= log_chn->settings.event_limit) {
       stop_requested = TRUE;
 
-      cm_msg(MTALK, "log_write", "stopping run after having received %d events",
-             log_chn->settings.event_limit);
+      cm_msg(MTALK, "log_write", "stopping run after having received %.0f events", log_chn->settings.event_limit);
 
       status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, DEBUG_TRANS);
       if (status != CM_SUCCESS)
@@ -3116,14 +3114,14 @@ INT tr_start(INT run_number, char *error)
       status = db_create_record(hDB, 0, "/Logger/Channels/0/", strcomb(chn_settings_str));
       if (status != DB_SUCCESS) {
          strcpy(error, "Cannot create channel entry in database");
-         cm_msg(MERROR, "tr_prestart", error);
+         cm_msg(MERROR, "tr_prestart", "%s", error);
          return 0;
       }
 
       status = db_find_key(hDB, 0, "/Logger/Channels", &hKeyRoot);
       if (status != DB_SUCCESS) {
          strcpy(error, "Cannot create channel entry in database");
-         cm_msg(MERROR, "tr_prestart", error);
+         cm_msg(MERROR, "tr_prestart", "%s", error);
          return 0;
       }
    }
@@ -3162,7 +3160,7 @@ INT tr_start(INT run_number, char *error)
              db_find_key(hDB, hKeyChannel, "Settings", &log_chn[index].settings_hkey);
          if (status != DB_SUCCESS) {
             strcpy(error, "Cannot find channel settings info");
-            cm_msg(MERROR, "tr_prestart", error);
+            cm_msg(MERROR, "tr_prestart", "%s", error);
             return 0;
          }
 
@@ -3170,7 +3168,7 @@ INT tr_start(INT run_number, char *error)
          status = db_find_key(hDB, hKeyChannel, "Statistics", &log_chn[index].stats_hkey);
          if (status != DB_SUCCESS) {
             strcpy(error, "Cannot find channel statistics info");
-            cm_msg(MERROR, "tr_prestart", error);
+            cm_msg(MERROR, "tr_prestart", "%s", error);
             return 0;
          }
 
@@ -3192,7 +3190,7 @@ INT tr_start(INT run_number, char *error)
              db_get_record(hDB, log_chn[index].settings_hkey, chn_settings, &size, 0);
          if (status != DB_SUCCESS) {
             strcpy(error, "Cannot read channel info");
-            cm_msg(MERROR, "tr_prestart", error);
+            cm_msg(MERROR, "tr_prestart", "%s", error);
             return 0;
          }
 
@@ -3202,7 +3200,7 @@ INT tr_start(INT run_number, char *error)
              log_chn[index].statistics.bytes_written_total >= chn_settings->tape_capacity)
          {
             strcpy(error, "Tape capacity reached. Please load new tape");
-            cm_msg(MERROR, "tr_prestart", error);
+            cm_msg(MERROR, "tr_prestart", "%s", error);
             return 0;
          }
 
@@ -3221,7 +3219,7 @@ INT tr_start(INT run_number, char *error)
             sprintf(error,
                     "Invalid channel type \"%s\", pease use \"Tape\", \"FTP\" or \"Disk\"",
                     chn_settings->type);
-            cm_msg(MERROR, "tr_prestart", error);
+            cm_msg(MERROR, "tr_prestart", "%s", error);
             return 0;
          }
 
@@ -3308,10 +3306,9 @@ INT tr_start(INT run_number, char *error)
                        "No ROOT support compiled into mlogger, please compile with -DUSE_ROOT flag");
 
             if (status == SS_INVALID_FORMAT)
-               sprintf(error,
-                       "Invalid data format, please use \"MIDAS\", \"ASCII\", \"DUMP\" or \"ROOT\"");
+               sprintf(error, "Invalid data format, please use \"MIDAS\", \"ASCII\", \"DUMP\" or \"ROOT\"");
 
-            cm_msg(MERROR, "tr_prestart", error);
+            cm_msg(MERROR, "tr_prestart", "%s", error);
             return 0;
          }
 
@@ -3397,7 +3394,7 @@ INT tr_start(INT run_number, char *error)
    status = open_history();
    if (status != CM_SUCCESS) {
       sprintf(error, "Error in history system, aborting run start");
-      cm_msg(MERROR, "tr_prestart", error);
+      cm_msg(MERROR, "tr_prestart", "%s", error);
       return 0;
    }
 
@@ -5405,7 +5402,7 @@ INT scheduler(void)
              eq->serial_number > eq_info->event_limit && run_state == STATE_RUNNING) {
             /* stop run */
             if (cm_transition(TR_STOP, 0, str, sizeof(str), SYNC, FALSE) != CM_SUCCESS) {
-               cm_msg(MERROR, "Cannot stop run: %s", str);
+               cm_msg(MERROR, "main", "Cannot stop run: %s", str);
             }
 
             /* check if autorestart, main loop will take care of it */
