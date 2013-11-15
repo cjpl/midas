@@ -1495,7 +1495,7 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time, DWORD interval, co
             lseek(fh, irec.offset, SEEK_SET);
             rd = read(fh, (char *) &rec, sizeof(rec));
             if (rd != sizeof(rec)) {
-               cm_msg(MERROR, "hs_read", "corrupted history data at time %d: read() of %d bytes returned %d, errno %d (%s)", (int) irec.time, sizeof(rec), rd, errno, strerror(errno));
+               cm_msg(MERROR, "hs_read", "corrupted history data at time %d: read() of %d bytes returned %d, errno %d (%s)", (int) irec.time, (int)sizeof(rec), rd, errno, strerror(errno));
                //*tbsize = *dbsize = *n = 0;
                if (fh > 0)
                   close(fh);
