@@ -653,6 +653,7 @@ extern "C" {
    INT recv_udp(int sock, char *buffer, DWORD buffer_size, INT flags);
    INT EXPRT recv_string(int sock, char *buffer, DWORD buffer_size, INT flags);
    INT EXPRT ss_socket_wait(int sock, int millisec);
+   INT EXPRT ss_recv_net_command(int sock, DWORD* routine_id, DWORD* param_size, char **param_ptr, int timeout_ms);
 
    /*---- system logging ----*/
    INT EXPRT ss_syslog(const char *message);
