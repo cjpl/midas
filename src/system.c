@@ -38,6 +38,8 @@ The Midas System file
 /**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
+#include <stdio.h>
+#include <math.h>
 
 #include "midas.h"
 #include "msystem.h"
@@ -6847,7 +6849,13 @@ int ss_isnan(double x)
 
 int ss_isfin(double x)
 {
+#ifdef FP_INFINITE
+   /* new-style finite() */
    return isfinite(x);
+#else
+   /* old-style finite() */
+   return finite(x);
+#endif
 }
 
 /*------------------------------------------------------------------*/
