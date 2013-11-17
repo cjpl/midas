@@ -6847,7 +6847,7 @@ int ss_isnan(double x)
 
 int ss_isfin(double x)
 {
-   return finite(x);
+   return isfinite(x);
 }
 
 /*------------------------------------------------------------------*/

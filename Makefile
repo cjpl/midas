@@ -114,8 +114,7 @@ NEED_MSCB=1
 #
 CC = gcc $(USERFLAGS)
 CXX = g++ $(USERFLAGS)
-CFLAGS = -g -O2 -Wall -Wno-strict-aliasing -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -I$(MXML_DIR) -I$(MSCB_DIR) -L$(LIB_DIR) -DHAVE_FTPLIB
-#CFLAGS = -g  -Wall -Wno-strict-aliasing -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -I$(MXML_DIR) -I$(MSCB_DIR) -L$(LIB_DIR) -DHAVE_FTPLIB
+CFLAGS = -g -O2 -Wall -Wno-strict-aliasing -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -I$(MXML_DIR) -I$(MSCB_DIR) -DHAVE_FTPLIB
 
 #-----------------------
 # Ovevwrite MAX_EVENT_SIZE with environment variable

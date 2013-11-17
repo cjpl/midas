@@ -492,8 +492,7 @@ EVENT_DEF *db_get_event_definition(short int event_id)
       /* search for equipment with specific name */
       status = db_enum_key(hDB, hKeyRoot, i, &hKey);
       if (status == DB_NO_MORE_SUBKEYS) {
-         sprintf(str, "Cannot find event id %d under /equipment", event_id);
-         cm_msg(MERROR, "db_get_event_definition", str);
+         cm_msg(MERROR, "db_get_event_definition", "Cannot find event id %d under /equipment", event_id);
          return NULL;
       }
 
@@ -1783,9 +1782,8 @@ INT bor(INT run_number, char *error)
             else if (strncmp(ext_str, ".root", 5) == 0)
                out_format = FORMAT_ROOT;
             else {
-               strcpy(error,
-                      "Unknown output data format. Please use file extension .asc, .mid, .rz or .root.\n");
-               cm_msg(MERROR, "bor", error);
+               strcpy(error, "Unknown output data format. Please use file extension .asc, .mid, .rz or .root.\n");
+               cm_msg(MERROR, "bor", "%s", error);
                return 0;
             }
          } else
@@ -1873,7 +1871,7 @@ INT bor(INT run_number, char *error)
                out_file = fopen(file_name, "wb");
             if (out_file == NULL) {
                sprintf(error, "Cannot open output file %s", file_name);
-               cm_msg(MERROR, "bor", error);
+               cm_msg(MERROR, "bor", "%s", error);
                return 0;
             }
          }
