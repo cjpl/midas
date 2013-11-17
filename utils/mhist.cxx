@@ -10,6 +10,10 @@
 #include "midas.h"
 #include "msystem.h"
 #include "history.h"
+#ifndef HAVE_STRLCPY
+#include "strlcpy.h"
+#endif
+
 
 void tmp()
 {

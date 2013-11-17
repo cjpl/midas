@@ -26,6 +26,10 @@
 #include "midas.h"
 #include "history.h"
 
+#ifndef HAVE_STRLCPY
+#include "strlcpy.h"
+#endif
+
 ////////////////////////////////////////
 //           helper stuff             //
 ////////////////////////////////////////

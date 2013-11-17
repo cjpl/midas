@@ -16,6 +16,10 @@ const char *mhttpd_svn_revision = "$Rev$";
 #include "midas.h"
 #include "msystem.h"
 #include "mxml.h"
+#ifndef HAVE_STRLCPY
+#include "strlcpy.h"
+#endif
+
 extern "C" {
 #include "mgd.h"
 }

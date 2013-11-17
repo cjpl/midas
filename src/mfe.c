@@ -16,6 +16,10 @@
 #include "msystem.h"
 #include "mcstd.h"
 
+#ifndef HAVE_STRLCPY
+#include "strlcpy.h"
+#endif
+
 /*------------------------------------------------------------------*/
 
 /* items defined in user part of frontend */

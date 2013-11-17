@@ -15,6 +15,10 @@
 #include "ftplib.h"
 #include "mcstd.h"
 
+#ifndef HAVE_STRLCPY
+#include "strlcpy.h"
+#endif
+
 #define HAVE_LOGGING
 #include "mdsupport.h"
 

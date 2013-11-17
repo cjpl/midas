@@ -13,6 +13,11 @@
 #include "msystem.h"
 #include <assert.h>
 
+#ifndef HAVE_STRLCPY
+#include "strlcpy.h"
+#endif
+
+
 extern INT cmd_edit(const char *prompt, char *cmd, INT(*dir) (char *, INT *), INT(*idle) ());
 
 BOOL need_redraw;

@@ -42,6 +42,10 @@ The Midas System file
 #include "midas.h"
 #include "msystem.h"
 
+#ifndef HAVE_STRLCPY
+#include "strlcpy.h"
+#endif
+
 #ifdef OS_UNIX
 #include <sys/mount.h>
 #endif
