@@ -6759,6 +6759,7 @@ static void db_save_tree_struct(HNDLE hDB, HNDLE hKey, int hfile, INT level)
    KEY key;
    HNDLE hSubkey;
    char line[MAX_ODB_PATH], str[MAX_STRING_LENGTH], name[MAX_STRING_LENGTH];
+   int wr;
 
    /* first enumerate this level */
    for (idx = 0;; idx++) {
@@ -6774,8 +6775,10 @@ static void db_save_tree_struct(HNDLE hDB, HNDLE hKey, int hfile, INT level)
       db_get_key(hDB, hSubkey, &key);
 
       if (key.type != TID_KEY) {
-         for (i = 0; i <= level; i++)
-            write(hfile, "  ", 2);
+         for (i = 0; i <= level; i++) {
+            wr = write(hfile, "  ", 2);
+            assert(wr == 2);
+         }
 
          switch (key.type) {
          case TID_SBYTE:
@@ -6817,24 +6820,31 @@ static void db_save_tree_struct(HNDLE hDB, HNDLE hKey, int hfile, INT level)
          strcpy(line + 10, str);
          strcat(line, ";\n");
 
-         write(hfile, line, strlen(line));
+         wr = write(hfile, line, strlen(line));
+         assert(wr > 0);
       } else {
          /* recurse subtree */
-         for (i = 0; i <= level; i++)
-            write(hfile, "  ", 2);
+         for (i = 0; i <= level; i++) {
+            wr = write(hfile, "  ", 2);
+            assert(wr == 2);
+         }
 
          sprintf(line, "struct {\n");
-         write(hfile, line, strlen(line));
+         wr = write(hfile, line, strlen(line));
+         assert(wr > 0);
          db_save_tree_struct(hDB, hSubkey, hfile, level + 1);
 
-         for (i = 0; i <= level; i++)
-            write(hfile, "  ", 2);
+         for (i = 0; i <= level; i++) {
+            wr = write(hfile, "  ", 2);
+            assert(wr == 2);
+         }
 
          strcpy(str, name);
          name2c(str);
 
          sprintf(line, "} %s;\n", str);
-         write(hfile, line, strlen(line));
+         wr = write(hfile, line, strlen(line));
+         assert(wr > 0);
       }
    }
 }
@@ -7533,6 +7543,7 @@ INT db_save_struct(HNDLE hDB, HNDLE hKey, const char *file_name, const char *str
    KEY key;
    char str[100], line[100];
    INT status, i, fh;
+   int wr, size;
 
    /* open file */
    fh = open(file_name, O_WRONLY | O_CREAT | (append ? O_APPEND : O_TRUNC), 0644);
@@ -7549,7 +7560,15 @@ INT db_save_struct(HNDLE hDB, HNDLE hKey, const char *file_name, const char *str
    }
 
    sprintf(line, "typedef struct {\n");
-   write(fh, line, strlen(line));
+
+   size = strlen(line);
+   wr = write(fh, line, size);
+   if (wr != size) {
+      cm_msg(MERROR, "db_save_struct", "file \"%s\" write error: write(%d) returned %d, errno %d (%s)", file_name, size, wr, errno, strerror(errno));
+      close(fh);
+      return DB_FILE_ERROR;
+   }
+
    db_save_tree_struct(hDB, hKey, fh, 0);
 
    if (struct_name && struct_name[0])
@@ -7562,7 +7581,14 @@ INT db_save_struct(HNDLE hDB, HNDLE hKey, const char *file_name, const char *str
       str[i] = (char) toupper(str[i]);
 
    sprintf(line, "} %s;\n\n", str);
-   write(fh, line, strlen(line));
+
+   size = strlen(line);
+   wr = write(fh, line, size);
+   if (wr != size) {
+      cm_msg(MERROR, "db_save_struct", "file \"%s\" write error: write(%d) returned %d, errno %d (%s)", file_name, size, wr, errno, strerror(errno));
+      close(fh);
+      return DB_FILE_ERROR;
+   }
 
    close(fh);
 
@@ -7600,7 +7626,8 @@ INT db_save_string(HNDLE hDB, HNDLE hKey, const char *file_name, const char *str
    KEY key;
    char str[256], line[256];
    INT status, i, size, fh, buffer_size;
-   char *buffer, *pc;
+   char *buffer = NULL, *pc;
+   int wr;
 
 
    /* open file */
@@ -7627,7 +7654,15 @@ INT db_save_string(HNDLE hDB, HNDLE hKey, const char *file_name, const char *str
       str[i] = (char) toupper(str[i]);
 
    sprintf(line, "#define %s(_name) const char *_name[] = {\\\n", str);
-   write(fh, line, strlen(line));
+   size = strlen(line);
+   wr = write(fh, line, size);
+   if (wr != size) {
+      cm_msg(MERROR, "db_save", "file \"%s\" write error: write(%d) returned %d, errno %d (%s)", file_name, size, wr, errno, strerror(errno));
+      close(fh);
+      if (buffer)
+         free(buffer);
+      return DB_FILE_ERROR;
+   }
 
    buffer_size = 10000;
    do {
@@ -7660,8 +7695,17 @@ INT db_save_string(HNDLE hDB, HNDLE hKey, const char *file_name, const char *str
          line[i++] = *pc++;
       }
       strcpy(&line[i], "\",\\\n");
-      if (i > 0)
-         write(fh, line, strlen(line));
+      if (i > 0) {
+         size = strlen(line);
+         wr = write(fh, line, size);
+         if (wr != size) {
+            cm_msg(MERROR, "db_save", "file \"%s\" write error: write(%d) returned %d, errno %d (%s)", file_name, size, wr, errno, strerror(errno));
+            close(fh);
+            if (buffer)
+               free(buffer);
+            return DB_FILE_ERROR;
+         }
+      }
 
       if (*pc == '\n')
          pc++;
@@ -7669,7 +7713,15 @@ INT db_save_string(HNDLE hDB, HNDLE hKey, const char *file_name, const char *str
    } while (*pc);
 
    sprintf(line, "NULL }\n\n");
-   write(fh, line, strlen(line));
+   size = strlen(line);
+   wr = write(fh, line, size);
+   if (wr != size) {
+      cm_msg(MERROR, "db_save", "file \"%s\" write error: write(%d) returned %d, errno %d (%s)", file_name, size, wr, errno, strerror(errno));
+      close(fh);
+      if (buffer)
+         free(buffer);
+      return DB_FILE_ERROR;
+   }
 
    close(fh);
    free(buffer);
