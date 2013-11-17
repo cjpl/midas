@@ -1466,8 +1466,6 @@ INT db_flush_database(HNDLE hDB)
 #ifdef LOCAL_ROUTINES
    else {
       DATABASE_HEADER *pheader;
-      DATABASE_CLIENT *pclient;
-      INT idx;
 
       if (hDB > _database_entries || hDB <= 0) {
          cm_msg(MERROR, "db_close_database", "invalid database handle");
@@ -1481,9 +1479,7 @@ INT db_flush_database(HNDLE hDB)
        */
 
       db_lock_database(hDB);
-      idx = _database[hDB - 1].client_index;
       pheader = _database[hDB - 1].database_header;
-      pclient = &pheader->client[idx];
 
       if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_SINGLE &&
           _database[hDB - 1].index != rpc_get_server_acception()) {
@@ -4336,7 +4332,7 @@ INT db_reorder_key(HNDLE hDB, HNDLE hKey, INT idx)
 #ifdef LOCAL_ROUTINES
    {
       DATABASE_HEADER *pheader;
-      KEY *pkey, *pprev_key, *pnext_key, *pkey_tmp;
+      KEY *pkey, *pnext_key, *pkey_tmp;
       KEYLIST *pkeylist;
       INT i;
 
@@ -4415,7 +4411,6 @@ INT db_reorder_key(HNDLE hDB, HNDLE hKey, INT idx)
 
          /* find last key */
          for (i = 0; i < pkeylist->num_keys - 2; i++) {
-            pprev_key = pkey_tmp;
             pkey_tmp = (KEY *) ((char *) pheader + pkey_tmp->next_key);
          }
 
@@ -6226,10 +6221,8 @@ INT db_paste(HNDLE hDB, HNDLE hKeyRoot, const char *buffer)
    INT tid, i, j, n_data, string_length, status, size;
    HNDLE hKey;
    KEY root_key;
-   BOOL multi_line;
 
    title[0] = 0;
-   multi_line = FALSE;
 
    if (hKeyRoot == 0)
       db_find_key(hDB, hKeyRoot, "", &hKeyRoot);
@@ -7104,6 +7097,8 @@ INT db_save_xml(HNDLE hDB, HNDLE hKey, const char *filename)
 
       mxml_end_element(writer); // "odb"
       mxml_close_file(writer);
+
+      return status;
    }
 #endif                          /* LOCAL_ROUTINES */
 
@@ -8632,14 +8627,11 @@ void merge_records(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
 {
    char full_name[256];
    INT status, size;
-   void *p;
    HNDLE hKeyInit;
    KEY initkey, key;
 
    /* avoid compiler warnings */
    status = level;
-   p = info;
-   p = pkey;
 
    /* compose name of init key */
    db_get_path(hDB, hKey, full_name, sizeof(full_name));
@@ -8698,15 +8690,6 @@ static int open_count;
 
 void check_open_keys(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
 {
-   int i;
-   void *p;
-
-   /* avoid compiler warnings */
-   i = hDB;
-   i = hKey;
-   i = level;
-   p = info;
-
    if (pkey->notify_count)
       open_count++;
 }
@@ -8953,7 +8936,6 @@ INT db_check_record(HNDLE hDB, HNDLE hKey, const char *keyname, const char *rec_
    INT i, j, n_data, string_length, status;
    HNDLE hKeyRoot, hKeyTest;
    KEY key;
-   BOOL multi_line;
 
    if (rpc_is_remote())
       return rpc_call(RPC_DB_CHECK_RECORD, hDB, hKey, keyname, rec_str, correct);
@@ -8971,7 +8953,6 @@ INT db_check_record(HNDLE hDB, HNDLE hKey, const char *keyname, const char *rec_
    assert(hKeyRoot);
 
    title[0] = 0;
-   multi_line = FALSE;
    rec_str_orig = rec_str;
 
    db_get_key(hDB, hKeyRoot, &key);
@@ -9510,7 +9491,7 @@ INT db_update_record(INT hDB, INT hKey, int s)
          }
       }
 
-   return DB_SUCCESS;
+   return status;
 }
 
 /********************************************************************/
