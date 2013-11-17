@@ -11,9 +11,12 @@
 
 #include "midas.h"
 #include "msystem.h"
-#include "strlcpy.h"
 #include <assert.h>
 #include <signal.h>
+
+#ifndef HAVE_STRLCPY
+#include "strlcpy.h"
+#endif
 
 /**dox***************************************************************/
 /** @file midas.c

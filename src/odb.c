@@ -35,7 +35,9 @@ The Online Database file
 #include "midas.h"
 #include "msystem.h"
 #include "mxml.h"
+#ifndef HAVE_STRLCPY
 #include "strlcpy.h"
+#endif
 #include <assert.h>
 #include <signal.h>
 #include <math.h>
