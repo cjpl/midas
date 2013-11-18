@@ -27,7 +27,7 @@
     <TargetOption>
       <CLK51>25000000</CLK51>
       <OPTTT>
-        <gFlags>1</gFlags>
+        <gFlags>0</gFlags>
         <BeepAtEnd>1</BeepAtEnd>
         <RunSim>1</RunSim>
         <RunTarget>0</RunTarget>
@@ -160,13 +160,13 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>28</ColumnNumber>
+      <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>14</TopLine>
-      <CurrentLine>43</CurrentLine>
+      <TopLine>46</TopLine>
+      <CurrentLine>73</CurrentLine>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\scs_210_tpg262.c</PathWithFileName>
-      <FilenameWithoutPath>scs_210_tpg262.c</FilenameWithoutPath>
+      <PathWithFileName>..\src\mscbmain.c</PathWithFileName>
+      <FilenameWithoutPath>mscbmain.c</FilenameWithoutPath>
     </File>
     <File>
       <GroupNumber>1</GroupNumber>
@@ -179,8 +179,8 @@
       <TopLine>0</TopLine>
       <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\src\mscbmain.c</PathWithFileName>
-      <FilenameWithoutPath>mscbmain.c</FilenameWithoutPath>
+      <PathWithFileName>..\src\mscbutil.c</PathWithFileName>
+      <FilenameWithoutPath>mscbutil.c</FilenameWithoutPath>
     </File>
     <File>
       <GroupNumber>1</GroupNumber>
@@ -188,13 +188,13 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>3</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
+      <TopLine>138</TopLine>
+      <CurrentLine>159</CurrentLine>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\src\mscbutil.c</PathWithFileName>
-      <FilenameWithoutPath>mscbutil.c</FilenameWithoutPath>
+      <PathWithFileName>.\scs_210_maxigauge.c</PathWithFileName>
+      <FilenameWithoutPath>scs_210_maxigauge.c</FilenameWithoutPath>
     </File>
   </Group>
 
@@ -214,8 +214,8 @@
       <TopLine>0</TopLine>
       <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
-      <PathWithFileName>.\config.h</PathWithFileName>
-      <FilenameWithoutPath>config.h</FilenameWithoutPath>
+      <PathWithFileName>..\include\mscbemb.h</PathWithFileName>
+      <FilenameWithoutPath>mscbemb.h</FilenameWithoutPath>
     </File>
     <File>
       <GroupNumber>2</GroupNumber>
@@ -228,8 +228,8 @@
       <TopLine>0</TopLine>
       <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\include\mscbemb.h</PathWithFileName>
-      <FilenameWithoutPath>mscbemb.h</FilenameWithoutPath>
+      <PathWithFileName>.\config.h</PathWithFileName>
+      <FilenameWithoutPath>config.h</FilenameWithoutPath>
     </File>
   </Group>
 
@@ -1574,25 +1574,25 @@
     <ActiveMDIGroup>0</ActiveMDIGroup>
     <MDIGroup>
       <Size>100</Size>
-      <ActiveTab>1</ActiveTab>
+      <ActiveTab>0</ActiveTab>
       <Documents>
         <Doc>
-          <Name>.\scs_210_tpg262.c</Name>
-          <ColumnNumber>28</ColumnNumber>
-          <TopLine>14</TopLine>
-          <CurrentLine>43</CurrentLine>
+          <Name>.\scs_210_maxigauge.c</Name>
+          <ColumnNumber>3</ColumnNumber>
+          <TopLine>138</TopLine>
+          <CurrentLine>159</CurrentLine>
         </Doc>
         <Doc>
-          <Name>..\INCLUDE\MSCBEMB.H</Name>
-          <ColumnNumber>20</ColumnNumber>
-          <TopLine>301</TopLine>
-          <CurrentLine>330</CurrentLine>
+          <Name>..\src\mscbmain.c</Name>
+          <ColumnNumber>0</ColumnNumber>
+          <TopLine>46</TopLine>
+          <CurrentLine>73</CurrentLine>
         </Doc>
         <Doc>
           <Name>CONFIG.H</Name>
-          <ColumnNumber>17</ColumnNumber>
+          <ColumnNumber>0</ColumnNumber>
           <TopLine>1</TopLine>
-          <CurrentLine>25</CurrentLine>
+          <CurrentLine>1</CurrentLine>
         </Doc>
       </Documents>
     </MDIGroup>

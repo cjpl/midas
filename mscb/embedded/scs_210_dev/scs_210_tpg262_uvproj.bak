@@ -29,11 +29,11 @@
           <SLE66CMisc></SLE66CMisc>
           <SLE66AMisc></SLE66AMisc>
           <SLE66LinkerMisc></SLE66LinkerMisc>
-          <UseEnv>0</UseEnv>
+          <UseEnv>1</UseEnv>
           <BinPath>C:\Program Files\Keil\C51\BIN\</BinPath>
           <IncludePath>C:\Program Files\Keil\C51\INC\</IncludePath>
           <LibPath>C:\Program Files\Keil\C51\LIB\</LibPath>
-          <RegisterFilePath>.\Cygnal\</RegisterFilePath>
+          <RegisterFilePath>ÿCygnal\</RegisterFilePath>
           <DBRegisterFilePath>ÿCygnal\</DBRegisterFilePath>
           <TargetStatus>
             <Error>0</Error>
@@ -43,7 +43,7 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>.\</OutputDirectory>
-          <OutputName>scs_210_maxigauge</OutputName>
+          <OutputName>scs_210_tpg262</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>1</CreateHexFile>
@@ -163,7 +163,7 @@
             <DriverSelection>0</DriverSelection>
           </Flash1>
           <Flash2></Flash2>
-          <Flash3></Flash3>
+          <Flash3>"" ()</Flash3>
           <Flash4></Flash4>
         </Utilities>
         <Target51>
@@ -294,7 +294,7 @@
               <MiscControls></MiscControls>
               <Define></Define>
               <Undefine></Undefine>
-              <IncludePath>\midas\mscb\embedded\include</IncludePath>
+              <IncludePath>..\include</IncludePath>
             </VariousControls>
           </C51>
           <Ax51>
@@ -347,6 +347,11 @@
           <GroupName>Source Files</GroupName>
           <Files>
             <File>
+              <FileName>scs_210_tpg262.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\scs_210_tpg262.c</FilePath>
+            </File>
+            <File>
               <FileName>mscbmain.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\src\mscbmain.c</FilePath>
@@ -356,25 +361,20 @@
               <FileType>1</FileType>
               <FilePath>..\src\mscbutil.c</FilePath>
             </File>
-            <File>
-              <FileName>scs_210_maxigauge.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\scs_210_maxigauge.c</FilePath>
-            </File>
           </Files>
         </Group>
         <Group>
           <GroupName>Include Files</GroupName>
           <Files>
             <File>
-              <FileName>mscbemb.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\include\mscbemb.h</FilePath>
-            </File>
-            <File>
               <FileName>config.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\config.h</FilePath>
+            </File>
+            <File>
+              <FileName>mscbemb.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\include\mscbemb.h</FilePath>
             </File>
           </Files>
         </Group>

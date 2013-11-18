@@ -1,0 +1,7 @@
+".\mscbmain.obj",
+".\mscbutil.obj",
+"scs_210_maxigauge.obj" 
+TO "scs_210_maxigauge" 
+RAMSIZE(256) 
+DISABLEWARNING (16) 
+CODE( ?PR?UPGRADE?MSCBMAIN (0x7000) )

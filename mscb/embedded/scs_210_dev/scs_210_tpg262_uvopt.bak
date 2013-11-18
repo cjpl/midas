@@ -1583,13 +1583,13 @@
           <CurrentLine>43</CurrentLine>
         </Doc>
         <Doc>
-          <Name>..\INCLUDE\MSCBEMB.H</Name>
+          <Name>..\include\mscbemb.h</Name>
           <ColumnNumber>20</ColumnNumber>
           <TopLine>301</TopLine>
           <CurrentLine>330</CurrentLine>
         </Doc>
         <Doc>
-          <Name>CONFIG.H</Name>
+          <Name>.\config.h</Name>
           <ColumnNumber>17</ColumnNumber>
           <TopLine>1</TopLine>
           <CurrentLine>25</CurrentLine>

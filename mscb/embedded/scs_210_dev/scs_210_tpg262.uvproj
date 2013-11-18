@@ -29,11 +29,11 @@
           <SLE66CMisc></SLE66CMisc>
           <SLE66AMisc></SLE66AMisc>
           <SLE66LinkerMisc></SLE66LinkerMisc>
-          <UseEnv>1</UseEnv>
+          <UseEnv>0</UseEnv>
           <BinPath>C:\Program Files\Keil\C51\BIN\</BinPath>
           <IncludePath>C:\Program Files\Keil\C51\INC\</IncludePath>
           <LibPath>C:\Program Files\Keil\C51\LIB\</LibPath>
-          <RegisterFilePath>ÿCygnal\</RegisterFilePath>
+          <RegisterFilePath>.\Cygnal\</RegisterFilePath>
           <DBRegisterFilePath>ÿCygnal\</DBRegisterFilePath>
           <TargetStatus>
             <Error>0</Error>
@@ -163,7 +163,7 @@
             <DriverSelection>0</DriverSelection>
           </Flash1>
           <Flash2></Flash2>
-          <Flash3></Flash3>
+          <Flash3>"" ()</Flash3>
           <Flash4></Flash4>
         </Utilities>
         <Target51>

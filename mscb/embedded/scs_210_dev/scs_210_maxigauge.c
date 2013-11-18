@@ -6,7 +6,7 @@
   Contents:     Application specific (user) part of
                 Midas Slow Control Bus protocol 
                 for SCS-210 RS232 node connected to a
-                Pfeiffer Maxigauge
+                Pfeiffer Maxigauge TPG 256
 
   $Id$
 
@@ -14,6 +14,7 @@
 
 #include <stdio.h>
 #include <stdlib.h> // for atof()
+#include <string.h>
 
 #include "mscbemb.h"
 
@@ -34,6 +35,8 @@ static unsigned long xdata last_read = 0;
 
 typedef struct {
    float p[6];
+   char str1[32];
+   char str2[32];
    unsigned char baud;
 } USER_DATA;
 
@@ -41,6 +44,8 @@ USER_DATA xdata user_data;
 
 MSCB_INFO_VAR code vars[] = {
    1, UNIT_ASCII,  0, 0, MSCBF_DATALESS, "RS232",               0,
+   32, UNIT_STRING,  0, 0, 0, "str1",          &user_data.str1,
+   32, UNIT_STRING,  0, 0, 0, "str2",          &user_data.str2,
    4, UNIT_BAR, PRFX_MILLI, 0,    MSCBF_FLOAT, "P1",      &user_data.p[0],
    4, UNIT_BAR, PRFX_MILLI, 0,    MSCBF_FLOAT, "P2",      &user_data.p[1],
    4, UNIT_BAR, PRFX_MILLI, 0,    MSCBF_FLOAT, "P3",      &user_data.p[2],
@@ -144,6 +149,9 @@ void user_loop(void)
    char xdata str[32];
    int xdata status;
 
+   const char *SensorStrings[6] = {"PR1\r\n", "PR2\r\n", "PR3\r\n", "PR4\r\n", "PR5\r\n", "PR6\r\n"};
+
+
    if (flush_flag) {
       flush_flag = 0;
       flush();
@@ -155,32 +163,43 @@ void user_loop(void)
     
       for (i=0; i<6; i++){
          // Query sensor status and value
-         printf("PR%d\r", i+1);
+         //printf("PR%d\r\n", i+1);
+         printf(SensorStrings[i]);
          flush();
-         //usleep(100000);  /* sleep for 100 milliSeconds */
 
          // Read reply device
          r = gets_wait(str, sizeof(str), 200);
+         
+         DISABLE_INTERRUPTS;
+         strcpy(user_data.str1, str);
+         ENABLE_INTERRUPTS;
+         
          if (str[0] == 6) { // 6: Acknowledged query
+         //if (1) {
  
             // Query sending of data
             printf("%c", 5); // ENQ
             flush();
-            //usleep(100000);
-
+            
             // Read sensor status and value
             r = gets_wait(str, sizeof(str), 200);
 
+            DISABLE_INTERRUPTS;
+            strcpy(user_data.str2, str);
+            ENABLE_INTERRUPTS;
+
             // Convert characters to values
             status = atoi((char *)&str[0]);
-      
+            p = atof(str+2);
+
             if (status == 0) {
-               //pressures[i] = strtod((const char*)str+2,NULL);
-
-               p = atof(str+2);
-
                DISABLE_INTERRUPTS;
                user_data.p[i] = p;
+               ENABLE_INTERRUPTS;
+            }
+            else {
+               DISABLE_INTERRUPTS;
+               user_data.p[i] = 0.0;
                ENABLE_INTERRUPTS;
             }
          }
