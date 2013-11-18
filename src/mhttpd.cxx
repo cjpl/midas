@@ -64,7 +64,7 @@ char _text[TEXT_SIZE];
 char *_attachment_buffer[3];
 INT _attachment_size[3];
 struct in_addr remote_addr;
-INT _sock;
+INT _sock = -1;
 BOOL elog_mode = FALSE;
 BOOL history_mode = FALSE;
 BOOL verbose = FALSE;
@@ -814,9 +814,12 @@ void redirect(const char *path)
 void redirect2(const char *path)
 {
    redirect(path);
-   send_tcp(_sock, return_buffer, strlen(return_buffer) + 1, 0x10000);
-   closesocket(_sock);
-   return_length = -1;
+   if (_sock != (-1)) {
+      send_tcp(_sock, return_buffer, strlen(return_buffer) + 1, 0x10000);
+      closesocket(_sock);
+      _sock = -1;
+      return_length = -1;
+   }
 }
 
 /*------------------------------------------------------------------*/
@@ -14915,6 +14918,8 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
    const char* value = getparam("value");
    const char* group = getparam("group");
    index = atoi(getparam("index"));
+
+   //printf("interprete: path [%s] dec_path [%s], command [%s] value [%s]\n", path, dec_path, command, value);
    
    cm_get_experiment_database(&hDB, NULL);
    
@@ -15697,7 +15702,7 @@ void decode_get(char *string, const char *cookie_pwd, const char *cookie_wpwd, c
 
 /*------------------------------------------------------------------*/
 
-void decode_post(char *header, char *string, char *boundary, int length,
+void decode_post(const char *header, char *string, const char *boundary, int length,
                  const char *cookie_pwd, const char *cookie_wpwd, int refresh)
 {
    char *pinit, *p, *pitem, *ptmp, file_name[256], str[256], path[256];
@@ -16033,6 +16038,7 @@ void server_loop()
             if (!allowed) {
                printf("Rejecting http connection from \'%s\'\n", hname);
                closesocket(_sock);
+               _sock = -1;
                continue;
             }
          }
@@ -16323,6 +16329,7 @@ void server_loop()
           error:
 
             closesocket(_sock);
+            _sock = -1;
          }
 
          if (locked) {
