@@ -1845,7 +1845,7 @@ INT bor(INT run_number, char *error)
                 new TFile(file_name, "RECREATE", "Midas Analyzer output file");
             if (gManaOutputFile == NULL) {
                sprintf(error, "Cannot open output file %s", out_info.filename);
-               cm_msg(MERROR, "bor", error);
+               cm_msg(MERROR, "bor", "%s", error);
                out_file = NULL;
                return 0;
             }

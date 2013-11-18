@@ -462,7 +462,7 @@ INT rpc_server_dispatch(INT index, void *prpc_param[])
       break;
 
    case RPC_CM_MSG:
-      status = cm_msg(CINT(0), CSTRING(1), CINT(2), CSTRING(3), CSTRING(4));
+      status = cm_msg(CINT(0), CSTRING(1), CINT(2), CSTRING(3), "%s", CSTRING(4));
       break;
 
    case RPC_CM_MSG_LOG:
