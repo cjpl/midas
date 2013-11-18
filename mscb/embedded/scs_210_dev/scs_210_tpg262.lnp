@@ -1,7 +1,0 @@
-"scs_210_tpg262.obj",
-".\mscbmain.obj",
-".\mscbutil.obj" 
-TO "scs_210_tpg262" 
-RAMSIZE(256) 
-DISABLEWARNING (16) 
-CODE( ?PR?UPGRADE?MSCBMAIN (0x7000) )
