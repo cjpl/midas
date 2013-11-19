@@ -100,11 +100,17 @@ static int guess_tid(const MJsonNode* node)
    case MJSON_ARRAY:  { const MJsonNodeVector* a = node->GetArray(); if (a && a->size()>0) return guess_tid((*a)[0]); else return 0; }
    case MJSON_OBJECT: return TID_KEY;
    case MJSON_STRING: {
-      // FIXME: also watch for inf and nan
       std::string v = node->GetString();
-      if (v[0]=='0' && v[1]=='x' && isxdigit(v[2]))
+      if (v == "NaN")
+         return TID_DOUBLE;
+      else if (v == "Infinity")
+         return TID_DOUBLE;
+      else if (v == "-Infinity")
+         return TID_DOUBLE;
+      else if (v[0]=='0' && v[1]=='x' && isxdigit(v[2]))
          return TID_DWORD;
-      return TID_STRING;
+      else
+         return TID_STRING;
    }
    case MJSON_INT:    return TID_INT;
    case MJSON_NUMBER: return TID_DOUBLE;
