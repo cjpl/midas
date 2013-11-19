@@ -330,7 +330,7 @@ static std::string parse_digits(const char* s, const char** sout)
    return v;
 }
 
-static int atoi_with_overflow(const char* s)
+static int patoi_with_overflow(const char* s)
 {
    const int kMAX = INT_MAX/10;
    const int kLAST = INT_MAX - kMAX*10;
@@ -348,14 +348,38 @@ static int atoi_with_overflow(const char* s)
    return v;
 }
 
-static void test_atoi_with_overflow_value(const char*s, int v)
+static int matoi_with_overflow(const char* s)
 {
-   int vv = atoi_with_overflow(s);
-   //printf("atoi test: [%s] -> %d (0x%x) should be %d (0x%x)\n", s, vv, vv, v, v);
+   const int kMIN = INT_MIN/10;
+   const int kLAST = -(INT_MIN - kMIN*10);
+   int v = 0;
+   for ( ; *s != 0; s++) {
+      int vadd = (*s)-'0';
+      //printf("compare: %d kMIN: %d, v*10: %d, vadd %d, kLAST %d\n", v, kMIN, v*10, vadd, kLAST);
+      if (v < kMIN)
+         return 1;
+      if (v == kMIN && vadd > kLAST) {
+         return 1;
+      }
+      v = v*10 - vadd;
+   }
+   return v;
+}
+
+static void test_atoi_with_overflow_value(int sign, const char*s, int v)
+{
+   int vv;
+   if (sign > 0)
+      vv = patoi_with_overflow(s);
+   else
+      vv = matoi_with_overflow(s);
+
+   //printf("atoi test: [%s] [%s] -> %d (0x%x) should be %d (0x%x)\n", (sign>0)?"+":"-", s, vv, vv, v, v);
+
    if (vv == v)
       return;
 
-   printf("atoi test failed: [%s] -> %d (0x%x) != %d (0x%x)\n", s, vv, vv, v, v);
+   printf("atoi test failed: [%s] [%s] -> %d (0x%x) != %d (0x%x)\n", (sign>0)?"+":"-", s, vv, vv, v, v);
    assert(!"mjson self test: my atoi() is broken, bye!");
    abort();
    // DOES NOT RETURN
@@ -363,17 +387,33 @@ static void test_atoi_with_overflow_value(const char*s, int v)
 
 static void test_atoi_with_overflow()
 {
-   test_atoi_with_overflow_value("0", 0);
-   test_atoi_with_overflow_value("1", 1);
-   test_atoi_with_overflow_value("12", 12);
-   test_atoi_with_overflow_value("1234", 1234);
-   test_atoi_with_overflow_value("2147483646", 0x80000000-2);
-   test_atoi_with_overflow_value("2147483647", 0x80000000-1);
-   if (0x80000000 < 0) { // check for 32-bit integers
-      test_atoi_with_overflow_value("2147483648", -1);
-      test_atoi_with_overflow_value("2147483649", -1);
+   int i = 0x80000000;
+   // test positive values
+   test_atoi_with_overflow_value(1, "0", 0);
+   test_atoi_with_overflow_value(1, "1", 1);
+   test_atoi_with_overflow_value(1, "12", 12);
+   test_atoi_with_overflow_value(1, "1234", 1234);
+   if (i < 0) { // check overflow of 32-bit integers
+      test_atoi_with_overflow_value(1, "2147483646", 0x80000000-2);
+      test_atoi_with_overflow_value(1, "2147483647", 0x80000000-1);
+      test_atoi_with_overflow_value(1, "2147483648", -1);
+      test_atoi_with_overflow_value(1, "2147483649", -1);
    }
-   test_atoi_with_overflow_value("999999999999999999999999999999999999999999999999999999", -1);
+   test_atoi_with_overflow_value(1, "999999999999999999999999999999999999999999999999999999", -1);
+
+   // test negative
+   test_atoi_with_overflow_value(-1, "0", 0);
+   test_atoi_with_overflow_value(-1, "1", -1);
+   test_atoi_with_overflow_value(-1, "12", -12);
+   test_atoi_with_overflow_value(-1, "1234", -1234);
+   if (i < 0) { // check overflow of 32-bit integers
+      test_atoi_with_overflow_value(-1, "2147483646", 0x80000000+2);
+      test_atoi_with_overflow_value(-1, "2147483647", 0x80000000+1);
+      test_atoi_with_overflow_value(-1, "2147483648", 0x80000000+0);
+      test_atoi_with_overflow_value(-1, "2147483649", 1);
+      test_atoi_with_overflow_value(-1, "2147483650", 1);
+   }
+   test_atoi_with_overflow_value(-1, "999999999999999999999999999999999999999999999999999999", 1);
 }
 
 static MJsonNode* parse_number(const char* sin, const char* s, const char** sout)
@@ -458,7 +498,7 @@ static MJsonNode* parse_number(const char* sin, const char* s, const char** sout
          v2 += (*p-'0')*vm;
       }
 
-      int e = atoi_with_overflow(sexp.c_str()); // may overflow
+      int e = patoi_with_overflow(sexp.c_str());
 
       if (e < 0 || e > 400) {
          // overflow or exponent will not fit into IEEE754 double precision number
@@ -487,7 +527,7 @@ static MJsonNode* parse_number(const char* sin, const char* s, const char** sout
    } else {
       // no sfrac, expsign is positive, so this is an integer, unless it overflows
 
-      int e = atoi_with_overflow(sexp.c_str()); // may overflow
+      int e = patoi_with_overflow(sexp.c_str()); // may overflow
 
       if (e < 0 || e > 400) {
          // overflow or exponent will not fit into IEEE754 double precision number
@@ -504,19 +544,27 @@ static MJsonNode* parse_number(const char* sin, const char* s, const char** sout
       for (int ee=0; ee<e; ee++)
          sint += "0";
 
-      int v1 = atoi_with_overflow(sint.c_str());
+      int overflow = 0;
+      int v = 0;
 
-      // FIXME: -2147483648 (0x80000000) overflows and converts to a double precision number instead of integer
-
-      if (v1 < 0) {
-         // overflow, convert to double
-         //printf("integer overflow!\n");
-         double v = atof(sint.c_str());
-         *sout = s;
-         return MJsonNode::MakeNumber(sign*v);
+      if (sign > 0) {
+         v = patoi_with_overflow(sint.c_str());
+         if (v < 0)
+            overflow = 1;
+      } else {
+         v = matoi_with_overflow(sint.c_str());
+         if (v > 0)
+            overflow = 1;
       }
 
-      int v = sign*v1;
+      if (overflow) {
+         // overflow, convert to double
+         //printf("integer overflow!\n");
+         double vv = atof(sint.c_str());
+         *sout = s;
+         return MJsonNode::MakeNumber(sign*vv);
+      }
+
       *sout = s;
       return MJsonNode::MakeInt(v);
    }
