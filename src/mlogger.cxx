@@ -15,6 +15,10 @@
 #include <errno.h>              /* for mkdir() */
 #include <assert.h>
 
+#ifndef HAVE_STRLCPY
+#include "strlcpy.h"
+#endif
+
 #define HAVE_LOGGING
 #include "mdsupport.h"
 

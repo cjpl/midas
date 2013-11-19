@@ -162,7 +162,7 @@
       <Focus>0</Focus>
       <ColumnNumber>28</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>10</TopLine>
+      <TopLine>14</TopLine>
       <CurrentLine>43</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\scs_210_tpg262.c</PathWithFileName>
@@ -1579,13 +1579,13 @@
         <Doc>
           <Name>.\scs_210_tpg262.c</Name>
           <ColumnNumber>28</ColumnNumber>
-          <TopLine>10</TopLine>
+          <TopLine>14</TopLine>
           <CurrentLine>43</CurrentLine>
         </Doc>
         <Doc>
           <Name>..\INCLUDE\MSCBEMB.H</Name>
           <ColumnNumber>20</ColumnNumber>
-          <TopLine>291</TopLine>
+          <TopLine>301</TopLine>
           <CurrentLine>330</CurrentLine>
         </Doc>
         <Doc>

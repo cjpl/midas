@@ -18,6 +18,10 @@
 
 #include "midas.h"
 
+#ifndef HAVE_STRLCPY
+#include "strlcpy.h"
+#endif
+
 /*------------------------------------------------------------------*/
 
 int read_state(HNDLE hDB)

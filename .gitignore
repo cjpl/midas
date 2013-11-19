@@ -6,3 +6,11 @@ analyzer
 frontend
 *~
 mtfe
+*.lst
+*.obj
+*.M51
+*.lnp
+*.bak
+*.plg
+mscb/embedded/scs_210_dev/scs_210_maxigauge
+*.__i

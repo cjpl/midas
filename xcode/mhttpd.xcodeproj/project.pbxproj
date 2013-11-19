@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		D51A109D1798772E00ED6F5F /* mxml.c in Sources */ = {isa = PBXBuildFile; fileRef = D51A109B1798772E00ED6F5F /* mxml.c */; };
 		D51A109E1798772E00ED6F5F /* strlcpy.c in Sources */ = {isa = PBXBuildFile; fileRef = D51A109C1798772E00ED6F5F /* strlcpy.c */; };
+		D534757E183A1979004316B0 /* mongoose.c in Sources */ = {isa = PBXBuildFile; fileRef = D534757D183A1979004316B0 /* mongoose.c */; };
 		D5705992179871EA00DA5416 /* alarm.c in Sources */ = {isa = PBXBuildFile; fileRef = D5705987179871EA00DA5416 /* alarm.c */; };
 		D5705993179871EA00DA5416 /* elog.c in Sources */ = {isa = PBXBuildFile; fileRef = D5705988179871EA00DA5416 /* elog.c */; };
 		D5705994179871EA00DA5416 /* history_midas.cxx in Sources */ = {isa = PBXBuildFile; fileRef = D5705989179871EA00DA5416 /* history_midas.cxx */; };
@@ -41,6 +42,7 @@
 /* Begin PBXFileReference section */
 		D51A109B1798772E00ED6F5F /* mxml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mxml.c; path = /mxml/mxml.c; sourceTree = "<absolute>"; };
 		D51A109C1798772E00ED6F5F /* strlcpy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = strlcpy.c; path = /mxml/strlcpy.c; sourceTree = "<absolute>"; };
+		D534757D183A1979004316B0 /* mongoose.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mongoose.c; path = /midas/src/mongoose.c; sourceTree = "<absolute>"; };
 		D570596317986E2F00DA5416 /* mhttpd */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = mhttpd; sourceTree = BUILT_PRODUCTS_DIR; };
 		D5705987179871EA00DA5416 /* alarm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = alarm.c; path = /midas/src/alarm.c; sourceTree = "<absolute>"; };
 		D5705988179871EA00DA5416 /* elog.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = elog.c; path = /midas/src/elog.c; sourceTree = "<absolute>"; };
@@ -116,6 +118,7 @@
 		D570598617986EFF00DA5416 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				D534757D183A1979004316B0 /* mongoose.c */,
 				D51A109B1798772E00ED6F5F /* mxml.c */,
 				D51A109C1798772E00ED6F5F /* strlcpy.c */,
 				D5F40E09179876ED004CBF77 /* mgd.c */,
@@ -207,6 +210,7 @@
 				D5705999179871EA00DA5416 /* mrpc.c in Sources */,
 				D570599A179871EA00DA5416 /* odb.c in Sources */,
 				D570599B179871EA00DA5416 /* sequencer.cxx in Sources */,
+				D534757E183A1979004316B0 /* mongoose.c in Sources */,
 				D570599C179871EA00DA5416 /* system.c in Sources */,
 				D5F40E051798757A004CBF77 /* mscb.c in Sources */,
 				D5F40E0717987594004CBF77 /* mscbrpc.c in Sources */,
@@ -286,6 +290,7 @@
 					OS_DARWIN,
 					USE_POSIX_SHM,
 					HAVE_MSCB,
+					HAVE_STRLCPY,
 				);
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
 				HEADER_SEARCH_PATHS = (
@@ -305,6 +310,7 @@
 					OS_DARWIN,
 					USE_POSIX_SHM,
 					HAVE_MSCB,
+					HAVE_STRLCPY,
 				);
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
 				HEADER_SEARCH_PATHS = (

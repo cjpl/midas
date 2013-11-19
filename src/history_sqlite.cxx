@@ -22,6 +22,10 @@
 #include <string>
 #include <map>
 
+#ifndef HAVE_STRLCPY
+#include "strlcpy.h"
+#endif
+
 typedef std::vector<int> IntVector;
 typedef std::vector<std::string> StringVector;
 typedef std::map<std::string, std::string>  StringMap;

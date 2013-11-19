@@ -11,7 +11,9 @@
 
 #include "midas.h"
 #include "msystem.h"
+#ifndef HAVE_STRLCPY
 #include "strlcpy.h"
+#endif
 #include <assert.h>
 
 /** @defgroup elfunctioncode Midas Elog Functions (el_xxx)

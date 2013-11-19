@@ -11,9 +11,12 @@
 
 #include "midas.h"
 #include "msystem.h"
-#include "strlcpy.h"
 #include <assert.h>
 #include <signal.h>
+
+#ifndef HAVE_STRLCPY
+#include "strlcpy.h"
+#endif
 
 static INT _send_sock;
 

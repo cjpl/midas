@@ -35,7 +35,9 @@ The Online Database file
 #include "midas.h"
 #include "msystem.h"
 #include "mxml.h"
+#ifndef HAVE_STRLCPY
 #include "strlcpy.h"
+#endif
 #include <assert.h>
 #include <signal.h>
 #include <math.h>
@@ -517,12 +519,12 @@ static int db_validate_key(DATABASE_HEADER * pheader, int recurse, const char *p
    static time_t t_min = 0, t_max;
 
    if (!db_validate_key_offset(pheader, (POINTER_T) pkey - (POINTER_T) pheader)) {
-      cm_msg(MERROR, "db_validate_key", "Warning: database corruption, path \"%s\", key offset %d is invalid", path, (POINTER_T) pkey - (POINTER_T) pheader);
+      cm_msg(MERROR, "db_validate_key", "Warning: database corruption, path \"%s\", key offset %d is invalid", path, (int)((char*)pkey - (char*)pheader));
       return 0;
    }
 
    if (!db_validate_data_offset(pheader, pkey->data)) {
-      cm_msg(MERROR, "db_validate_key", "Warning: database corruption, path \"%s\", data offset 0x%08X is invalid", path, pkey->data - sizeof(DATABASE_HEADER));
+      cm_msg(MERROR, "db_validate_key", "Warning: database corruption, path \"%s\", data offset 0x%08X is invalid", path, pkey->data - (int)sizeof(DATABASE_HEADER));
       return 0;
    }
 
@@ -597,7 +599,7 @@ static int db_validate_key(DATABASE_HEADER * pheader, int recurse, const char *p
 
       if (pkeylist->num_keys != 0 &&
           (pkeylist->first_key == 0 || !db_validate_key_offset(pheader, pkeylist->first_key))) {
-         cm_msg(MERROR, "db_validate_key", "Warning: database corruption, key \"%s\", first_key 0x%08X", path, pkeylist->first_key - sizeof(DATABASE_HEADER));
+         cm_msg(MERROR, "db_validate_key", "Warning: database corruption, key \"%s\", first_key 0x%08X", path, pkeylist->first_key - (int)sizeof(DATABASE_HEADER));
          return 0;
       }
 
@@ -609,7 +611,7 @@ static int db_validate_key(DATABASE_HEADER * pheader, int recurse, const char *p
          sprintf(buf, "%s/%s", path, pkey->name);
 
          if (!db_validate_key_offset(pheader, pkey->next_key)) {
-            cm_msg(MERROR, "db_validate_key", "Warning: database corruption, key \"%s\", next_key 0x%08X is invalid", buf, pkey->next_key - sizeof(DATABASE_HEADER));
+            cm_msg(MERROR, "db_validate_key", "Warning: database corruption, key \"%s\", next_key 0x%08X is invalid", buf, pkey->next_key - (int)sizeof(DATABASE_HEADER));
             return 0;
          }
 
@@ -871,7 +873,7 @@ static int db_validate_db(DATABASE_HEADER * pheader)
    /* validate the key free list */
 
    if (!db_validate_key_offset(pheader, pheader->first_free_key)) {
-      cm_msg(MERROR, "db_validate_db", "Warning: database corruption, first_free_key 0x%08X", pheader->first_free_key - sizeof(DATABASE_HEADER));
+      cm_msg(MERROR, "db_validate_db", "Warning: database corruption, first_free_key 0x%08X", pheader->first_free_key - (int)sizeof(DATABASE_HEADER));
       return 0;
    }
 
@@ -881,7 +883,7 @@ static int db_validate_db(DATABASE_HEADER * pheader)
       FREE_DESCRIP *nextpfree;
 
       if (pfree->next_free != 0 && !db_validate_key_offset(pheader, pfree->next_free)) {
-         cm_msg(MERROR, "db_validate_db", "Warning: database corruption, key area next_free 0x%08X", pfree->next_free - sizeof(DATABASE_HEADER));
+         cm_msg(MERROR, "db_validate_db", "Warning: database corruption, key area next_free 0x%08X", pfree->next_free - (int)sizeof(DATABASE_HEADER));
          return 0;
       }
 
@@ -889,7 +891,7 @@ static int db_validate_db(DATABASE_HEADER * pheader)
       nextpfree = (FREE_DESCRIP *) ((char *) pheader + pfree->next_free);
 
       if (pfree->next_free != 0 && nextpfree == pfree) {
-         cm_msg(MERROR, "db_validate_db", "Warning: database corruption, key area next_free 0x%08X is same as current free %p", pfree->next_free, pfree - sizeof(DATABASE_HEADER));
+         cm_msg(MERROR, "db_validate_db", "Warning: database corruption, key area next_free 0x%08X is same as current free %p", pfree->next_free, pfree - (int)sizeof(DATABASE_HEADER));
          return 0;
       }
 
@@ -908,7 +910,7 @@ static int db_validate_db(DATABASE_HEADER * pheader)
    /* validate the data free list */
 
    if (!db_validate_data_offset(pheader, pheader->first_free_data)) {
-      cm_msg(MERROR, "db_validate_db", "Warning: database corruption, first_free_data 0x%08X", pheader->first_free_data - sizeof(DATABASE_HEADER));
+      cm_msg(MERROR, "db_validate_db", "Warning: database corruption, first_free_data 0x%08X", pheader->first_free_data - (int)sizeof(DATABASE_HEADER));
       return 0;
    }
 
@@ -918,7 +920,7 @@ static int db_validate_db(DATABASE_HEADER * pheader)
       FREE_DESCRIP *nextpfree;
 
       if (pfree->next_free != 0 && !db_validate_data_offset(pheader, pfree->next_free)) {
-         cm_msg(MERROR, "db_validate_db", "Warning: database corruption, data area next_free 0x%08X", pfree->next_free - sizeof(DATABASE_HEADER));
+         cm_msg(MERROR, "db_validate_db", "Warning: database corruption, data area next_free 0x%08X", pfree->next_free - (int)sizeof(DATABASE_HEADER));
          return 0;
       }
 
@@ -926,7 +928,7 @@ static int db_validate_db(DATABASE_HEADER * pheader)
       nextpfree = (FREE_DESCRIP *) ((char *) pheader + pfree->next_free);
 
       if (pfree->next_free != 0 && nextpfree == pfree) {
-         cm_msg(MERROR, "db_validate_db", "Warning: database corruption, data area next_free 0x%08X is same as current free %p", pfree->next_free, pfree - sizeof(DATABASE_HEADER));
+         cm_msg(MERROR, "db_validate_db", "Warning: database corruption, data area next_free 0x%08X is same as current free %p", pfree->next_free, pfree - (int)sizeof(DATABASE_HEADER));
          return 0;
       }
 
@@ -945,7 +947,7 @@ static int db_validate_db(DATABASE_HEADER * pheader)
    /* validate the tree of keys, starting from the root key */
 
    if (!db_validate_key_offset(pheader, pheader->root_key)) {
-      cm_msg(MERROR, "db_validate_db", "Warning: database corruption, root_key 0x%08X is invalid", pheader->root_key - sizeof(DATABASE_HEADER));
+      cm_msg(MERROR, "db_validate_db", "Warning: database corruption, root_key 0x%08X is invalid", pheader->root_key - (int)sizeof(DATABASE_HEADER));
       return 0;
    }
 
@@ -1464,8 +1466,6 @@ INT db_flush_database(HNDLE hDB)
 #ifdef LOCAL_ROUTINES
    else {
       DATABASE_HEADER *pheader;
-      DATABASE_CLIENT *pclient;
-      INT idx;
 
       if (hDB > _database_entries || hDB <= 0) {
          cm_msg(MERROR, "db_close_database", "invalid database handle");
@@ -1479,9 +1479,7 @@ INT db_flush_database(HNDLE hDB)
        */
 
       db_lock_database(hDB);
-      idx = _database[hDB - 1].client_index;
       pheader = _database[hDB - 1].database_header;
-      pclient = &pheader->client[idx];
 
       if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_SINGLE &&
           _database[hDB - 1].index != rpc_get_server_acception()) {
@@ -1908,7 +1906,7 @@ INT db_create_key(HNDLE hDB, HNDLE hKey, const char *key_name, DWORD type)
          for (i = 0; i < pkeylist->num_keys; i++) {
             if (!db_validate_key_offset(pheader, pkey->next_key)) {
                db_unlock_database(hDB);
-               cm_msg(MERROR, "db_create_key", "Warning: database corruption, key \"%s\", next_key 0x%08X", key_name, pkey->next_key - sizeof(DATABASE_HEADER));
+               cm_msg(MERROR, "db_create_key", "Warning: database corruption, key \"%s\", next_key 0x%08X", key_name, pkey->next_key - (int)sizeof(DATABASE_HEADER));
                return DB_CORRUPTED;
             }
 
@@ -2412,7 +2410,7 @@ INT db_find_key(HNDLE hDB, HNDLE hKey, const char *key_name, HNDLE * subhKey)
          for (i = 0; i < pkeylist->num_keys; i++) {
             if (pkey->name[0] == 0 || !db_validate_key_offset(pheader, pkey->next_key)) {
                db_unlock_database(hDB);
-               cm_msg(MERROR, "db_find_key", "Warning: database corruption, key \"%s\", next_key 0x%08X is invalid", key_name, pkey->next_key - sizeof(DATABASE_HEADER));
+               cm_msg(MERROR, "db_find_key", "Warning: database corruption, key \"%s\", next_key 0x%08X is invalid", key_name, pkey->next_key - (int)sizeof(DATABASE_HEADER));
                *subhKey = 0;
                return DB_CORRUPTED;
             }
@@ -2732,7 +2730,7 @@ INT db_find_link(HNDLE hDB, HNDLE hKey, const char *key_name, HNDLE * subhKey)
          for (i = 0; i < pkeylist->num_keys; i++) {
             if (!db_validate_key_offset(pheader, pkey->next_key)) {
                db_unlock_database(hDB);
-               cm_msg(MERROR, "db_find_link", "Warning: database corruption, key \"%s\", next_key 0x%08X is invalid", key_name, pkey->next_key - sizeof(DATABASE_HEADER));
+               cm_msg(MERROR, "db_find_link", "Warning: database corruption, key \"%s\", next_key 0x%08X is invalid", key_name, pkey->next_key - (int)sizeof(DATABASE_HEADER));
                *subhKey = 0;
                return DB_CORRUPTED;
             }
@@ -2881,7 +2879,7 @@ INT db_find_link1(HNDLE hDB, HNDLE hKey, const char *key_name, HNDLE * subhKey)
 
          for (i = 0; i < pkeylist->num_keys; i++) {
             if (!db_validate_key_offset(pheader, pkey->next_key)) {
-               cm_msg(MERROR, "db_find_link1", "Warning: database corruption, key \"%s\", next_key 0x%08X is invalid", key_name, pkey->next_key - sizeof(DATABASE_HEADER));
+               cm_msg(MERROR, "db_find_link1", "Warning: database corruption, key \"%s\", next_key 0x%08X is invalid", key_name, pkey->next_key - (int)sizeof(DATABASE_HEADER));
                *subhKey = 0;
                return DB_CORRUPTED;
             }
@@ -4334,7 +4332,7 @@ INT db_reorder_key(HNDLE hDB, HNDLE hKey, INT idx)
 #ifdef LOCAL_ROUTINES
    {
       DATABASE_HEADER *pheader;
-      KEY *pkey, *pprev_key, *pnext_key, *pkey_tmp;
+      KEY *pkey, *pnext_key, *pkey_tmp;
       KEYLIST *pkeylist;
       INT i;
 
@@ -4413,7 +4411,6 @@ INT db_reorder_key(HNDLE hDB, HNDLE hKey, INT idx)
 
          /* find last key */
          for (i = 0; i < pkeylist->num_keys - 2; i++) {
-            pprev_key = pkey_tmp;
             pkey_tmp = (KEY *) ((char *) pheader + pkey_tmp->next_key);
          }
 
@@ -6224,10 +6221,8 @@ INT db_paste(HNDLE hDB, HNDLE hKeyRoot, const char *buffer)
    INT tid, i, j, n_data, string_length, status, size;
    HNDLE hKey;
    KEY root_key;
-   BOOL multi_line;
 
    title[0] = 0;
-   multi_line = FALSE;
 
    if (hKeyRoot == 0)
       db_find_key(hDB, hKeyRoot, "", &hKeyRoot);
@@ -6764,6 +6759,7 @@ static void db_save_tree_struct(HNDLE hDB, HNDLE hKey, int hfile, INT level)
    KEY key;
    HNDLE hSubkey;
    char line[MAX_ODB_PATH], str[MAX_STRING_LENGTH], name[MAX_STRING_LENGTH];
+   int wr;
 
    /* first enumerate this level */
    for (idx = 0;; idx++) {
@@ -6779,8 +6775,10 @@ static void db_save_tree_struct(HNDLE hDB, HNDLE hKey, int hfile, INT level)
       db_get_key(hDB, hSubkey, &key);
 
       if (key.type != TID_KEY) {
-         for (i = 0; i <= level; i++)
-            write(hfile, "  ", 2);
+         for (i = 0; i <= level; i++) {
+            wr = write(hfile, "  ", 2);
+            assert(wr == 2);
+         }
 
          switch (key.type) {
          case TID_SBYTE:
@@ -6822,24 +6820,31 @@ static void db_save_tree_struct(HNDLE hDB, HNDLE hKey, int hfile, INT level)
          strcpy(line + 10, str);
          strcat(line, ";\n");
 
-         write(hfile, line, strlen(line));
+         wr = write(hfile, line, strlen(line));
+         assert(wr > 0);
       } else {
          /* recurse subtree */
-         for (i = 0; i <= level; i++)
-            write(hfile, "  ", 2);
+         for (i = 0; i <= level; i++) {
+            wr = write(hfile, "  ", 2);
+            assert(wr == 2);
+         }
 
          sprintf(line, "struct {\n");
-         write(hfile, line, strlen(line));
+         wr = write(hfile, line, strlen(line));
+         assert(wr > 0);
          db_save_tree_struct(hDB, hSubkey, hfile, level + 1);
 
-         for (i = 0; i <= level; i++)
-            write(hfile, "  ", 2);
+         for (i = 0; i <= level; i++) {
+            wr = write(hfile, "  ", 2);
+            assert(wr == 2);
+         }
 
          strcpy(str, name);
          name2c(str);
 
          sprintf(line, "} %s;\n", str);
-         write(hfile, line, strlen(line));
+         wr = write(hfile, line, strlen(line));
+         assert(wr > 0);
       }
    }
 }
@@ -7102,6 +7107,8 @@ INT db_save_xml(HNDLE hDB, HNDLE hKey, const char *filename)
 
       mxml_end_element(writer); // "odb"
       mxml_close_file(writer);
+
+      return status;
    }
 #endif                          /* LOCAL_ROUTINES */
 
@@ -7574,6 +7581,7 @@ INT db_save_struct(HNDLE hDB, HNDLE hKey, const char *file_name, const char *str
    KEY key;
    char str[100], line[100];
    INT status, i, fh;
+   int wr, size;
 
    /* open file */
    fh = open(file_name, O_WRONLY | O_CREAT | (append ? O_APPEND : O_TRUNC), 0644);
@@ -7590,7 +7598,15 @@ INT db_save_struct(HNDLE hDB, HNDLE hKey, const char *file_name, const char *str
    }
 
    sprintf(line, "typedef struct {\n");
-   write(fh, line, strlen(line));
+
+   size = strlen(line);
+   wr = write(fh, line, size);
+   if (wr != size) {
+      cm_msg(MERROR, "db_save_struct", "file \"%s\" write error: write(%d) returned %d, errno %d (%s)", file_name, size, wr, errno, strerror(errno));
+      close(fh);
+      return DB_FILE_ERROR;
+   }
+
    db_save_tree_struct(hDB, hKey, fh, 0);
 
    if (struct_name && struct_name[0])
@@ -7603,7 +7619,14 @@ INT db_save_struct(HNDLE hDB, HNDLE hKey, const char *file_name, const char *str
       str[i] = (char) toupper(str[i]);
 
    sprintf(line, "} %s;\n\n", str);
-   write(fh, line, strlen(line));
+
+   size = strlen(line);
+   wr = write(fh, line, size);
+   if (wr != size) {
+      cm_msg(MERROR, "db_save_struct", "file \"%s\" write error: write(%d) returned %d, errno %d (%s)", file_name, size, wr, errno, strerror(errno));
+      close(fh);
+      return DB_FILE_ERROR;
+   }
 
    close(fh);
 
@@ -7641,7 +7664,8 @@ INT db_save_string(HNDLE hDB, HNDLE hKey, const char *file_name, const char *str
    KEY key;
    char str[256], line[256];
    INT status, i, size, fh, buffer_size;
-   char *buffer, *pc;
+   char *buffer = NULL, *pc;
+   int wr;
 
 
    /* open file */
@@ -7668,7 +7692,15 @@ INT db_save_string(HNDLE hDB, HNDLE hKey, const char *file_name, const char *str
       str[i] = (char) toupper(str[i]);
 
    sprintf(line, "#define %s(_name) const char *_name[] = {\\\n", str);
-   write(fh, line, strlen(line));
+   size = strlen(line);
+   wr = write(fh, line, size);
+   if (wr != size) {
+      cm_msg(MERROR, "db_save", "file \"%s\" write error: write(%d) returned %d, errno %d (%s)", file_name, size, wr, errno, strerror(errno));
+      close(fh);
+      if (buffer)
+         free(buffer);
+      return DB_FILE_ERROR;
+   }
 
    buffer_size = 10000;
    do {
@@ -7701,8 +7733,17 @@ INT db_save_string(HNDLE hDB, HNDLE hKey, const char *file_name, const char *str
          line[i++] = *pc++;
       }
       strcpy(&line[i], "\",\\\n");
-      if (i > 0)
-         write(fh, line, strlen(line));
+      if (i > 0) {
+         size = strlen(line);
+         wr = write(fh, line, size);
+         if (wr != size) {
+            cm_msg(MERROR, "db_save", "file \"%s\" write error: write(%d) returned %d, errno %d (%s)", file_name, size, wr, errno, strerror(errno));
+            close(fh);
+            if (buffer)
+               free(buffer);
+            return DB_FILE_ERROR;
+         }
+      }
 
       if (*pc == '\n')
          pc++;
@@ -7710,7 +7751,15 @@ INT db_save_string(HNDLE hDB, HNDLE hKey, const char *file_name, const char *str
    } while (*pc);
 
    sprintf(line, "NULL }\n\n");
-   write(fh, line, strlen(line));
+   size = strlen(line);
+   wr = write(fh, line, size);
+   if (wr != size) {
+      cm_msg(MERROR, "db_save", "file \"%s\" write error: write(%d) returned %d, errno %d (%s)", file_name, size, wr, errno, strerror(errno));
+      close(fh);
+      if (buffer)
+         free(buffer);
+      return DB_FILE_ERROR;
+   }
 
    close(fh);
    free(buffer);
@@ -8668,14 +8717,11 @@ void merge_records(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
 {
    char full_name[256];
    INT status, size;
-   void *p;
    HNDLE hKeyInit;
    KEY initkey, key;
 
    /* avoid compiler warnings */
    status = level;
-   p = info;
-   p = pkey;
 
    /* compose name of init key */
    db_get_path(hDB, hKey, full_name, sizeof(full_name));
@@ -8734,15 +8780,6 @@ static int open_count;
 
 void check_open_keys(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
 {
-   int i;
-   void *p;
-
-   /* avoid compiler warnings */
-   i = hDB;
-   i = hKey;
-   i = level;
-   p = info;
-
    if (pkey->notify_count)
       open_count++;
 }
@@ -8989,7 +9026,6 @@ INT db_check_record(HNDLE hDB, HNDLE hKey, const char *keyname, const char *rec_
    INT i, j, n_data, string_length, status;
    HNDLE hKeyRoot, hKeyTest;
    KEY key;
-   BOOL multi_line;
 
    if (rpc_is_remote())
       return rpc_call(RPC_DB_CHECK_RECORD, hDB, hKey, keyname, rec_str, correct);
@@ -9007,7 +9043,6 @@ INT db_check_record(HNDLE hDB, HNDLE hKey, const char *keyname, const char *rec_
    assert(hKeyRoot);
 
    title[0] = 0;
-   multi_line = FALSE;
    rec_str_orig = rec_str;
 
    db_get_key(hDB, hKeyRoot, &key);
@@ -9546,7 +9581,7 @@ INT db_update_record(INT hDB, INT hKey, int s)
          }
       }
 
-   return DB_SUCCESS;
+   return status;
 }
 
 /********************************************************************/
@@ -9726,3 +9761,10 @@ INT db_send_changed_records()
 
 /**dox***************************************************************/
                                                        /** @} *//* end of odbcode */
+/* emacs
+ * Local Variables:
+ * tab-width: 8
+ * c-basic-offset: 3
+ * indent-tabs-mode: nil
+ * End:
+ */

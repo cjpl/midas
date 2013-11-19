@@ -16,6 +16,10 @@
 
 #include <string>
 
+#ifndef HAVE_STRLCPY
+#include "strlcpy.h"
+#endif
+
 extern INT cmd_edit(const char *prompt, char *cmd, INT(*dir) (char *, INT *), INT(*idle) ());
 
 BOOL need_redraw;
@@ -2469,7 +2473,7 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
          }
 
          if (message[0])
-            cm_msg(msg_type, __FILE__, __LINE__, user_name, message);
+	    cm_msg(msg_type, __FILE__, __LINE__, user_name, "%s", message);
 
          last_msg_time = ss_time();
       }
@@ -2491,7 +2495,7 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
             in_cmd_edit = FALSE;
 
             if (message[0])
-               cm_msg(MUSER, user_name, message);
+	       cm_msg(MUSER, user_name, "%s", message);
 
          } while (message[0]);
 

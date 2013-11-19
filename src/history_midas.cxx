@@ -20,6 +20,10 @@
 #include "msystem.h"
 #include "history.h"
 
+#ifndef HAVE_STRLCPY
+#include "strlcpy.h"
+#endif
+
 #define STRLCPY(dst, src) strlcpy(dst, src, sizeof(dst))
 
 #if 0

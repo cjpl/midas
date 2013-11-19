@@ -12,6 +12,10 @@ Contents:     Dump event on screen with MIDAS or YBOS data format
 #include "msystem.h"
 #include "mrpc.h"
 #include "mdsupport.h"
+#ifndef HAVE_STRLCPY
+#include "strlcpy.h"
+#endif
+
 
 #define  REP_HEADER    1
 #define  REP_RECORD    2
