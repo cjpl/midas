@@ -12,6 +12,7 @@
 #include <string.h>
 #include <errno.h>
 #include <math.h>
+#include <unistd.h>
 
 #include "midas.h"
 #include "mjson.h"

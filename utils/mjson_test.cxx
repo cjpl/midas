@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 #include "mjson.h"
 
 int main(int argc, char* argv[])

@@ -7546,7 +7546,7 @@ INT db_save_json(HNDLE hDB, HNDLE hKey, const char *filename)
       json_write(&buffer, &buffer_size, &buffer_end, 0, path, 1);
       json_write(&buffer, &buffer_size, &buffer_end, 0, ",\n", 0);
 
-      db_save_json_key(hDB, hKey, 0, &buffer, &buffer_size, &buffer_end, 1, 0, 1);
+      status = db_save_json_key(hDB, hKey, 0, &buffer, &buffer_size, &buffer_end, 1, 0, 1);
 
       json_write(&buffer, &buffer_size, &buffer_end, 0, "\n}\n", 0);
 

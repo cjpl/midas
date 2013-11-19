@@ -79,7 +79,7 @@ static std::string xoutput_unicode(int unicode, bool* error)
       char buf[3];
       buf[0] = 0x80|0x40|((unicode>>6)&0x1F); // 5 bits
       buf[1] = 0x80|((unicode>>0)&0x3F); // 6 bits
-      buf[3] = 0;
+      buf[2] = 0;
       return buf;
    }
 
