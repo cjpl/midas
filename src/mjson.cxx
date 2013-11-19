@@ -458,7 +458,9 @@ static MJsonNode* parse_number(const char* sin, const char* s, const char** sout
          printf("overflow!\n");
          if (expsign > 0) {
             *sout = s;
-            double inf = 1.0/0.0;
+            double one = 1;
+            double zero = 0;
+            double inf = one/zero; // IEEE-754 1.0/0.0 is "+infinity", +infinity*(-1) => -infinity
             return MJsonNode::MakeNumber(sign*inf);
          } else {
             *sout = s;
@@ -484,7 +486,9 @@ static MJsonNode* parse_number(const char* sin, const char* s, const char** sout
          // convert to +/- infinity
          //printf("overflow!\n");
          *sout = s;
-         double inf = 1.0/0.0;
+         double one = 1;
+         double zero = 0;
+         double inf = one/zero; // IEEE-754 1.0/0.0 is "+infinity", +infinity*(-1) => -infinity
          return MJsonNode::MakeNumber(sign*inf);
       }
 
@@ -858,7 +862,21 @@ double MJsonNode::GetNumber() const
    else if (type == MJSON_NUMBER)
       return numbervalue;
    else if (type == MJSON_STRING) {
-      // FIXME: maybe NaN, Infinity, -Infinity or hex number
+      if (stringvalue == "NaN") {
+         double zero1 = 0;
+         double zero2 = 0;
+         return zero1/zero2; // IEEE-754 0.0/0.0 is a NaN
+      } else if (stringvalue == "Infinity") {
+         double zero = 0;
+         double one = 1;
+         return one/zero; // IEEE-754 1.0/0.0 is +infinity
+      } else if (stringvalue == "-Infinity") {
+         double zero = 0;
+         double one = -1;
+         return one/zero; // IEEE-754 -1.0/0.0 is -infinity
+      } else if (stringvalue[0]=='0' && stringvalue[1]=='x') {
+         return strtoul(stringvalue.c_str(), NULL, 16);
+      }
       return 0;
    } else
       return 0;
