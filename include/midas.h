@@ -1992,6 +1992,15 @@ extern "C" {
    void EXPRT open_subfolder(char *name);
    void EXPRT close_subfolder();
 
+   /* we need a duplicate of mxml/strlcpy.h or nobody can use strlcpy() from libmidas.a */
+#ifndef HAVE_STRLCPY
+#ifndef _STRLCPY_H_
+#define _STRLCPY_H_
+   size_t EXPRT strlcpy(char *dst, const char *src, size_t size);
+   size_t EXPRT strlcat(char *dst, const char *src, size_t size);
+#endif
+#endif
+
 #ifdef __cplusplus
 }
 #ifdef USE_ROOT
