@@ -129,7 +129,7 @@ endif
 ifeq ($(OSTYPE),crosscompile)
 GCC_PREFIX=$(HOME)/linuxdcc/Cross-Compiler/gcc-4.0.2/build/gcc-4.0.2-glibc-2.3.6/powerpc-405-linux-gnu
 GCC_BIN=$(GCC_PREFIX)/bin/powerpc-405-linux-gnu-
-LIBS=-L$(HOME)/linuxdcc/userland/lib -phread -lutil -lrt -ldl
+LIBS=-L$(HOME)/linuxdcc/userland/lib -pthread -lutil -lrt -ldl
 CC  = $(GCC_BIN)gcc
 CXX = $(GCC_BIN)g++
 OSTYPE = cross-ppc405
@@ -568,8 +568,8 @@ $(BIN_DIR)/%: $(UTL_DIR)/%.cxx
 $(BIN_DIR)/mcnaf: $(UTL_DIR)/mcnaf.c $(DRV_DIR)/camac/camacrpc.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mcnaf.c $(DRV_DIR)/camac/camacrpc.c $(LIB) $(LIBS)
 
-$(BIN_DIR)/mdump: $(UTL_DIR)/mdump.c $(SRC_DIR)/mdsupport.cxx
-	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mdump.c $(SRC_DIR)/mdsupport.cxx $(LIB) $(LIBS)
+$(BIN_DIR)/mdump: $(UTL_DIR)/mdump.cxx $(SRC_DIR)/mdsupport.cxx
+	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mdump.cxx $(SRC_DIR)/mdsupport.cxx $(LIB) $(LIBS)
 
 $(BIN_DIR)/mfe_link_test: $(SRC_DIR)/mfe.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -DLINK_TEST -o $@ $(SRC_DIR)/mfe.c $(LIB) $(LIBS)
@@ -578,7 +578,7 @@ $(BIN_DIR)/fal_link_test: $(SRC_DIR)/fal.cxx
 	$(CXX) $(CFLAGS) $(OSFLAGS) -DMANA_LITE -DLINK_TEST -o $@ $(SRC_DIR)/fal.cxx $(LIB)  $(MYSQL_LIBS) $(LIBS)
 
 $(BIN_DIR)/mana_link_test: $(SRC_DIR)/mana.cxx
-	$(CC) $(CFLAGS) $(OSFLAGS) -DLINK_TEST -o $@ $(SRC_DIR)/mana.cxx $(LIB) $(LIBS)
+	$(CXX) $(CFLAGS) $(OSFLAGS) -DLINK_TEST -o $@ $(SRC_DIR)/mana.cxx $(LIB) $(LIBS)
 
 $(BIN_DIR)/mhdump: $(UTL_DIR)/mhdump.cxx
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $<
