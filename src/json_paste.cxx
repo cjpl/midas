@@ -70,6 +70,8 @@ INT EXPRT db_load_json(HNDLE hDB, HNDLE hKey, const char *filename)
 
 static int tid_from_key(const MJsonNode* key)
 {
+   if (!key)
+      return 0;
    const MJsonNode* n = key->FindObjectNode("type");
    if (!n)
       return 0;
@@ -81,6 +83,8 @@ static int tid_from_key(const MJsonNode* key)
 
 static int item_size_from_key(const MJsonNode* key)
 {
+   if (!key)
+      return 0;
    const MJsonNode* n = key->FindObjectNode("item_size");
    if (!n)
       return 0;
@@ -157,7 +161,8 @@ static int paste_object(HNDLE hDB, HNDLE hKey, const char* path, const MJsonNode
          tid = TID_KEY;
       else {
          key = objnode->FindObjectNode((std::string(name) + "/key").c_str());
-         tid = tid_from_key(key);
+         if (key)
+            tid = tid_from_key(key);
          if (!tid)
             tid = guess_tid(node);
          //printf("entry [%s] type %s, tid %d\n", name, MJsonNode::TypeToString(node->GetType()), tid);
