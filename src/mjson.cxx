@@ -728,7 +728,7 @@ std::string MJsonNode::Stringify(int flags) const
    }
    case MJSON_NUMBER: {
       char buf[256];
-      sprintf(buf, "%g", numbervalue);
+      sprintf(buf, "%.16e", numbervalue);
       return buf;
    }
    case MJSON_BOOL:
