@@ -172,16 +172,20 @@ static MJsonNode* parse_array(const char* sin, const char* s, const char** sout)
    //printf("array-->%s\n", s);
    MJsonNode *n = MJsonNode::MakeArray();
 
+   s = skip_spaces(s);
+
+   if (*s == ']') {
+      // empty array
+      *sout = s+1;
+      return n;
+   }
+
    while (1) {
       s = skip_spaces(s);
       
       if (*s == 0) {
          *sout = s;
          return MJsonNode::MakeError(n, "unexpected end of string while parsing array", sin, s);
-      } else if (*s == ']') {
-         // end of array
-         *sout = s+1;
-         return n;
       }
 
       MJsonNode *p = parse_something(sin, s, sout);
@@ -222,6 +226,14 @@ static MJsonNode* parse_object(const char* sin, const char* s, const char** sout
 
    MJsonNode *n = MJsonNode::MakeObject();
 
+   s = skip_spaces(s);
+
+   if (*s == '}') {
+      // empty object
+      *sout = s+1;
+      return n;
+   }
+
    while (1) {
       s = skip_spaces(s);
 
@@ -230,10 +242,6 @@ static MJsonNode* parse_object(const char* sin, const char* s, const char** sout
       if (*s == 0) {
          *sout = s;
          return MJsonNode::MakeError(n, "unexpected end of string while parsing object", sin, s);
-      } else if (*s == '}') {
-         // end of object
-         *sout = s+1;
-         return n;
       } else if (*s != '\"') {
          *sout = s;
          return MJsonNode::MakeError(n, "unexpected char while parsing object, should be \"\"\"", sin, s);
