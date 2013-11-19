@@ -14,6 +14,9 @@
 #include <stdio.h>
 #include <assert.h>
 #include <math.h>
+#include <string.h>
+#include <limits.h>
+#include <stdlib.h>
 
 #include "mjson.h"
 

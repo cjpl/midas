@@ -13,9 +13,14 @@
 #include <errno.h>
 #include <math.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include "midas.h"
 #include "mjson.h"
+
+#ifndef HAVE_STRLCPY
+#include "strlcpy.h"
+#endif
 
 INT EXPRT db_load_json(HNDLE hDB, HNDLE hKey, const char *filename)
 {
