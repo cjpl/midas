@@ -16,6 +16,7 @@ Contents:     Dump event on screen with MIDAS or YBOS data format
 #include "strlcpy.h"
 #endif
 
+#include <vector>
 
 #define  REP_HEADER    1
 #define  REP_RECORD    2
@@ -33,15 +34,25 @@ INT i, data_fmt, count;
 KEY key;
 HNDLE hSubkey;
 INT event_id, event_msk;
-typedef struct {
+
+struct FMT_ID {
    WORD id;
    WORD msk;
    WORD fmt;
   char Fmt[16];
   char Eqname[256];
-} FMT_ID;
 
-FMT_ID eq[32];
+   FMT_ID() // ctor
+   {
+      id = 0;
+      msk = 0;
+      fmt = 0;
+      Fmt[0] = 0;
+      Eqname[0] = 0;
+   }
+};
+
+std::vector<FMT_ID> eq;
 
 /*-------- Check data format ------------*/
 DWORD data_format_check(EVENT_HEADER * pevent, INT * i)
@@ -651,7 +662,6 @@ int main(int argc, char **argv)
   
   {   /* ID block */
     INT l = 0;
-    memset((char *) eq, 0, 32 * sizeof(FMT_ID));
     /* check if dir exists */
     if (db_find_key(hDB, 0, "/equipment", &hKey) == DB_SUCCESS) {
       char strtmp[256], equclient[32];
@@ -660,6 +670,8 @@ int main(int argc, char **argv)
 	if (!hSubkey)
 	  break;
 	db_get_key(hDB, hSubkey, &key);
+        FMT_ID f;
+        eq.push_back(f);
 	strlcpy(eq[l].Eqname, key.name, sizeof(eq[l].Eqname));
 	/* check if client running this equipment is present */
 	/* extract client name from equipment */
