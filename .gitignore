@@ -14,3 +14,5 @@ mtfe
 *.plg
 mscb/embedded/scs_210_dev/scs_210_maxigauge
 *.__i
+mscb_fe
+scfe

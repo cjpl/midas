@@ -47,7 +47,8 @@ INT event_buffer_size = 10 * 10000;
 
 /* device driver list */
 DEVICE_DRIVER mscb_driver[] = {
-   {"SCS2001", mscbdev, 0, NULL, DF_INPUT | DF_MULTITHREAD},
+   {"Input", mscbdev, 0, NULL, DF_INPUT | DF_MULTITHREAD},
+   {"Output", mscbdev, 0, NULL, DF_OUTPUT | DF_PRIO_DEVICE | DF_MULTITHREAD},
    {""}
 };
 
@@ -111,7 +112,7 @@ void mscb_define(char *submaster, char *equipment, char *devname, DEVICE_DRIVER 
          break;
 
    if (!driver[dev_index].name[0]) {
-      cm_msg(MERROR, "Device \"%s\" not present in device driver list", devname);
+      cm_msg(MERROR, "mscb_define", "Device \"%s\" not present in device driver list", devname);
       return;
    }
 
@@ -147,7 +148,7 @@ void scfe_error(const char *error)
    char str[256];
 
    strlcpy(str, error, sizeof(str));
-   cm_msg(MERROR, "scfe_error", str);
+   cm_msg(MERROR, "scfe_error", "%s", str);
    al_trigger_alarm("MSCB", str, "MSCB Alarm", "Communication Problem", AT_INTERNAL);
 }
 
@@ -163,10 +164,10 @@ INT frontend_init()
 
    /*---- set correct ODB device addresses ----*/
 
-   mscb_define("mscbxxx.psi.ch", "Environment", "SCS2001", mscb_driver, 1, 0, "Temperature 1", 0.1);
-   mscb_define("mscbxxx.psi.ch", "Environment", "SCS2001", mscb_driver, 1, 1, "Temperature 2", 0.1);
-   mscb_define("mscbxxx.psi.ch", "Environment", "SCS2001", mscb_driver, 1, 2, "Temperature 3", 0.1);
-   mscb_define("mscbxxx.psi.ch", "Environment", "SCS2001", mscb_driver, 1, 3, "Temperature 4", 0.1);
+   mscb_define("mscbxxx.psi.ch", "Environment", "Input", mscb_driver, 1, 0, "Temperature 1", 0.1);
+   mscb_define("mscbxxx.psi.ch", "Environment", "Input", mscb_driver, 1, 1, "Temperature 2", 0.1);
+   mscb_define("mscbxxx.psi.ch", "Environment", "Output", mscb_driver, 1, 2, "Heat control 1", 0.1);
+   mscb_define("mscbxxx.psi.ch", "Environment", "Output", mscb_driver, 1, 3, "Heat control 2", 0.1);
 
    return CM_SUCCESS;
 }
