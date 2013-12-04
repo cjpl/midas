@@ -802,7 +802,8 @@ INT hv_init(EQUIPMENT * pequipment)
                       hv_info->chState, hv_set_chState, pequipment);
 
    /* Crate Map */
-   validate_odb_int(hDB, hv_info, "Settings/Devices/sy2527/DD/crateMap", 'n', CMD_GET_CRATEMAP,
+   sprintf(str, "Settings/Devices/%s/DD/crateMap", pequipment->driver[0].name);
+   validate_odb_int(hDB, hv_info, str, 'n', CMD_GET_CRATEMAP,
                       hv_info->crateMap, NULL, pequipment);
 
    /*---- Create/Read variables ----*/
@@ -905,7 +906,8 @@ INT hv_init(EQUIPMENT * pequipment)
    db_set_record(hDB, hKey, hv_info->rampdown_speed, hv_info->num_channels * sizeof(float), 0);
    db_find_key(hDB, hv_info->hKeyRoot, "Settings/ChState", &hKey);
    db_set_record(hDB, hKey, hv_info->chState, hv_info->num_channels * sizeof(DWORD), 'n');
-   db_find_key(hDB, hv_info->hKeyRoot, "Settings/Devices/sy2527/DD/crateMap", &hKey);
+   sprintf(str, "Settings/Devices/%s/DD/crateMap", pequipment->driver[0].name);
+   db_find_key(hDB, hv_info->hKeyRoot, str, &hKey);
    db_set_record(hDB, hKey, hv_info->crateMap, sizeof(INT), 'n');
 
    /*--- open hotlink to HV demand values ----*/
