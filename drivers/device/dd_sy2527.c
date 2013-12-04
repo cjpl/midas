@@ -15,13 +15,14 @@ $Id: dd_sy2527.c 2780 2005-10-19 13:20:29Z ritt $
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stdbool.h>
 #include "midas.h"
 #include "CAENHVWrapper.h"
 
 /*---- globals -----------------------------------------------------*/
 
 #define DEFAULT_TIMEOUT 10000	/* 10 sec. */
-#define SY2527_MAX_SLOTS   12
+#define SY2527_MAX_SLOTS   16
 
 /* Store any parameters the device driver needs in following 
 structure.  Edit the DDSY2527_SETTINGS_STR accordingly. This 
@@ -41,13 +42,15 @@ typedef struct
   char ip[32];			// IP# for network access
   int linktype;			// Connection type (0:TCP/IP, 1:, 2:)
   int begslot;			// First slot# belonging to this experiment
+  int crateMap;			// integer code describing number of slots and size of each card 
 } DDSY2527_SETTINGS;
 
 #define DDSY2527_SETTINGS_STR "\
 System Name = STRING : [32] sy2527\n\
-IP = STRING : [32] 142.90.111.74\n\
+IP = STRING : [32] 142.90.127.157\n\
 LinkType = INT : 0\n\
 First Slot = INT : 0\n\
+crateMap = INT : 0\n\
 "
 
 /* following structure contains private variables to the device
@@ -74,6 +77,8 @@ INT dd_sy2527_lParam_set (DDSY2527_INFO * info, WORD nchannel, WORD , char *ParN
 INT dd_sy2527_lParam_get (DDSY2527_INFO * info, WORD nchannel, WORD , char *ParName, DWORD * lvalue);
 INT dd_sy2527_fParam_set (DDSY2527_INFO * info, WORD nchannel, WORD , char *ParName, float *fvalue);
 INT dd_sy2527_fParam_get (DDSY2527_INFO * info, WORD nchannel, WORD , char *ParName, float *fvalue);
+INT dd_sy2527_fBoard_set (DDSY2527_INFO * info, WORD nchannel, WORD , char *ParName, float *fvalue);
+INT dd_sy2527_fBoard_get (DDSY2527_INFO * info, WORD nchannel, WORD , char *ParName, float *fvalue);
 
 /*---- device driver routines --------------------------------------*/
 /* the init function creates a ODB record which contains the
@@ -108,12 +113,14 @@ INT dd_sy2527_init (HNDLE hkey, void **pinfo, WORD channels,
   ret = db_get_record (hDB, hkeydd, &info->dd_sy2527_settings, &size, 0);
 
   //  Connect to device
-  strcpy (username, "admin");
-  strcpy (passwd, "admin");
+  strcpy (username, "user");
+  strcpy (passwd, "user");
   DevName = info->dd_sy2527_settings.name;
   ret =
     CAENHVInitSystem (DevName, info->dd_sy2527_settings.linktype,
     info->dd_sy2527_settings.ip, username, passwd);
+  //cm_msg (MINFO, "dd_sy2527", "device name: %s link type: %d ip: %s user: %s pass: %s",
+  //  DevName, info->dd_sy2527_settings.linktype, info->dd_sy2527_settings.ip, username, passwd);
   cm_msg (MINFO, "dd_sy2527", "CAENHVInitSystem: %s  (num. %d)",
     CAENHVGetError (DevName), ret);
 
@@ -174,7 +181,7 @@ INT dd_sy2527_init (HNDLE hkey, void **pinfo, WORD channels,
     }
   }
 
-  /* initialize driver */
+  // initialize driver
   info->num_channels = channels;
   info->array = calloc (channels, sizeof (float));
   info->hkey = hkey;
@@ -259,6 +266,7 @@ dd_sy2527_lParam_get (DDSY2527_INFO * info, WORD nchannel, WORD channel,
     ret =
       CAENHVGetChParam (info->dd_sy2527_settings.name, islot, ParName,
       nchannel, chlist, lvalue);
+
     if (ret != CAENHV_OK)
       cm_msg (MERROR, "lParam", "GetChlParam returns %d", ret);
   }
@@ -277,6 +285,7 @@ INT dd_sy2527_fParam_set (DDSY2527_INFO * info, WORD nchannel, WORD channel,
   // Find out what slot we need to talk to.
   get_slot (info, channel, &ch, &islot);
   //  printf("fSet chi:%d cho:%d slot:%d value:%f\n", *chlist, ch, islot, *fvalue);
+
   chlist[0] = ch;
   ret =
     CAENHVGetChParamProp (info->dd_sy2527_settings.name, islot, chlist[0],
@@ -289,8 +298,7 @@ INT dd_sy2527_fParam_set (DDSY2527_INFO * info, WORD nchannel, WORD channel,
   if ((ret == CAENHV_OK) && (tipo == PARAM_TYPE_NUMERIC))
   {
     ret =
-      CAENHVSetChParam (info->dd_sy2527_settings.name, islot, ParName,
-      nchannel, chlist, fvalue);
+      CAENHVSetChParam (info->dd_sy2527_settings.name, islot, ParName, nchannel, chlist, fvalue);
     if (ret != CAENHV_OK)
     {
       //          cm_msg(MINFO,"dd_sy2527","Set fParam - chNum:%i Value: %f %f %f", nchannel, fvalue[0], fvalue[1], fvalue[2]);
@@ -311,20 +319,21 @@ INT dd_sy2527_fParam_get (DDSY2527_INFO * info, WORD nchannel, WORD channel,
 
   // Find out what slot we need to talk to.
   get_slot (info, channel, &ch, &islot);
+
   chlist[0] = ch;
   ret =
     CAENHVGetChParamProp (info->dd_sy2527_settings.name, islot, chlist[0],
     ParName, "Type", &tipo);
   if (ret != CAENHV_OK)
   {
-    cm_msg (MERROR, "fParam_get", "Param Not Found Type : %d", tipo);
+    //cm_msg (MERROR, "fParam_get", "Param Not Found Type : %d", tipo);
+    cm_msg (MERROR, "fParam_get", ParName);
     return ret;
   }
   if ((ret == CAENHV_OK) && (tipo == PARAM_TYPE_NUMERIC))
   {
     ret =
-      CAENHVGetChParam (info->dd_sy2527_settings.name, islot, ParName,
-      nchannel, chlist, fvalue);
+      CAENHVGetChParam (info->dd_sy2527_settings.name, islot, ParName, nchannel, chlist, fvalue);
     if (ret != CAENHV_OK)
       //         cm_msg(MINFO,"dd_sy2527","Get fParam - chNum:%i Value: %f %f %f", nchannel, fvalue[0], fvalue[1], fvalue[2]);
       cm_msg (MERROR, "fParam", "GetChfParam returns %d", ret);
@@ -332,6 +341,100 @@ INT dd_sy2527_fParam_get (DDSY2527_INFO * info, WORD nchannel, WORD channel,
   return ret;
 }
 
+
+/*----------------------------------------------------------------------------*/
+
+INT dd_sy2527_fBoard_set (DDSY2527_INFO * info, WORD nchannel, WORD channel,
+                      char *ParName, float *fvalue)
+{
+  WORD islot, ch;
+  DWORD tipo;
+  CAENHVRESULT ret;
+  WORD chlist[32];
+
+  // Find out what slot we need to talk to.
+  get_slot (info, channel, &ch, &islot);
+
+  chlist[0] = islot;
+  ret =
+    CAENHVGetBdParamProp (info->dd_sy2527_settings.name, islot, ParName, "Type", &tipo);
+  if (ret != CAENHV_OK)
+  {
+    cm_msg (MERROR, "fBoard_get", "Param Not Found Type : %d", tipo);
+    return ret;  
+  }
+  if ((ret == CAENHV_OK) && (tipo == PARAM_TYPE_NUMERIC))
+  {
+    ret =
+      CAENHVSetBdParam (info->dd_sy2527_settings.name, nchannel, chlist, ParName, fvalue); /*chlist should be the list of slots...?*/
+    if (ret != CAENHV_OK)
+    {
+      cm_msg (MERROR, "fParam", "SetChfParam returns %d", ret);
+    }
+  }
+  return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
+INT dd_sy2527_fBoard_get (DDSY2527_INFO * info, WORD nchannel, WORD channel,
+                      char *ParName, float *fvalue)
+{
+  WORD islot, ch;
+  DWORD tipo;
+  CAENHVRESULT ret;
+  WORD chlist[32];
+                      
+  // Find out what slot we need to talk to.
+  get_slot (info, channel, &ch, &islot);
+
+  chlist[0] = islot;
+  ret =
+    CAENHVGetBdParamProp (info->dd_sy2527_settings.name, islot, ParName, "Type", &tipo);
+  if (ret != CAENHV_OK)
+  {
+    cm_msg (MERROR, "fBoard_get", "Param Not Found Type : %d", tipo);
+    return ret;  
+  }
+  if ((ret == CAENHV_OK) && (tipo == PARAM_TYPE_NUMERIC))
+  {
+    ret =
+      CAENHVGetBdParam (info->dd_sy2527_settings.name, nchannel, chlist, ParName, fvalue); /*chlist should be the list of slots...?*/
+    if (ret != CAENHV_OK)
+      cm_msg (MERROR, "fParam", "GetChfParam returns %d", ret);
+  }
+  return ret;
+}
+
+/*---------------------------------------------------------------------------*/
+
+//Return number of channels in a given slot:
+int howBig(DDSY2527_INFO * info, int slot){
+ 
+  unsigned short NrOfSlot, *NrOfChList, *SerNumList;
+  char *ModelList, *DescriptionList;
+  unsigned char *FmwRelMinList, *FmwRelMaxList;
+  
+  CAENHVGetCrateMap(info->dd_sy2527_settings.name, &NrOfSlot, &NrOfChList, &ModelList, &DescriptionList, &SerNumList, &FmwRelMinList, &FmwRelMaxList);
+  
+  return NrOfChList[slot];
+
+}
+
+//is this the first channel in the slot?
+int isFirst(DDSY2527_INFO * info, WORD channel){
+  
+  if(channel == 0) return 1;
+    
+  WORD islot, ch, prevSlot, prevCh;
+  get_slot (info, channel, &ch, &islot);
+  get_slot (info, channel-1, &prevCh, &prevSlot);
+   
+  if(islot == prevSlot) return 0;
+  else return 1;
+  
+}
+  
 /*----------------------------------------------------------------------------*/
 INT dd_sy2527_Label_set (DDSY2527_INFO * info, WORD channel, char *label)
 {
@@ -340,6 +443,7 @@ INT dd_sy2527_Label_set (DDSY2527_INFO * info, WORD channel, char *label)
   if (strlen (label) < MAX_CH_NAME)
   {
     ret = dd_sy2527_Name_set (info, 1, channel, label);
+
     return ret;
   }
   else
@@ -376,6 +480,7 @@ INT dd_sy2527_Label_get (DDSY2527_INFO * info, WORD channel, char *label)
   nchannel = 1;
   ret = dd_sy2527_Name_get (info, nchannel, channel, chnamelist);
   strcpy(label, chnamelist[0]);
+
   return ret == 0 ? FE_SUCCESS : 0;
 }
 
@@ -393,6 +498,7 @@ INT dd_sy2527_Name_get (DDSY2527_INFO * info, WORD nchannel, WORD channel,
   if (ret != CAENHV_OK) {
     cm_msg (MERROR, "Name Set", "GetChName returns %d", ret);
   }
+
   return ret;
 }
 
@@ -422,16 +528,33 @@ INT dd_sy2527_current_get (DDSY2527_INFO * info, WORD channel, float *pvalue)
 {
   CAENHVRESULT ret;
 
-  ret = dd_sy2527_fParam_get (info, 1, channel, "IMon", pvalue);
-  return ret == 0 ? FE_SUCCESS : 0;
+  WORD islot, ch;    
+  // Find out what slot we need to talk to.
+  get_slot (info, channel, &ch, &islot);
+  //how many channels are in this slot?
+  int nChan = howBig(info, islot);
+
+  int isPrimary = isFirst(info, channel);
+
+  //do the normal thing for 12 channel cards and channel 0 of 48 chan cards;
+  //return an error code for non-primary channels of 48 chan cards.
+  if(nChan == 12 || isPrimary == 1 ){
+    ret = dd_sy2527_fParam_get (info, 1, channel, "IMon", pvalue);
+    return ret == 0 ? FE_SUCCESS : 0;
+  } else {
+    *pvalue = -9999;
+    return FE_SUCCESS;
+  }
+
 }
 
-/*----------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------*/
+
 /** Set demand voltage
 */
 INT dd_sy2527_set (DDSY2527_INFO * info, WORD channel, float value)
 {
-  DWORD temp;
+  //DWORD temp;
   CAENHVRESULT ret;
 
   if (value < 0.01)
@@ -439,14 +562,14 @@ INT dd_sy2527_set (DDSY2527_INFO * info, WORD channel, float value)
     // Set value
     ret = dd_sy2527_fParam_set (info, 1, channel, "V0Set", &value);
     // switch off this channel
-    temp = 0;
-    ret = dd_sy2527_lParam_set (info, 1, channel, "Pw", &temp);
+    // temp = 0;
+    // ret = dd_sy2527_lParam_set (info, 1, channel, "Pw", &temp);
   }
   else
   {
     // switch on this channel
-    temp = 1;
-    ret = dd_sy2527_lParam_set (info, 1, channel, "Pw", &temp);
+    // temp = 1;
+    // ret = dd_sy2527_lParam_set (info, 1, channel, "Pw", &temp);
     // Set Value
     ret = dd_sy2527_fParam_set (info, 1, channel, "V0Set", &value);
   }
@@ -454,6 +577,97 @@ INT dd_sy2527_set (DDSY2527_INFO * info, WORD channel, float value)
 }
 
 /*----------------------------------------------------------------------------*/
+INT dd_sy2527_chState_set (DDSY2527_INFO * info, WORD channel, DWORD *pvalue)
+{
+  CAENHVRESULT ret;
+
+  ret = dd_sy2527_lParam_set (info, 1, channel, "Pw", pvalue);
+
+  return ret == 0 ? FE_SUCCESS : 0;
+}
+  
+/*----------------------------------------------------------------------------*/
+INT dd_sy2527_chState_get (DDSY2527_INFO * info, WORD channel, DWORD *pvalue)
+{
+  CAENHVRESULT ret;
+  
+  ret = dd_sy2527_lParam_get (info, 1, channel, "Pw", pvalue);
+
+  return ret == 0 ? FE_SUCCESS : 0;
+}
+
+/*----------------------------------------------------------------------------*/
+INT dd_sy2527_crateMap_get (DDSY2527_INFO * info, WORD channel, INT *dummy)
+{
+  unsigned short NrOfSlot, *NrOfChList, *SerNumList;
+  char *ModelList, *DescriptionList;
+  unsigned char *FmwRelMinList, *FmwRelMaxList;
+ 
+  CAENHVGetCrateMap(info->dd_sy2527_settings.name, &NrOfSlot, &NrOfChList, &ModelList, &DescriptionList, &SerNumList, &FmwRelMinList, &FmwRelMaxList);
+  //*dummy = NrOfChList[0];
+  *dummy = 0;
+  /*
+  if(NrOfSlot == 12){
+    *dummy = 1;
+  }
+  if(NrOfSlot == 16){
+    *dummy = 2;
+  }
+  */
+  int i = 0;
+  //cm_msg (MINFO, "cratemap", "dummy start: %d", *dummy);
+  for(i=0; i<NrOfSlot; i++){
+    if(NrOfChList[i] == 12){
+      *dummy = *dummy | (1 << (i*2));
+    } else if(NrOfChList[i] == 0){
+      *dummy = *dummy;
+    } else{
+      *dummy = *dummy | (2 << (i*2));
+    }
+    //cm_msg (MINFO, "cratemap", "dummy step: %d", *dummy);
+  }
+  //terminating bit pattern = 111; position indicates 6 or 12 slot crate, absence indicates 16 slot crate:
+  if(NrOfSlot == 6){
+    *dummy = *dummy | (7 << 12);
+  }
+  else if(NrOfSlot == 12){
+    *dummy = *dummy | (7 << 24);
+  }
+
+    //cm_msg (MINFO, "cratemap", "%lu", *dummy);
+
+  return FE_SUCCESS;
+}
+/*----------------------------------------------------------------------------*/
+
+INT dd_sy2527_chStatus_get (DDSY2527_INFO * info, WORD channel, DWORD *pvalue)
+{
+  CAENHVRESULT ret;
+
+  ret = dd_sy2527_lParam_get (info, 1, channel, "Status", pvalue);
+
+  //cm_msg (MINFO, "dd_sy2527", "ChStatus: %d", *pvalue);
+
+  return ret == 0 ? FE_SUCCESS : 0;
+ 
+}
+
+/*----------------------------------------------------------------------------*/
+
+INT dd_sy2527_temperature_get (DDSY2527_INFO * info, WORD channel, float *pvalue)
+{
+  //cm_msg(MINFO, "dd_sy2527", info->dd_sy2527_settings.ip);
+
+  CAENHVRESULT ret;
+
+  ret = dd_sy2527_fBoard_get (info, 1, channel, "Temp", pvalue);
+  
+  return ret == 0 ? FE_SUCCESS : 0;
+
+}
+    
+/*----------------------------------------------------------------------------*/
+
 INT dd_sy2527_ramp_set (DDSY2527_INFO * info, INT cmd, WORD channel, float *pvalue)
 {
   CAENHVRESULT ret;
@@ -481,8 +695,26 @@ INT dd_sy2527_current_limit_set (DDSY2527_INFO * info, WORD channel, float *pval
 {
   CAENHVRESULT ret;
 
-  ret = dd_sy2527_fParam_set (info, 1, channel, "I0Set", pvalue);
-  return ret == 0 ? FE_SUCCESS : 0;
+  //ret = dd_sy2527_fParam_set (info, 1, channel, "I0Set", pvalue);
+  //return ret == 0 ? FE_SUCCESS : 0;
+
+  WORD islot, ch;
+  // Find out what slot we need to talk to.
+  get_slot (info, channel, &ch, &islot);
+  //how many channels are in this slot?
+  int nChan = howBig(info, islot);
+ 
+  int isPrimary = isFirst(info, channel);
+
+  //do the normal thing for 12 channel cards and channel 0 of 48 chan cards;
+  //return an error code for non-primary channels of 48 chan cards.
+  if(nChan == 12 || isPrimary == 1 ){
+    ret = dd_sy2527_fParam_set (info, 1, channel, "I0Set", pvalue);
+    return ret == 0 ? FE_SUCCESS : 0;
+  } else {
+    return FE_SUCCESS;
+  }
+
 }
 
 /*----------------------------------------------------------------------------*/
@@ -490,8 +722,27 @@ INT dd_sy2527_current_limit_get (DDSY2527_INFO * info, WORD channel, float *pval
 {
   CAENHVRESULT ret;
 
-  ret = dd_sy2527_fParam_get (info, 1, channel, "I0Set", pvalue);
-  return ret == 0 ? FE_SUCCESS : 0;
+  //ret = dd_sy2527_fParam_get (info, 1, channel, "I0Set", pvalue);
+  //return ret == 0 ? FE_SUCCESS : 0;
+
+  WORD islot, ch;
+  // Find out what slot we need to talk to.
+  get_slot (info, channel, &ch, &islot);
+  //how many channels are in this slot?
+  int nChan = howBig(info, islot);
+
+  int isPrimary = isFirst(info, channel);
+
+  //do the normal thing for 12 channel cards and channel 0 of 48 chan cards;
+  //return an error code for non-primary channels of 48 chan cards.
+  if(nChan == 12 || isPrimary == 1 ){
+    ret = dd_sy2527_fParam_get (info, 1, channel, "I0Set", pvalue);
+    return ret == 0 ? FE_SUCCESS : 0;
+  } else {
+    *pvalue = -9999;
+    return FE_SUCCESS; 
+  }
+
 }
 
 /*----------------------------------------------------------------------------*/
@@ -499,8 +750,26 @@ INT dd_sy2527_voltage_limit_set (DDSY2527_INFO * info, WORD channel, float *pval
 {
   CAENHVRESULT ret;
 
-  ret = dd_sy2527_fParam_set (info, 1, channel, "SVMax", pvalue);
-  return ret == 0 ? FE_SUCCESS : 0;
+  //ret = dd_sy2527_fParam_set (info, 1, channel, "SVMax", pvalue);
+  //return ret == 0 ? FE_SUCCESS : 0;
+
+  WORD islot, ch;
+  // Find out what slot we need to talk to.
+  get_slot (info, channel, &ch, &islot);
+  //how many channels are in this slot?
+  int nChan = howBig(info, islot);
+ 
+  int isPrimary = isFirst(info, channel);
+
+  //do the normal thing for 12 channel cards and channel 0 of 48 chan cards;
+  //return an error code for non-primary channels of 48 chan cards.
+  if(nChan == 12 || isPrimary == 1 ){
+    ret = dd_sy2527_fParam_set (info, 1, channel, "SVMax", pvalue);
+    return ret == 0 ? FE_SUCCESS : 0;
+  } else {
+    return FE_SUCCESS;
+  }
+
 }
 
 /*----------------------------------------------------------------------------*/
@@ -508,8 +777,27 @@ INT dd_sy2527_voltage_limit_get (DDSY2527_INFO * info, WORD channel, float *pval
 {
   CAENHVRESULT ret;
 
-  ret = dd_sy2527_fParam_get (info, 1, channel, "SVMax", pvalue);
-  return ret == 0 ? FE_SUCCESS : 0;
+  //ret = dd_sy2527_fParam_get (info, 1, channel, "SVMax", pvalue);
+  //return ret == 0 ? FE_SUCCESS : 0;
+
+  WORD islot, ch;
+  // Find out what slot we need to talk to.
+  get_slot (info, channel, &ch, &islot);
+  //how many channels are in this slot?
+  int nChan = howBig(info, islot);
+
+  int isPrimary = isFirst(info, channel);  
+
+  //do the normal thing for 12 channel cards and channel 0 of 48 chan cards;
+  //return an error code for non-primary channels of 48 chan cards.
+  if(nChan == 12 || isPrimary == 1 ){   
+    ret = dd_sy2527_fParam_get (info, 1, channel, "SVMax", pvalue);
+    return ret == 0 ? FE_SUCCESS : 0;
+  } else {
+    *pvalue = -9999;
+    return FE_SUCCESS;
+  }
+
 }
 
 /*----------------------------------------------------------------------------*/
@@ -517,8 +805,23 @@ INT dd_sy2527_trip_time_set (DDSY2527_INFO * info, WORD channel, float *pvalue)
 {
   CAENHVRESULT ret;
 
-  ret = dd_sy2527_fParam_set (info, 1, channel, "Trip", pvalue);
-  return ret == 0 ? FE_SUCCESS : 0;
+  //ret = dd_sy2527_fParam_set (info, 1, channel, "Trip", pvalue);
+  //return ret == 0 ? FE_SUCCESS : 0;
+
+  WORD islot, ch;
+  // Find out what slot we need to talk to.
+  get_slot (info, channel, &ch, &islot);
+  //how many channels are in this slot?
+  int nChan = howBig(info, islot);
+   
+  //do the normal thing for 12 channel cards:
+  if(nChan == 12){
+    ret = dd_sy2527_fParam_set (info, 1, channel, "Trip", pvalue);
+    return ret == 0 ? FE_SUCCESS : 0;
+  } else {
+    return FE_SUCCESS;
+  }
+
 }
 
 /*----------------------------------------------------------------------------*/
@@ -526,8 +829,23 @@ INT dd_sy2527_trip_time_get (DDSY2527_INFO * info, WORD channel, float *pvalue)
 {
   CAENHVRESULT ret;
 
-  ret = dd_sy2527_fParam_get (info, 1, channel, "Trip", pvalue);
-  return ret == 0 ? FE_SUCCESS : 0;
+  //ret = dd_sy2527_fParam_get (info, 1, channel, "Trip", pvalue);
+  //return ret == 0 ? FE_SUCCESS : 0;
+
+  WORD islot, ch;
+  // Find out what slot we need to talk to.
+  get_slot (info, channel, &ch, &islot);
+  //how many channels are in this slot?
+  int nChan = howBig(info, islot);
+
+  //do the normal thing for 12 channel cards
+  if(nChan == 12 ){
+    ret = dd_sy2527_fParam_get (info, 1, channel, "Trip", pvalue);
+    return ret == 0 ? FE_SUCCESS : 0;
+  } else {
+    *pvalue = -9999;
+    return FE_SUCCESS;
+  }
 }
 
 /*---- device driver entry point -----------------------------------*/
@@ -537,9 +855,13 @@ INT dd_sy2527 (INT cmd, ...)
   HNDLE hKey;
   WORD channel, status, icmd;
   DWORD flags;
+  DWORD state, *pstate;
+  double *pdouble;
+  unsigned short *NrOfChList;
   char *label;
   float value, *pvalue;
   void *info, *bd;
+  INT *pint;
 
   va_start (argptr, cmd);
   status = FE_SUCCESS;
@@ -600,6 +922,41 @@ INT dd_sy2527 (INT cmd, ...)
     channel = (WORD) va_arg (argptr, INT);
     pvalue = va_arg(argptr, float *);
     status = dd_sy2527_current_get (info, channel, pvalue);
+    break;
+
+  case CMD_SET_CHSTATE:
+    info = va_arg (argptr, void *);
+    channel = (WORD) va_arg(argptr, INT);
+    state = (DWORD)va_arg(argptr, DWORD);
+    status = dd_sy2527_chState_set (info, channel, &state);
+    break;
+
+  case CMD_GET_CHSTATE:
+    info = va_arg (argptr, void *);
+    channel = (WORD) va_arg (argptr, INT);
+    pstate = (DWORD *) va_arg (argptr, DWORD *);
+    status = dd_sy2527_chState_get (info, channel, pstate);
+    break;
+
+  case CMD_GET_CRATEMAP:
+    info = va_arg (argptr, void *);
+    channel = (WORD) va_arg (argptr, INT);
+    pint = (INT *) va_arg (argptr, INT *);
+    status = dd_sy2527_crateMap_get (info, channel, pint);
+    break;
+
+  case CMD_GET_STATUS:
+    info = va_arg (argptr, void *);
+    channel = (WORD) va_arg (argptr, INT);
+    pstate = (DWORD *) va_arg (argptr, DWORD *);
+    status = dd_sy2527_chStatus_get (info, channel, pstate);
+    break;
+
+  case CMD_GET_TEMPERATURE:
+    info = va_arg (argptr, void *);
+    channel = (WORD) va_arg (argptr, INT);
+    pvalue = (float *)va_arg(argptr, float *);
+    status = dd_sy2527_temperature_get (info, channel, pvalue);
     break;
 
   case CMD_SET_RAMPUP:
