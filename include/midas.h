@@ -958,17 +958,17 @@ typedef struct {
 /** @defgroup mequipment Equipment related
  *  @{  */
 
-#define DF_INPUT       		(1<<0)	/**< channel is input           */
-#define DF_OUTPUT      		(1<<1)	/**< channel is output          */
-#define DF_PRIO_DEVICE 		(1<<2)	/**< get demand values from device instead of ODB */
-#define DF_READ_ONLY   		(1<<3)	/**< never write demand values to device */
-#define DF_MULTITHREAD 		(1<<4)	//*< access device with a dedicated thread */
-#define DF_HW_RAMP     		(1<<5)	//*< high voltage device can do hardware ramping */
-#define DF_LABELS_FROM_DEVICE 	(1<<6)	//pull HV channel names from device 
-#define DF_REPORT_TEMP		(1<<7)  //report temperature from caen cards
-#define DF_REPORT_STATUS	(1<<8)  //report status word from caen channels
-#define DF_REPORT_CHSTATE       (1<<9)  //report channel state word from caen channels
-#define DF_REPORT_CRATEMAP      (1<<10) //reports an integer encoding size and occupancy of caen crate
+#define DF_INPUT              (1<<0)  /**< channel is input           */
+#define DF_OUTPUT             (1<<1)  /**< channel is output          */
+#define DF_PRIO_DEVICE        (1<<2)  /**< get demand values from device instead of ODB */
+#define DF_READ_ONLY          (1<<3)  /**< never write demand values to device */
+#define DF_MULTITHREAD        (1<<4)  //*< access device with a dedicated thread */
+#define DF_HW_RAMP            (1<<5)  //*< high voltage device can do hardware ramping */
+#define DF_LABELS_FROM_DEVICE (1<<6)  //*< pull HV channel names from device */
+#define DF_REPORT_TEMP        (1<<7)  //*< report temperature from HV cards */
+#define DF_REPORT_STATUS      (1<<8)  //*< report status word from HV channels */
+#define DF_REPORT_CHSTATE     (1<<9)  //*< report channel state word from HV channels */
+#define DF_REPORT_CRATEMAP    (1<<10) //*< reports an integer encoding size and occupancy of HV crate */
 
 typedef struct {
    char name[NAME_LENGTH];            /**< Driver name                       */
@@ -978,7 +978,7 @@ typedef struct {
 
 typedef struct {
    float variable[CMD_GET_LAST+1];    /**< Array for various values          */
-   char  label[NAME_LENGTH];          /**< Array for channel labels          */                                
+   char  label[NAME_LENGTH];          /**< Array for channel labels          */
 } DD_MT_CHANNEL;
 
 typedef struct {
