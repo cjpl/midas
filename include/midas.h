@@ -728,13 +728,16 @@ Slow control device driver commands */
 #define CMD_SET_RAMPUP               CMD_SET_FIRST+3
 #define CMD_SET_RAMPDOWN             CMD_SET_FIRST+4
 #define CMD_SET_TRIP_TIME            CMD_SET_FIRST+5
-#define CMD_SET_LAST                 CMD_SET_FIRST+5 /* update this if you add new commands */
+#define CMD_SET_CHSTATE              CMD_SET_FIRST+6
+#define CMD_SET_LAST                 CMD_SET_FIRST+6 /* update this if you add new commands */
 
 #define CMD_GET_FIRST                CMD_SET_LAST+1  /* multithreaded get commands */
 #define CMD_GET                      CMD_GET_FIRST   // = 19
 #define CMD_GET_CURRENT              CMD_GET_FIRST+1
 #define CMD_GET_TRIP                 CMD_GET_FIRST+2
-#define CMD_GET_LAST                 CMD_GET_FIRST+2 /* update this if you add new commands ! */
+#define CMD_GET_STATUS               CMD_GET_FIRST+3
+#define CMD_GET_TEMPERATURE          CMD_GET_FIRST+4
+#define CMD_GET_LAST                 CMD_GET_FIRST+4 /* update this if you add new commands ! */
 
 #define CMD_GET_DIRECT               CMD_GET_LAST+1  /* direct get commands */
 #define CMD_GET_DEMAND               CMD_GET_DIRECT  // = 22
@@ -742,8 +745,10 @@ Slow control device driver commands */
 #define CMD_GET_CURRENT_LIMIT        CMD_GET_DIRECT+2
 #define CMD_GET_RAMPUP               CMD_GET_DIRECT+3
 #define CMD_GET_RAMPDOWN             CMD_GET_DIRECT+4
-#define CMD_GET_TRIP_TIME            CMD_GET_DIRECT+5 
-#define CMD_GET_DIRECT_LAST          CMD_GET_DIRECT+5 /* update this if you add new commands ! */
+#define CMD_GET_TRIP_TIME            CMD_GET_DIRECT+5
+#define CMD_GET_CHSTATE              CMD_GET_DIRECT+6
+#define CMD_GET_CRATEMAP             CMD_GET_DIRECT+7
+#define CMD_GET_DIRECT_LAST          CMD_GET_DIRECT+7 /* update this if you add new commands ! */
 
 #define CMD_ENABLE_COMMAND       (1<<14)  /* these two commands can be used to enable/disable */
 #define CMD_DISABLE_COMMAND      (1<<15)  /* one of the other commands                        */
@@ -953,12 +958,17 @@ typedef struct {
 /** @defgroup mequipment Equipment related
  *  @{  */
 
-#define DF_INPUT       (1<<0)         /**< channel is input           */
-#define DF_OUTPUT      (1<<1)         /**< channel is output          */
-#define DF_PRIO_DEVICE (1<<2)         /**< get demand values from device instead of ODB */
-#define DF_READ_ONLY   (1<<3)         /**< never write demand values to device */
-#define DF_MULTITHREAD (1<<4)         //*< access device with a dedicated thread */
-#define DF_HW_RAMP     (1<<5)         //*< high voltage device can do hardware ramping */
+#define DF_INPUT              (1<<0)  /**< channel is input           */
+#define DF_OUTPUT             (1<<1)  /**< channel is output          */
+#define DF_PRIO_DEVICE        (1<<2)  /**< get demand values from device instead of ODB */
+#define DF_READ_ONLY          (1<<3)  /**< never write demand values to device */
+#define DF_MULTITHREAD        (1<<4)  //*< access device with a dedicated thread */
+#define DF_HW_RAMP            (1<<5)  //*< high voltage device can do hardware ramping */
+#define DF_LABELS_FROM_DEVICE (1<<6)  //*< pull HV channel names from device */
+#define DF_REPORT_TEMP        (1<<7)  //*< report temperature from HV cards */
+#define DF_REPORT_STATUS      (1<<8)  //*< report status word from HV channels */
+#define DF_REPORT_CHSTATE     (1<<9)  //*< report channel state word from HV channels */
+#define DF_REPORT_CRATEMAP    (1<<10) //*< reports an integer encoding size and occupancy of HV crate */
 
 typedef struct {
    char name[NAME_LENGTH];            /**< Driver name                       */
@@ -968,7 +978,7 @@ typedef struct {
 
 typedef struct {
    float variable[CMD_GET_LAST+1];    /**< Array for various values          */
-   char  label[NAME_LENGTH];          /**< Array for channel labels          */                                
+   char  label[NAME_LENGTH];          /**< Array for channel labels          */
 } DD_MT_CHANNEL;
 
 typedef struct {

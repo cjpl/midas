@@ -5,7 +5,7 @@
 
   Contents:     High Voltage Class Driver
 
-  $Id$
+  $Id: hv.c 5126 2011-07-07 12:32:53Z ritt $
 
 \********************************************************************/
 
@@ -14,11 +14,12 @@
 #include <assert.h>
 #include "midas.h"
 #include "ybos.h"
+#include <stdbool.h>
 
 typedef struct {
 
    /* ODB keys */
-   HNDLE hKeyRoot, hKeyDemand, hKeyMeasured, hKeyCurrent;
+   HNDLE hKeyRoot, hKeyDemand, hKeyMeasured, hKeyCurrent, hKeyChStatus, hKeyTemperature;
 
    /* globals */
    INT num_channels;
@@ -32,6 +33,8 @@ typedef struct {
    float *demand;
    float *measured;
    float *current;
+   DWORD *chStatus;
+   float *temperature;
 
    /* items in /Settings */
    float *update_threshold;
@@ -42,11 +45,15 @@ typedef struct {
    float *rampup_speed;
    float *rampdown_speed;
    float *trip_time;
+   DWORD *chState;
+   INT   *crateMap;
 
    /* mirror arrays */
    float *demand_mirror;
    float *measured_mirror;
    float *current_mirror;
+   DWORD *chStatus_mirror;
+   float *temperature_mirror;
    DWORD *last_change;
 
    DEVICE_DRIVER **driver;
@@ -67,6 +74,8 @@ static void free_mem(HV_INFO * hv_info)
    free(hv_info->demand);
    free(hv_info->measured);
    free(hv_info->current);
+   free(hv_info->chStatus);
+   free(hv_info->temperature);
 
    free(hv_info->update_threshold);
    free(hv_info->update_threshold_current);
@@ -76,10 +85,14 @@ static void free_mem(HV_INFO * hv_info)
    free(hv_info->rampup_speed);
    free(hv_info->rampdown_speed);
    free(hv_info->trip_time);
+   free(hv_info->chState);
+   free(hv_info->crateMap);
 
    free(hv_info->demand_mirror);
    free(hv_info->measured_mirror);
    free(hv_info->current_mirror);
+   free(hv_info->chStatus_mirror);
+   free(hv_info->temperature_mirror);
    free(hv_info->last_change);
 
    free(hv_info->dd_info);
@@ -142,6 +155,14 @@ INT hv_read(EQUIPMENT * pequipment, int channel)
          status = device_driver(hv_info->driver[i], CMD_GET_CURRENT,
                                 i - hv_info->channel_offset[i],
                                 &hv_info->current[i]);
+         if (hv_info->driver[i]->flags & DF_REPORT_STATUS)
+            status = device_driver(hv_info->driver[i], CMD_GET_STATUS,
+                                   i - hv_info->channel_offset[i],
+                                   &hv_info->chStatus[i]);
+         if (hv_info->driver[i]->flags & DF_REPORT_TEMP)
+            status = device_driver(hv_info->driver[i], CMD_GET_TEMPERATURE,
+                                   i - hv_info->channel_offset[i],
+                                   &hv_info->temperature[i]);
       }
    }
 
@@ -153,6 +174,14 @@ INT hv_read(EQUIPMENT * pequipment, int channel)
       status = device_driver(hv_info->driver[channel], CMD_GET_CURRENT,
                                  channel - hv_info->channel_offset[channel],
                                  &hv_info->current[channel]);
+      if (hv_info->driver[channel]->flags & DF_REPORT_STATUS)
+         status = device_driver(hv_info->driver[channel], CMD_GET_STATUS,
+                                    channel - hv_info->channel_offset[channel],
+                                    &hv_info->chStatus[channel]);
+      if (hv_info->driver[channel]->flags & DF_REPORT_TEMP)
+         status = device_driver(hv_info->driver[channel], CMD_GET_TEMPERATURE,
+                                    channel - hv_info->channel_offset[channel],
+                                    &hv_info->temperature[channel]);
    }
 
    /* check how much channels have changed since last ODB update */
@@ -219,6 +248,73 @@ INT hv_read(EQUIPMENT * pequipment, int channel)
       pequipment->odb_out++;
    }
 
+   //check for updated chStatus:
+   max_diff = 0.f;
+   min_time = 60000;
+   changed = FALSE;
+   for (i = 0; i < hv_info->num_channels; i++) {
+      if (hv_info->driver[i]->flags & DF_REPORT_STATUS){
+         if (abs(hv_info->chStatus[i] - hv_info->chStatus_mirror[i]) > max_diff)
+            max_diff = abs(hv_info->chStatus[i] - hv_info->chStatus_mirror[i]);
+
+         // indicate change if variation more than the threshold 
+         //if (abs(hv_info->chStatus[i] - hv_info->chStatus_mirror[i]) > hv_info->update_threshold[i] && hv_info->chStatus[i] > hv_info->zero_threshold[i])
+         if(hv_info->chStatus[i] != hv_info->chStatus_mirror[i])
+            changed = TRUE;
+                                 
+         if (act_time - hv_info->last_change[i] < min_time)
+            min_time = act_time - hv_info->last_change[i];
+      }
+   }
+      
+   //update if change is more than update_sensitivity or less than 20 seconds ago or last update is older than a minute
+   if (changed || (min_time < 20000 && max_diff > 0) ||
+       act_time - hv_info->last_update > 60000) {
+      hv_info->last_update = act_time;
+   
+      for (i = 0; i < hv_info->num_channels; i++)
+         hv_info->chStatus_mirror[i] = hv_info->chStatus[i];
+   
+      db_set_data(hDB, hv_info->hKeyChStatus, hv_info->chStatus,
+                  sizeof(DWORD) * hv_info->num_channels, hv_info->num_channels,
+                  TID_DWORD);
+      
+      pequipment->odb_out++;
+   }
+
+   //check for temeprature update:
+   max_diff = 0.f;
+   min_time = 60000;
+   changed = FALSE;
+   for (i = 0; i < hv_info->num_channels; i++) {
+      if (hv_info->driver[i]->flags & DF_REPORT_TEMP){
+         if (abs(hv_info->temperature[i] - hv_info->temperature_mirror[i]) > max_diff)
+            max_diff = abs(hv_info->temperature[i] - hv_info->temperature_mirror[i]);
+   
+         // indicate change if variation more than the threshold
+         if(hv_info->temperature[i] != hv_info->temperature_mirror[i])
+            changed = TRUE;
+   
+         if (act_time - hv_info->last_change[i] < min_time)
+            min_time = act_time - hv_info->last_change[i];
+      }
+   }
+                                 
+   //update if change is more than update_sensitivity or less than 20 seconds ago or last update is older than a minute
+   if (changed || (min_time < 20000 && max_diff > 0) ||
+       act_time - hv_info->last_update > 60000) {
+      hv_info->last_update = act_time;
+      
+      for (i = 0; i < hv_info->num_channels; i++)
+         hv_info->temperature_mirror[i] = hv_info->temperature[i];
+   
+      db_set_data(hDB, hv_info->hKeyTemperature, hv_info->temperature,
+                  sizeof(float) * hv_info->num_channels, hv_info->num_channels,
+                  TID_FLOAT);
+   
+      pequipment->odb_out++;
+   }
+
    return status;
 }
 
@@ -230,6 +326,7 @@ INT hv_ramp(HV_INFO * hv_info)
    float delta, ramp_speed = 0;
 
    for (i = 0; i < hv_info->num_channels; i++) {
+
       if (hv_info->demand[i] != hv_info->demand_mirror[i]) {
          /* check if to ramp up or down */
          if ((hv_info->demand[i] >= 0.f) && (hv_info->demand_mirror[i] > 0.f)) {
@@ -422,6 +519,7 @@ void hv_set_voltage_limit(INT hDB, INT hKey, void *info)
 
 void hv_update_label(INT hDB, INT hKey, void *info)
 {
+   
    INT i, status;
    HV_INFO *hv_info;
    EQUIPMENT *pequipment;
@@ -429,15 +527,35 @@ void hv_update_label(INT hDB, INT hKey, void *info)
    pequipment = (EQUIPMENT *) info;
    hv_info = (HV_INFO *) pequipment->cd_info;
 
-   /* update channel labels based on the midas channel names */
+   //update channel labels based on the midas channel names
    for (i = 0; i < hv_info->num_channels; i++)
       status = device_driver(hv_info->driver[i], CMD_SET_LABEL,
                              i - hv_info->channel_offset[i],
                              hv_info->names + NAME_LENGTH * i);
+   
 }
 
 /*------------------------------------------------------------------*/
 
+void hv_set_chState(INT hDB, INT hKey, void *info)
+{
+   INT i;
+   HV_INFO *hv_info;
+   EQUIPMENT *pequipment;
+   
+   pequipment = (EQUIPMENT *) info;
+   hv_info = (HV_INFO *) pequipment->cd_info;
+   
+   for (i = 0; i < hv_info->num_channels; i++){
+
+      device_driver(hv_info->driver[i], CMD_SET_CHSTATE, i - hv_info->channel_offset[i], hv_info->chState[i] );
+   }
+   
+   pequipment->odb_in++;
+}
+
+/*------------------------------------------------------------------*/
+   
 void validate_odb_array(HNDLE hDB, HV_INFO *hv_info, char *path, double default_value, int cmd, 
                         float *array, void (*callback)(INT,INT,void *) ,EQUIPMENT *pequipment)
 {
@@ -456,6 +574,44 @@ void validate_odb_array(HNDLE hDB, HV_INFO *hv_info, char *path, double default_
    assert(hKey);
    db_open_record(hDB, hKey, array, sizeof(float) * hv_info->num_channels, MODE_READ, 
                   callback, pequipment);
+}
+
+void validate_odb_array_bool(HNDLE hDB, HV_INFO *hv_info, char *path, double default_value, int cmd,
+                        DWORD *array, void (*callback)(INT,INT,void *) ,EQUIPMENT *pequipment)
+{
+   int i;
+   HNDLE hKey;
+   
+   for (i = 0; i < hv_info->num_channels; i++)
+      array[i] = (DWORD)default_value;
+   if (db_find_key(hDB, hv_info->hKeyRoot, path, &hKey) != DB_SUCCESS)
+      for (i = 0; i < hv_info->num_channels; i++){
+         device_driver(hv_info->driver[i], cmd, i - hv_info->channel_offset[i], array + i);
+         array[i] = 0;
+      }
+   db_merge_data(hDB, hv_info->hKeyRoot, path, array, sizeof(DWORD) * hv_info->num_channels, hv_info->num_channels, TID_DWORD);
+   db_find_key(hDB, hv_info->hKeyRoot, path, &hKey);
+   assert(hKey);
+   db_open_record(hDB, hKey, array, sizeof(DWORD) * hv_info->num_channels, MODE_READ,
+                  callback, pequipment);
+}
+
+void validate_odb_int(HNDLE hDB, HV_INFO *hv_info, char *path, double default_value, int cmd,
+                        int *target, void (*callback)(INT,INT,void *) ,EQUIPMENT *pequipment)
+{
+   int i;
+   HNDLE hKey;
+
+   for (i = 0; i < 1; i++)
+      target[i] = (INT)default_value;
+   if (db_find_key(hDB, hv_info->hKeyRoot, path, &hKey) != DB_SUCCESS)
+      for (i = 0; i < 1; i++){
+         device_driver(hv_info->driver[i], cmd, i - hv_info->channel_offset[i], target + i);
+      }
+   db_merge_data(hDB, hv_info->hKeyRoot, path, target, sizeof(INT), 1, TID_INT);
+   db_find_key(hDB, hv_info->hKeyRoot, path, &hKey);
+   assert(hKey);
+   db_open_record(hDB, hKey, target, sizeof(INT), MODE_READ,callback, pequipment);
 }
 
 /*------------------------------------------------------------------*/
@@ -509,20 +665,25 @@ INT hv_init(EQUIPMENT * pequipment)
    hv_info->demand = (float *) calloc(hv_info->num_channels, sizeof(float));
    hv_info->measured = (float *) calloc(hv_info->num_channels, sizeof(float));
    hv_info->current = (float *) calloc(hv_info->num_channels, sizeof(float));
+   hv_info->chStatus = (DWORD *) calloc(hv_info->num_channels, sizeof(DWORD));
+   hv_info->temperature = (float *) calloc(hv_info->num_channels, sizeof(float));
 
    hv_info->update_threshold = (float *) calloc(hv_info->num_channels, sizeof(float));
-   hv_info->update_threshold_current =
-       (float *) calloc(hv_info->num_channels, sizeof(float));
+   hv_info->update_threshold_current = (float *) calloc(hv_info->num_channels, sizeof(float));
    hv_info->zero_threshold = (float *) calloc(hv_info->num_channels, sizeof(float));
    hv_info->voltage_limit = (float *) calloc(hv_info->num_channels, sizeof(float));
    hv_info->current_limit = (float *) calloc(hv_info->num_channels, sizeof(float));
    hv_info->rampup_speed = (float *) calloc(hv_info->num_channels, sizeof(float));
    hv_info->rampdown_speed = (float *) calloc(hv_info->num_channels, sizeof(float));
    hv_info->trip_time = (float *) calloc(hv_info->num_channels, sizeof(float));
+   hv_info->chState = (DWORD *) calloc(hv_info->num_channels, sizeof(DWORD));
+   hv_info->crateMap = (INT *) calloc(hv_info->num_channels, sizeof(INT));
 
    hv_info->demand_mirror = (float *) calloc(hv_info->num_channels, sizeof(float));
    hv_info->measured_mirror = (float *) calloc(hv_info->num_channels, sizeof(float));
    hv_info->current_mirror = (float *) calloc(hv_info->num_channels, sizeof(float));
+   hv_info->chStatus_mirror = (DWORD *) calloc(hv_info->num_channels, sizeof(DWORD));
+   hv_info->temperature_mirror = (float *) calloc(hv_info->num_channels, sizeof(float));
    hv_info->last_change = (DWORD *) calloc(hv_info->num_channels, sizeof(DWORD));
 
    hv_info->dd_info = (void *) calloc(hv_info->num_channels, sizeof(void *));
@@ -570,21 +731,21 @@ INT hv_init(EQUIPMENT * pequipment)
    }
 
    /*---- Create/Read settings ----*/
+   // Names
+   for (i = 0; i < hv_info->num_channels; i++){
+      if(hv_info->driver[i]->flags & DF_LABELS_FROM_DEVICE == 0)
+         sprintf(hv_info->names + NAME_LENGTH * i, "Default%%CH %d", i);
+   }
 
-   /* Names */
-   for (i = 0; i < hv_info->num_channels; i++)
-      sprintf(hv_info->names + NAME_LENGTH * i, "Default%%CH %d", i);
    if (db_find_key(hDB, hv_info->hKeyRoot, "Settings/Names", &hKey) != DB_SUCCESS)
       for (i = 0; i < hv_info->num_channels; i++)
-         device_driver(hv_info->driver[i], CMD_GET_LABEL,
-                       i - hv_info->channel_offset[i], hv_info->names + NAME_LENGTH * i);
-   db_merge_data(hDB, hv_info->hKeyRoot, "Settings/Names",
-                 hv_info->names, NAME_LENGTH * hv_info->num_channels,
-                 hv_info->num_channels, TID_STRING);
+            device_driver(hv_info->driver[i], CMD_GET_LABEL, i - hv_info->channel_offset[i], hv_info->names + NAME_LENGTH * i);
+
+   db_merge_data(hDB, hv_info->hKeyRoot, "Settings/Names", hv_info->names, NAME_LENGTH * hv_info->num_channels, hv_info->num_channels, TID_STRING);
    db_find_key(hDB, hv_info->hKeyRoot, "Settings/Names", &hKey);
    assert(hKey);
-   db_open_record(hDB, hKey, hv_info->names, NAME_LENGTH * hv_info->num_channels,
-                  MODE_READ, hv_update_label, pequipment);
+   db_open_record(hDB, hKey, hv_info->names, NAME_LENGTH * hv_info->num_channels, MODE_READ, NULL, pequipment);
+
 
    /* Update threshold */
    validate_odb_array(hDB, hv_info, "Settings/Update Threshold Measured", 0.5, CMD_GET_THRESHOLD, 
@@ -618,6 +779,18 @@ INT hv_init(EQUIPMENT * pequipment)
    validate_odb_array(hDB, hv_info, "Settings/Ramp Down Speed", 0, CMD_GET_RAMPDOWN, 
                       hv_info->rampdown_speed, hv_set_rampdown, pequipment);
 
+   /* Channel State */
+   if (hv_info->driver[0]->flags & DF_REPORT_CHSTATE)
+      validate_odb_array_bool(hDB, hv_info, "Settings/ChState", 'n', CMD_GET_CHSTATE,
+                         hv_info->chState, hv_set_chState, pequipment);
+
+   /* Crate Map */
+   if (hv_info->driver[0]->flags & DF_REPORT_CRATEMAP){
+      sprintf(str, "Settings/Devices/%s/DD/crateMap", pequipment->driver[0].name);
+      validate_odb_int(hDB, hv_info, str, 'n', CMD_GET_CRATEMAP,
+                      hv_info->crateMap, NULL, pequipment);
+      }
+
    /*---- Create/Read variables ----*/
 
    /* Demand */
@@ -642,8 +815,29 @@ INT hv_init(EQUIPMENT * pequipment)
    memcpy(hv_info->current_mirror, hv_info->current,
           hv_info->num_channels * sizeof(float));
 
-   /*---- set labels form midas SC names ----*/
+   /* Status */
+   if (hv_info->driver[0]->flags & DF_REPORT_STATUS){
+      db_merge_data(hDB, hv_info->hKeyRoot, "Variables/ChStatus",
+                    hv_info->chStatus, sizeof(DWORD) * hv_info->num_channels,
+                    hv_info->num_channels, TID_DWORD);
+      db_find_key(hDB, hv_info->hKeyRoot, "Variables/ChStatus", &hv_info->hKeyChStatus);
+      memcpy(hv_info->chStatus_mirror, hv_info->chStatus,
+             hv_info->num_channels * sizeof(DWORD));
+   }
+
+   /* Temperature */
+   if (hv_info->driver[0]->flags & DF_REPORT_TEMP){
+      db_merge_data(hDB, hv_info->hKeyRoot, "Variables/Temperature",
+                    hv_info->temperature, sizeof(float) * hv_info->num_channels,
+                    hv_info->num_channels, TID_FLOAT);
+      db_find_key(hDB, hv_info->hKeyRoot, "Variables/Temperature", &hv_info->hKeyTemperature);
+      memcpy(hv_info->temperature_mirror, hv_info->temperature,
+             hv_info->num_channels * sizeof(float));
+   }
+
+   /*---- set labels from midas SC names ----*/
    for (i = 0; i < hv_info->num_channels; i++) {
+      if (hv_info->driver[i]->flags & DF_LABELS_FROM_DEVICE == 0)
       status = device_driver(hv_info->driver[i], CMD_SET_LABEL, 
                              i - hv_info->channel_offset[i], hv_info->names + NAME_LENGTH * i);
    }
@@ -664,6 +858,9 @@ INT hv_init(EQUIPMENT * pequipment)
                                 i - hv_info->channel_offset[i], hv_info->rampup_speed[i]);
          status = device_driver(hv_info->driver[i], CMD_SET_RAMPDOWN,
                                 i - hv_info->channel_offset[i], hv_info->rampdown_speed[i]);
+         if (hv_info->driver[i]->flags & DF_REPORT_CHSTATE)
+            status = device_driver(hv_info->driver[i], CMD_SET_CHSTATE,
+                                   i - hv_info->channel_offset[i], hv_info->chState[i]);
       } else {
          status = device_driver(hv_info->driver[i], CMD_GET_DEMAND,
                                 i - hv_info->channel_offset[i], hv_info->demand + i);
@@ -679,6 +876,12 @@ INT hv_init(EQUIPMENT * pequipment)
                                 i - hv_info->channel_offset[i], &hv_info->rampup_speed[i]);
          status = device_driver(hv_info->driver[i], CMD_GET_RAMPDOWN,
                                 i - hv_info->channel_offset[i], &hv_info->rampdown_speed[i]);
+         if (hv_info->driver[i]->flags & DF_REPORT_CHSTATE)
+            status = device_driver(hv_info->driver[i], CMD_GET_CHSTATE,
+                                   i - hv_info->channel_offset[i], &hv_info->chState[i]);
+         if (hv_info->driver[i]->flags & DF_REPORT_CRATEMAP)
+            status = device_driver(hv_info->driver[i], CMD_GET_CRATEMAP,
+                                   i - hv_info->channel_offset[i], &hv_info->crateMap[i]);
       }
    }
    db_set_record(hDB, hv_info->hKeyDemand, hv_info->demand,
@@ -694,6 +897,15 @@ INT hv_init(EQUIPMENT * pequipment)
    db_set_record(hDB, hKey, hv_info->rampup_speed, hv_info->num_channels * sizeof(float), 0);
    db_find_key(hDB, hv_info->hKeyRoot, "Settings/Ramp Down Speed", &hKey);
    db_set_record(hDB, hKey, hv_info->rampdown_speed, hv_info->num_channels * sizeof(float), 0);
+   if (hv_info->driver[0]->flags & DF_REPORT_CHSTATE){
+      db_find_key(hDB, hv_info->hKeyRoot, "Settings/ChState", &hKey);
+      db_set_record(hDB, hKey, hv_info->chState, hv_info->num_channels * sizeof(DWORD), 'n');
+   }
+   if (hv_info->driver[0]->flags & DF_REPORT_CRATEMAP){
+      sprintf(str, "Settings/Devices/%s/DD/crateMap", pequipment->driver[0].name);
+      db_find_key(hDB, hv_info->hKeyRoot, str, &hKey);
+      db_set_record(hDB, hKey, hv_info->crateMap, sizeof(INT), 'n');
+   }
 
    /*--- open hotlink to HV demand values ----*/
    db_open_record(hDB, hv_info->hKeyDemand, hv_info->demand,
@@ -707,15 +919,34 @@ INT hv_init(EQUIPMENT * pequipment)
                              i - hv_info->channel_offset[i], &hv_info->measured[i]);
       hv_info->driver[i]->dd(CMD_GET_CURRENT, hv_info->driver[i]->dd_info, 
                              i - hv_info->channel_offset[i], &hv_info->current[i]);
+      if (hv_info->driver[i]->flags & DF_REPORT_STATUS)
+         hv_info->driver[i]->dd(CMD_GET_STATUS, hv_info->driver[i]->dd_info,
+                                i - hv_info->channel_offset[i], &hv_info->chStatus[i]);
+      if (hv_info->driver[i]->flags & DF_REPORT_TEMP)
+         hv_info->driver[i]->dd(CMD_GET_TEMPERATURE, hv_info->driver[i]->dd_info,
+                                i - hv_info->channel_offset[i], &hv_info->temperature[i]);
 
       hv_info->measured_mirror[i] = hv_info->measured[i];
       hv_info->current_mirror[i]  = hv_info->current[i];
+      hv_info->chStatus_mirror[i]  = hv_info->chStatus[i];
+      hv_info->temperature_mirror[i]  = hv_info->temperature[i];
    }
+
    db_set_data(hDB, hv_info->hKeyCurrent, hv_info->current,
                sizeof(float) * hv_info->num_channels, hv_info->num_channels,
                TID_FLOAT);
-   pequipment->odb_out++;
 
+   if (hv_info->driver[0]->flags & DF_REPORT_STATUS)
+      db_set_data(hDB, hv_info->hKeyChStatus, hv_info->chStatus,
+                  sizeof(DWORD) * hv_info->num_channels, hv_info->num_channels,
+                  TID_DWORD);
+
+   if (hv_info->driver[0]->flags & DF_REPORT_TEMP)
+      db_set_data(hDB, hv_info->hKeyTemperature, hv_info->temperature,
+                  sizeof(float) * hv_info->num_channels, hv_info->num_channels,
+                  TID_FLOAT);
+
+   pequipment->odb_out++;
    return FE_SUCCESS;
 }
 
@@ -799,7 +1030,13 @@ INT cd_hv_read(char *pevent, int offset)
       memcpy(pevent, hv_info->current, sizeof(float) * hv_info->num_channels);
       pevent += sizeof(float) * hv_info->num_channels;
 
-      return 3 * sizeof(float) * hv_info->num_channels;
+      memcpy(pevent, hv_info->chStatus, sizeof(DWORD) * hv_info->num_channels);
+      pevent += sizeof(DWORD) * hv_info->num_channels;
+
+      memcpy(pevent, hv_info->temperature, sizeof(float) * hv_info->num_channels);
+      pevent += sizeof(float) * hv_info->num_channels;
+
+      return ( 4 * sizeof(float) + sizeof(DWORD) )* hv_info->num_channels;
    } else if (hv_info->format == FORMAT_MIDAS) {
       bk_init(pevent);
 
@@ -818,6 +1055,18 @@ INT cd_hv_read(char *pevent, int offset)
       /* create CRNT bank */
       bk_create(pevent, "CRNT", TID_FLOAT, &pdata);
       memcpy(pdata, hv_info->current, sizeof(float) * hv_info->num_channels);
+      pdata += hv_info->num_channels;
+      bk_close(pevent, pdata);
+
+      /* create STAT bank */
+      bk_create(pevent, "STAT", TID_DWORD, &pdata);
+      memcpy(pdata, hv_info->chStatus, sizeof(DWORD) * hv_info->num_channels); 
+      pdata += hv_info->num_channels;
+      bk_close(pevent, pdata);
+
+      /* create TPTR bank */
+      bk_create(pevent, "TPTR", TID_FLOAT, &pdata);
+      memcpy(pdata, hv_info->temperature, sizeof(float) * hv_info->num_channels); 
       pdata += hv_info->num_channels;
       bk_close(pevent, pdata);
 
@@ -848,6 +1097,18 @@ INT cd_hv_read(char *pevent, int offset)
       /* create CRNT bank */
       ybk_create((DWORD *) pevent, "CRNT", F4_BKTYPE, (DWORD *) & pdata);
       memcpy(pdata, hv_info->current, sizeof(float) * hv_info->num_channels);
+      pdata += hv_info->num_channels;
+      ybk_close((DWORD *) pevent, pdata);
+
+      /* create STAT bank */ 
+      ybk_create((DWORD *) pevent, "STAT", F4_BKTYPE, (DWORD *) & pdata);
+      memcpy(pdata, hv_info->chStatus, sizeof(DWORD) * hv_info->num_channels);
+      pdata += hv_info->num_channels;
+      ybk_close((DWORD *) pevent, pdata);
+
+      /* create TPTR bank */
+      ybk_create((DWORD *) pevent, "TPTR", F4_BKTYPE, (DWORD *) & pdata);
+      memcpy(pdata, hv_info->temperature, sizeof(float) * hv_info->num_channels); 
       pdata += hv_info->num_channels;
       ybk_close((DWORD *) pevent, pdata);
 
