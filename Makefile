@@ -141,6 +141,26 @@ HAVE_SQLITE=
 endif
 
 #-----------------------
+# ARM Cross-compilation, change GCC_PREFIX
+#
+ifeq ($(OSTYPE),crosslinuxarm)
+XDIR=/ladd/data0/olchansk/MityARM/TI/ti-sdk-am335x-evm-05.05.00.00/linux-devkit
+XEXT=arm-arago-linux-gnueabi
+#GCC_PREFIX=$(HOME)/linuxdcc/Cross-Compiler/gcc-4.0.2/build/gcc-4.0.2-glibc-2.3.6/powerpc-405-linux-gnu
+GCC_BIN=$(XDIR)/bin/$(XEXT)-
+LIBS=-Wl,-rpath,$(XDIR)/$(XEXT)/lib -pthread -lutil -lrt -ldl
+CC  = $(GCC_BIN)gcc
+CXX = $(GCC_BIN)g++
+OSTYPE = linux-arm
+OS_DIR = $(OSTYPE)
+CFLAGS += -DOS_LINUX
+NEED_MYSQL=
+HAVE_ODBC=
+HAVE_SQLITE=
+ROOTSYS=
+endif
+
+#-----------------------
 # OSF/1 (DEC UNIX)
 #
 ifeq ($(HOSTTYPE),alpha)
@@ -348,6 +368,14 @@ crosscompile:
 	echo OSTYPE=$(OSTYPE)
 	$(MAKE) ROOTSYS= OS_DIR=$(OSTYPE)-crosscompile OSTYPE=crosscompile
 
+linuxarm:
+	echo OSTYPE=$(OSTYPE)
+	$(MAKE) ROOTSYS= OS_DIR=$(OSTYPE)-arm OSTYPE=crosslinuxarm
+
+cleanarm:
+	$(MAKE) ROOTSYS= OS_DIR=linux-arm clean
+
+
 examples: $(EXAMPLES)
 
 #####################################################################
@@ -482,6 +510,12 @@ ifdef NEED_RANLIB
 endif
 
 ifeq ($(OSTYPE),crosscompile)
+%.so: $(OBJS)
+	rm -f $@
+	$(CXX) -shared -o $@ $^ $(LIBS) -lc
+endif
+
+ifeq ($(OSTYPE),crosslinuxarm)
 %.so: $(OBJS)
 	rm -f $@
 	$(CXX) -shared -o $@ $^ $(LIBS) -lc
