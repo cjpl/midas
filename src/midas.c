@@ -694,7 +694,7 @@ static INT cm_msg_send_event(INT ts, INT message_type, const char *send_message)
       /* setup the event header and send the message */
       bm_compose_event(pevent, EVENTID_MESSAGE, (WORD) message_type, strlen(event + sizeof(EVENT_HEADER)) + 1, 0);
       pevent->time_stamp = ts;
-      bm_send_event(_msg_buffer, event, pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+      bm_send_event(_msg_buffer, event, pevent->data_size + sizeof(EVENT_HEADER), BM_WAIT);
    }
 
    return CM_SUCCESS;
@@ -961,7 +961,7 @@ INT cm_msg1(INT message_type, const char *filename, INT line,
 
       /* setup the event header and send the message */
       bm_compose_event(pevent, EVENTID_MESSAGE, (WORD) message_type, strlen(event + sizeof(EVENT_HEADER)) + 1, 0);
-      bm_send_event(_msg_buffer, event, pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+      bm_send_event(_msg_buffer, event, pevent->data_size + sizeof(EVENT_HEADER), BM_WAIT);
    }
 
    /* log message */
@@ -3356,7 +3356,7 @@ INT cm_check_deferred_transition()
 
       if (_deferred_trans_table[i].transition == _requested_transition) {
          if (((BOOL(*)(INT, BOOL)) _deferred_trans_table[i].func) (_requested_transition, first)) {
-            status = cm_transition(_requested_transition | TR_DEFERRED, 0, str, sizeof(str), SYNC, FALSE);
+            status = cm_transition(_requested_transition | TR_DEFERRED, 0, str, sizeof(str), TR_SYNC, FALSE);
             if (status != CM_SUCCESS)
                cm_msg(MERROR, "cm_check_deferred_transition", "Cannot perform deferred transition: %s", str);
 
@@ -3513,7 +3513,7 @@ int cm_transition_call(void *param)
    tr_client->errorstr[0] = 0;
    
    /* wait for predecessor if set */
-   if (tr_client->async_flag & MTHREAD && tr_client->pred) {
+   if (tr_client->async_flag & TR_MTHREAD && tr_client->pred) {
       do {
          n_wait = 0;
          for (i=0 ; i<tr_client->n_pred ; i++) {
@@ -3705,7 +3705,7 @@ int cm_transition_call_direct(TR_CLIENT *tr_client)
 Performs a run transition (Start/Stop/Pause/Resume).
 
 Synchronous/Asynchronous flag.
-If set to ASYNC, the transition is done
+If set to TR_ASYNC, the transition is done
 asynchronously, meaning that clients are connected and told to execute their
 callback routine, but no result is awaited. The return value is
 specified by the transition callback function on the remote clients. If all callbacks
@@ -3736,7 +3736,7 @@ tapes.
 @param run_number New run number. If zero, use current run number plus one.
 @param errstr returned error string.
 @param errstr_size Size of error string.
-@param async_flag SYNC: synchronization flag (SYNC:wait completion, ASYNC: retun immediately)
+@param async_flag TR_SYNC: synchronization flag (TR_SYNC:wait completion, TR_ASYNC: retun immediately)
 @param debug_flag If 1 output debugging information, if 2 output via cm_msg().
 @return CM_SUCCESS, \<error\> error code from remote client
 */
@@ -3826,7 +3826,7 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
    }
 
    /* do detached transition via mtransition tool */
-   if (async_flag & DETACH)
+   if (async_flag & TR_DETACH)
       return cm_transition_detach(transition, run_number, errstr, errstr_size, async_flag, debug_flag);
 
    if (errstr != NULL)
@@ -4103,7 +4103,7 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
                tr_client[n_tr_clients].pred = NULL;
                strlcpy(tr_client[n_tr_clients].key_name, subkey.name, sizeof(tr_client[n_tr_clients].key_name));
 
-               if (hSubkey == hKeylocal && ((async_flag & MTHREAD) == 0)) {
+               if (hSubkey == hKeylocal && ((async_flag & TR_MTHREAD) == 0)) {
                   /* remember own client */
                   tr_client[n_tr_clients].port = 0;
                   strlcpy(tr_client[n_tr_clients].client_name, "(localclient)", sizeof(tr_client[n_tr_clients].client_name));
@@ -4169,7 +4169,7 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
                 "cm_transition: ==== Found client \"%s\" with sequence number %d",
                 tr_client[idx].client_name, tr_client[idx].sequence_number);
 
-      if (async_flag & MTHREAD) {
+      if (async_flag & TR_MTHREAD) {
          status = CM_SUCCESS;
          ss_thread_create(cm_transition_call, &tr_client[idx]);
       } else {
@@ -4192,7 +4192,7 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
          break;
    }
    
-   if (async_flag & MTHREAD) {
+   if (async_flag & TR_MTHREAD) {
       /* wait until all threads have finished */
       do {
          ss_sleep(10); // FIXME: check if transition was canceled
@@ -4365,8 +4365,8 @@ INT tr_main_thread(void *param)
 /* wrapper around cm_transition1() for detached multi-threaded transitions */
 INT cm_transition(INT transition, INT run_number, char *errstr, INT errstr_size, INT async_flag, INT debug_flag)
 {
-   int mflag = async_flag & MTHREAD;
-   int sflag = async_flag & SYNC;
+   int mflag = async_flag & TR_MTHREAD;
+   int sflag = async_flag & TR_SYNC;
    midas_thread_t tr_main;
 
    if (mflag) {
@@ -6891,7 +6891,7 @@ static int bm_wait_for_free_space(int buffer_handle, BUFFER * pbuf, int async_fl
       bm_unlock_buffer(buffer_handle);
 
       /* return now in ASYNC mode */
-      if (async_flag)
+      if (async_flag == BM_NO_WAIT)
          return BM_ASYNC_RETURN;
 
 #ifdef DEBUG_MSG
@@ -6972,7 +6972,7 @@ main()
  for (i=0 ; i<100 ; i++)
  *(event+sizeof(EVENT_HEADER)+i) = i;
  // send event
- bm_send_event(hbuf, event, 100+sizeof(EVENT_HEADER), SYNC);
+ bm_send_event(hbuf, event, 100+sizeof(EVENT_HEADER), BM_WAIT);
  cm_disconnect_experiment();
  return 0;
 }
@@ -6980,12 +6980,12 @@ main()
 @param buffer_handle Buffer handle obtained via bm_open_buffer()
 @param source Address of event buffer
 @param buf_size Size of event including event header in bytes
-@param async_flag Synchronous/asynchronous flag. If FALSE, the function
+@param async_flag Synchronous/asynchronous flag. If BM_WAIT, the function
 blocks if the buffer has not enough free space to receive the event.
-If TRUE, the function returns immediately with a
+If BM_NO_WAIT, the function returns immediately with a
 value of BM_ASYNC_RETURN without writing the event to the buffer
 @return BM_SUCCESS, BM_INVALID_HANDLE, BM_INVALID_PARAM<br>
-BM_ASYNC_RETURN Routine called with async_flag == TRUE and
+BM_ASYNC_RETURN Routine called with async_flag == BM_NO_WAIT and
 buffer has not enough space to receive event<br>
 BM_NO_MEMORY   Event is too large for network buffer or event buffer.
 One has to increase MAX_EVENT_SIZE in midas.h and
@@ -7171,11 +7171,11 @@ end of each run, otherwise events could be kept in the write buffer and will
 flow to the data of the next run.
 @param buffer_handle Buffer handle obtained via bm_open_buffer()
 @param async_flag Synchronous/asynchronous flag.
-If FALSE, the function blocks if the buffer has not
-enough free space to receive the full cache. If TRUE, the function returns
+If BM_WAIT, the function blocks if the buffer has not
+enough free space to receive the full cache. If BM_NO_WAIT, the function returns
 immediately with a value of BM_ASYNC_RETURN without writing the cache.
 @return BM_SUCCESS, BM_INVALID_HANDLE<br>
-BM_ASYNC_RETURN Routine called with async_flag == TRUE
+BM_ASYNC_RETURN Routine called with async_flag == BM_NO_WAIT
 and buffer has not enough space to receive cache<br>
 BM_NO_MEMORY Event is too large for network buffer or event buffer.
 One has to increase MAX_EVENT_SIZE in midas.h
@@ -7355,7 +7355,7 @@ main()
   do
   {
    size = sizeof(event_buffer);
-   status = bm_receive_event(hbuf, event_buffer, &size, ASYNC);
+   status = bm_receive_event(hbuf, event_buffer, &size, BM_NO_WAIT);
   if (status == CM_SUCCESS)
    process_event((EVENT_HEADER *) event_buffer);
    <...do something else...>
@@ -7370,8 +7370,8 @@ main()
 @param destination destination address where event is written to
 @param buf_size size of destination buffer on input, size of event plus
 header on return.
-@param async_flag Synchronous/asynchronous flag. If FALSE, the function
-blocks if no event is available. If TRUE, the function returns immediately
+@param async_flag Synchronous/asynchronous flag. If BM_WAIT, the function
+blocks if no event is available. If BM_NO_WAIT, the function returns immediately
 with a value of BM_ASYNC_RETURN without receiving any event.
 @return BM_SUCCESS, BM_INVALID_HANDLE <br>
 BM_TRUNCATED   The event is larger than the destination buffer and was
@@ -7445,7 +7445,7 @@ INT bm_receive_event(INT buffer_handle, void *destination, INT * buf_size, INT a
       pc = pheader->client + my_client_index;
 
       /* first do a quick check without locking the buffer */
-      if (async_flag == ASYNC && pheader->write_pointer == pc->read_pointer)
+      if (async_flag == BM_NO_WAIT && pheader->write_pointer == pc->read_pointer)
          return BM_ASYNC_RETURN;
 
       /* lock the buffer */
@@ -7456,7 +7456,7 @@ INT bm_receive_event(INT buffer_handle, void *destination, INT * buf_size, INT a
          bm_unlock_buffer(buffer_handle);
 
          /* return now in ASYNC mode */
-         if (async_flag == ASYNC)
+         if (async_flag == BM_NO_WAIT)
             return BM_ASYNC_RETURN;
 
          pc->read_wait = TRUE;
@@ -8193,7 +8193,7 @@ INT bm_poll_event(INT flag)
       do {
          /* receive event */
          size = _event_buffer_size;
-         status = bm_receive_event(_request_list[request_id].buffer_handle, _event_buffer, &size, ASYNC);
+         status = bm_receive_event(_request_list[request_id].buffer_handle, _event_buffer, &size, BM_NO_WAIT);
          //printf("receive_event buf %d, event %d, status %d\n", _event_buffer_size, size, status);
 
          /* call user function if successful */
@@ -10758,9 +10758,9 @@ Fast send_event routine which bypasses the RPC layer and
 @param source             Address of the event to send. It must have
                           a proper event header.
 @param buf_size           Size of event in bytes with header.
-@param async_flag         SYNC / ASYNC flag. In ASYNC mode, the
+@param async_flag         BM_WAIT / BM_NO_WAIT flag. In BM_NO_WAIT mode, the
                           function returns immediately if it cannot
-                          send the event over the network. In SYNC
+                          send the event over the network. In BM_WAIT
                           mode, it waits until the packet is sent
                           (blocking).
 @param mode               Determines in which mode the event is sent.
@@ -10802,7 +10802,7 @@ INT rpc_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag
    if (aligned_buf_size + 4 * 8 + sizeof(NET_COMMAND_HEADER) >= (DWORD) (_opt_tcp_size - _tcp_wp)
        && _tcp_wp != _tcp_rp) {
       /* set socket to nonblocking IO */
-      if (async_flag == ASYNC) {
+      if (async_flag == BM_NO_WAIT) {
          flag = 1;
 #ifdef OS_VXWORKS
          ioctlsocket(_rpc_sock, FIONBIO, (int) &flag);
@@ -10821,7 +10821,7 @@ INT rpc_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag
 #endif
 
       /* set socket back to blocking IO */
-      if (async_flag == ASYNC) {
+      if (async_flag == BM_NO_WAIT) {
          flag = 0;
 #ifdef OS_VXWORKS
          ioctlsocket(_rpc_sock, FIONBIO, (int) &flag);
@@ -13313,7 +13313,7 @@ INT rpc_server_receive(INT idx, int sock, BOOL check)
             pbh = (INT *) _net_recv_buffer;
             pevent = (EVENT_HEADER *) (pbh + 1);
 
-            status = bm_send_event(*pbh, pevent, pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+            status = bm_send_event(*pbh, pevent, pevent->data_size + sizeof(EVENT_HEADER), BM_WAIT);
             if (status != BM_SUCCESS)
                cm_msg(MERROR, "rpc_server_receive", "bm_send_event() returned %d", status);
 

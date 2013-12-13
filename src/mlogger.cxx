@@ -2423,11 +2423,11 @@ int stop_the_run(int restart)
    db_get_value(hDB, 0, "/Logger/Multithread transitions", &mflag, &size, TID_BOOL, TRUE);
 
    if (flag)
-      trans_flag = ASYNC;
+      trans_flag = TR_ASYNC;
    else if (mflag)
-      trans_flag = MTHREAD;
+      trans_flag = TR_MTHREAD;
    else
-      trans_flag = DETACH;
+      trans_flag = TR_DETACH;
 
    status = cm_transition(TR_STOP, 0, errstr, sizeof(errstr), trans_flag, verbose);
    if (status != CM_SUCCESS) {
@@ -2499,11 +2499,11 @@ int start_the_run()
    db_get_value(hDB, 0, "/Logger/Multithread transitions", &mflag, &size, TID_BOOL, TRUE);
 
    if (flag)
-      trans_flag = ASYNC;
+      trans_flag = TR_ASYNC;
    else if (mflag)
-      trans_flag = MTHREAD;
+      trans_flag = TR_MTHREAD;
    else
-      trans_flag = DETACH;
+      trans_flag = TR_DETACH;
 
    cm_msg(MTALK, "start_the_run", "starting new run");
    status = cm_transition(TR_START, run_number + 1, errstr, sizeof(errstr), trans_flag, verbose);

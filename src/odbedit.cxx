@@ -2339,7 +2339,7 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
                assert(new_run_number > 0);
 
                status = cm_transition(TR_START, new_run_number, str,
-                                      sizeof(str), mthread_flag?MTHREAD|SYNC:SYNC, debug_flag);
+                                      sizeof(str), mthread_flag?TR_MTHREAD|TR_SYNC:TR_SYNC, debug_flag);
                if (status != CM_SUCCESS) {
                   /* in case of error, reset run number */
                   status =
@@ -2374,9 +2374,9 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
          if (str[0] == 'y' || state != STATE_STOPPED || cmd_mode) {
             if (param[1][0] == 'n')
                status =
-               cm_transition(TR_STOP | TR_DEFERRED, 0, str, sizeof(str), mthread_flag?MTHREAD|SYNC:SYNC, debug_flag);
+               cm_transition(TR_STOP | TR_DEFERRED, 0, str, sizeof(str), mthread_flag?TR_MTHREAD|TR_SYNC:TR_SYNC, debug_flag);
             else
-               status = cm_transition(TR_STOP, 0, str, sizeof(str), mthread_flag?MTHREAD|SYNC:SYNC, debug_flag);
+               status = cm_transition(TR_STOP, 0, str, sizeof(str), mthread_flag?TR_MTHREAD|TR_SYNC:TR_SYNC, debug_flag);
 
             if (status == CM_DEFERRED_TRANSITION)
                printf("%s\n", str);
@@ -2401,17 +2401,14 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
             printf("Run is not started\n");
          } else {
             if (param[1][0] == 'n')
-               status =
-                   cm_transition(TR_PAUSE | TR_DEFERRED, 0, str, sizeof(str), SYNC,
-                                 debug_flag);
+               status = cm_transition(TR_PAUSE | TR_DEFERRED, 0, str, sizeof(str), TR_SYNC, debug_flag);
             else
-               status = cm_transition(TR_PAUSE, 0, str, sizeof(str), SYNC, debug_flag);
+               status = cm_transition(TR_PAUSE, 0, str, sizeof(str), TR_SYNC, debug_flag);
 
             if (status == CM_DEFERRED_TRANSITION)
                printf("%s\n", str);
             else if (status == CM_TRANSITION_IN_PROGRESS)
-               printf
-                   ("Deferred pause already in progress, enter \"pause now\" to force pause\n");
+               printf("Deferred pause already in progress, enter \"pause now\" to force pause\n");
             else if (status != CM_SUCCESS)
                printf("Error: %s\n", str);
          }
@@ -2429,7 +2426,7 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
          if (i != STATE_PAUSED) {
             printf("Run is not paused\n");
          } else {
-            status = cm_transition(TR_RESUME, 0, str, sizeof(str), SYNC, debug_flag);
+            status = cm_transition(TR_RESUME, 0, str, sizeof(str), TR_SYNC, debug_flag);
             if (status != CM_SUCCESS)
                printf("Error: %s\n", str);
          }

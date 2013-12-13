@@ -2400,7 +2400,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
          cm_msg(MTALK, "log_write", "Error writing to %s, stopping run", log_chn->path);
 
       stop_requested = TRUE;
-      cm_transition(TR_STOP, 0, NULL, 0, ASYNC, DEBUG_TRANS);
+      cm_transition(TR_STOP, 0, NULL, 0, TR_ASYNC, DEBUG_TRANS);
       stop_requested = FALSE;
 
       return status;
@@ -2414,7 +2414,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
 
       cm_msg(MTALK, "log_write", "stopping run after having received %.0f events", log_chn->settings.event_limit);
 
-      status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, DEBUG_TRANS);
+      status = cm_transition(TR_STOP, 0, NULL, 0, TR_ASYNC, DEBUG_TRANS);
       if (status != CM_SUCCESS)
          cm_msg(MERROR, "log_write", "cannot stop run after reaching event limit");
       stop_requested = FALSE;
@@ -2439,7 +2439,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
       cm_msg(MTALK, "log_write", "stopping run after having received %1.0lf mega bytes",
              log_chn->statistics.bytes_written / 1E6);
 
-      status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, DEBUG_TRANS);
+      status = cm_transition(TR_STOP, 0, NULL, 0, TR_ASYNC, DEBUG_TRANS);
       if (status != CM_SUCCESS)
          cm_msg(MERROR, "log_write", "cannot stop run after reaching bytes limit");
       stop_requested = FALSE;
@@ -2467,7 +2467,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
       strcpy(tape_name, log_chn->path);
       stats_hkey = log_chn->stats_hkey;
 
-      status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, DEBUG_TRANS);
+      status = cm_transition(TR_STOP, 0, NULL, 0, TR_ASYNC, DEBUG_TRANS);
       if (status != CM_SUCCESS)
          cm_msg(MERROR, "log_write", "cannot stop run after reaching tape capacity");
       stop_requested = FALSE;
@@ -2502,7 +2502,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
          stop_requested = TRUE;
          cm_msg(MTALK, "log_write", "disk nearly full, stopping run");
 
-         status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, DEBUG_TRANS);
+         status = cm_transition(TR_STOP, 0, NULL, 0, TR_ASYNC, DEBUG_TRANS);
          if (status != CM_SUCCESS)
             cm_msg(MERROR, "log_write", "cannot stop run after reaching byte limit");
          stop_requested = FALSE;
@@ -5059,17 +5059,17 @@ void send_event(INT index)
       /* send event to buffer */
       if (equipment[index].buffer_handle) {
          bm_send_event(equipment[index].buffer_handle, pevent,
-                       pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+                       pevent->data_size + sizeof(EVENT_HEADER), BM_WAIT);
 
          /* flush buffer cache */
-         bm_flush_cache(equipment[index].buffer_handle, SYNC);
+         bm_flush_cache(equipment[index].buffer_handle, BM_WAIT);
       }
    } else
       equipment[index].serial_number--;
 
    for (i = 0; equipment[i].name[0]; i++)
       if (equipment[i].buffer_handle)
-         bm_flush_cache(equipment[i].buffer_handle, SYNC);
+         bm_flush_cache(equipment[i].buffer_handle, BM_WAIT);
 }
 
 /*------------------------------------------------------------------*/
@@ -5142,7 +5142,7 @@ void interrupt_routine(void)
 
       if (interrupt_eq->buffer_handle) {
          rpc_send_event(interrupt_eq->buffer_handle, pevent,
-                        pevent->data_size + sizeof(EVENT_HEADER), SYNC, 0);
+                        pevent->data_size + sizeof(EVENT_HEADER), BM_WAIT, 0);
       }
 
       /* send event to ODB */
@@ -5342,10 +5342,10 @@ INT scheduler(void)
                   /* send event to buffer for remote consumer */
                   if (eq->buffer_handle) {
                      bm_send_event(eq->buffer_handle, pevent,
-                                   pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+                                   pevent->data_size + sizeof(EVENT_HEADER), BM_WAIT);
 
                      /* flush buffer cache */
-                     bm_flush_cache(eq->buffer_handle, SYNC);
+                     bm_flush_cache(eq->buffer_handle, BM_WAIT);
                   }
 
                } else
@@ -5377,7 +5377,7 @@ INT scheduler(void)
                if (pevent->data_size) {
                   if (eq->buffer_handle)
                      bm_send_event(eq->buffer_handle, pevent,
-                                   pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+                                   pevent->data_size + sizeof(EVENT_HEADER), BM_WAIT);
 
                   eq->bytes_sent += pevent->data_size;
                   eq->events_sent++;
@@ -5405,7 +5405,7 @@ INT scheduler(void)
              eq_info->event_limit &&
              eq->serial_number > eq_info->event_limit && run_state == STATE_RUNNING) {
             /* stop run */
-            if (cm_transition(TR_STOP, 0, str, sizeof(str), SYNC, FALSE) != CM_SUCCESS) {
+            if (cm_transition(TR_STOP, 0, str, sizeof(str), TR_SYNC, FALSE) != CM_SUCCESS) {
                cm_msg(MERROR, "main", "Cannot stop run: %s", str);
             }
 
@@ -5504,7 +5504,7 @@ INT scheduler(void)
          db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
 
          cm_msg(MTALK, "main", "starting new run");
-         status = cm_transition(TR_START, run_number + 1, NULL, 0, ASYNC, FALSE);
+         status = cm_transition(TR_START, run_number + 1, NULL, 0, TR_ASYNC, FALSE);
          if (status != CM_SUCCESS)
             cm_msg(MERROR, "main", "cannot restart run");
       }

@@ -319,11 +319,16 @@ Data types Definition                         min      max    */
 #define TID_LAST     17       /**< end of TID list indicator            */
 
 /**
+Transition flags */
+#define TR_SYNC          1
+#define TR_ASYNC         2
+#define TR_DETACH        4
+#define TR_MTHREAD       8
+
+/**
 Synchronous / Asynchronous flags */
-#define SYNC          1
-#define ASYNC         2
-#define DETACH        4
-#define MTHREAD       8
+#define BM_WAIT          0
+#define BM_NO_WAIT       1
 
 /**
 Access modes */

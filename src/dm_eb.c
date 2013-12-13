@@ -439,7 +439,7 @@ int dm_pointer_increment(INT buffer_handle, INT event_size)
    /* if not connected remotely, use bm_send_event */
    if (_send_sock == 0) {
       *((INT *) dm.pa->pw) = buffer_handle;
-      return bm_send_event(buffer_handle, dm.pa->pw + sizeof(INT), event_size, SYNC);
+      return bm_send_event(buffer_handle, dm.pa->pw + sizeof(INT), event_size, BM_WAIT);
    }
    aligned_event_size = ALIGN8(event_size);
 
@@ -478,7 +478,7 @@ INLINE INT dm_buffer_send(DMEM_AREA * larea)
 
    /* if not connected remotely, use bm_send_event */
    if (_send_sock == 0)
-      return bm_flush_cache(*((INT *) dm.pa->pw), ASYNC);
+      return bm_flush_cache(*((INT *) dm.pa->pw), BM_NO_WAIT);
 
    /* alias */
    lpt = larea->pt;
@@ -1002,7 +1002,7 @@ INT eb_increment_pointer(INT buffer_handle, INT event_size)
 
    /* if not connected remotely, use bm_send_event */
    if (_send_sock == 0)
-      return bm_send_event(buffer_handle, _eb_write_pointer + sizeof(INT), event_size, SYNC);
+      return bm_send_event(buffer_handle, _eb_write_pointer + sizeof(INT), event_size, BM_WAIT);
 
    aligned_event_size = ALIGN8(event_size);
 

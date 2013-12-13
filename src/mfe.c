@@ -198,9 +198,9 @@ INT tr_stop(INT rn, char *error)
       /* flush remaining buffered events */
       rpc_flush_event();
       if (equipment[i].buffer_handle) {
-         INT err = bm_flush_cache(equipment[i].buffer_handle, SYNC);
+         INT err = bm_flush_cache(equipment[i].buffer_handle, BM_WAIT);
          if (err != BM_SUCCESS) {
-            cm_msg(MERROR, "tr_stop", "bm_flush_cache(SYNC) error %d", err);
+            cm_msg(MERROR, "tr_stop", "bm_flush_cache(BM_WAIT) error %d", err);
             return err;
          }
       }
@@ -1191,9 +1191,9 @@ int send_event(INT idx, BOOL manual_trig)
             /* send event to buffer */
             if (equipment[idx].buffer_handle) {
                status = rpc_send_event(equipment[idx].buffer_handle, pfragment,
-                                       pfragment->data_size + sizeof(EVENT_HEADER), SYNC, rpc_mode);
+                                       pfragment->data_size + sizeof(EVENT_HEADER), BM_WAIT, rpc_mode);
                if (status != RPC_SUCCESS) {
-                  cm_msg(MERROR, "send_event", "rpc_send_event(SYNC) error %d", status);
+                  cm_msg(MERROR, "send_event", "rpc_send_event(BM_WAIT) error %d", status);
                   return status;
                }
 
@@ -1204,9 +1204,9 @@ int send_event(INT idx, BOOL manual_trig)
 
          if (equipment[idx].buffer_handle) {
             /* flush buffer cache on server side */
-            status = bm_flush_cache(equipment[idx].buffer_handle, SYNC);
+            status = bm_flush_cache(equipment[idx].buffer_handle, BM_WAIT);
             if (status != BM_SUCCESS) {
-               cm_msg(MERROR, "send_event", "bm_flush_cache(SYNC) error %d", status);
+               cm_msg(MERROR, "send_event", "bm_flush_cache(BM_WAIT) error %d", status);
                return status;
             }
          }
@@ -1222,15 +1222,15 @@ int send_event(INT idx, BOOL manual_trig)
          /* send event to buffer */
          if (equipment[idx].buffer_handle) {
             status = rpc_send_event(equipment[idx].buffer_handle, pevent,
-                                    pevent->data_size + sizeof(EVENT_HEADER), SYNC, rpc_mode);
+                                    pevent->data_size + sizeof(EVENT_HEADER), BM_WAIT, rpc_mode);
             if (status != BM_SUCCESS) {
-               cm_msg(MERROR, "send_event", "bm_send_event(SYNC) error %d", status);
+               cm_msg(MERROR, "send_event", "bm_send_event(BM_WAIT) error %d", status);
                return status;
             }
             rpc_flush_event();
-            status = bm_flush_cache(equipment[idx].buffer_handle, SYNC);
+            status = bm_flush_cache(equipment[idx].buffer_handle, BM_WAIT);
             if (status != BM_SUCCESS) {
-               cm_msg(MERROR, "send_event", "bm_flush_cache(SYNC) error %d", status);
+               cm_msg(MERROR, "send_event", "bm_flush_cache(BM_WAIT) error %d", status);
                return status;
             }
          }
@@ -1251,9 +1251,9 @@ int send_event(INT idx, BOOL manual_trig)
 
    for (i = 0; equipment[i].name[0]; i++)
       if (equipment[i].buffer_handle) {
-         status = bm_flush_cache(equipment[i].buffer_handle, SYNC);
+         status = bm_flush_cache(equipment[i].buffer_handle, BM_WAIT);
          if (status != BM_SUCCESS) {
-            cm_msg(MERROR, "send_event", "bm_flush_cache(SYNC) error %d", status);
+            cm_msg(MERROR, "send_event", "bm_flush_cache(BM_WAIT) error %d", status);
             return status;
          }
       }
@@ -1492,7 +1492,7 @@ int receive_trigger_event(EQUIPMENT *eq)
             
             status = rpc_send_event(eq->buffer_handle, pevent,
                                     pevent->data_size + sizeof(EVENT_HEADER),
-                                    SYNC, rpc_mode);
+                                    BM_WAIT, rpc_mode);
             
             if (status != SUCCESS) {
                cm_msg(MERROR, "receive_trigger_event", "rpc_send_event error %d", status);
@@ -1822,9 +1822,9 @@ INT check_polled_events(void)
                   /* send event to buffer */
                   if (equipment[idx].buffer_handle) {
                      status = rpc_send_event(equipment[idx].buffer_handle, pfragment,
-                                             pfragment->data_size + sizeof(EVENT_HEADER), SYNC, rpc_mode);
+                                             pfragment->data_size + sizeof(EVENT_HEADER), BM_WAIT, rpc_mode);
                      if (status != RPC_SUCCESS) {
-                        cm_msg(MERROR, "check_polled_events", "rpc_send_event(SYNC) error %d", status);
+                        cm_msg(MERROR, "check_polled_events", "rpc_send_event(BM_WAIT) error %d", status);
                         return status;
                      }
 
@@ -1844,7 +1844,7 @@ INT check_polled_events(void)
 
                status = rpc_send_event(eq->buffer_handle, pevent,
                                        pevent->data_size + sizeof(EVENT_HEADER),
-                                       SYNC, rpc_mode);
+                                       BM_WAIT, rpc_mode);
 
                if (status != SUCCESS) {
                   cm_msg(MERROR, "check_polled_events", "rpc_send_event error %d", status);
@@ -2110,9 +2110,9 @@ INT scheduler(void)
                         /* send event to buffer */
                         if (equipment[idx].buffer_handle) {
                            status = rpc_send_event(equipment[idx].buffer_handle, pfragment,
-                                                   pfragment->data_size + sizeof(EVENT_HEADER), SYNC, rpc_mode);
+                                                   pfragment->data_size + sizeof(EVENT_HEADER), BM_WAIT, rpc_mode);
                            if (status != RPC_SUCCESS) {
-                              cm_msg(MERROR, "scheduler", "rpc_send_event(SYNC) error %d", status);
+                              cm_msg(MERROR, "scheduler", "rpc_send_event(BM_WAIT) error %d", status);
                               return status;
                            }
 
@@ -2132,7 +2132,7 @@ INT scheduler(void)
 
                      status = rpc_send_event(eq->buffer_handle, pevent,
                                              pevent->data_size + sizeof(EVENT_HEADER),
-                                             SYNC, rpc_mode);
+                                             BM_WAIT, rpc_mode);
 
                      if (status != SUCCESS) {
                         cm_msg(MERROR, "scheduler", "rpc_send_event error %d", status);
@@ -2212,7 +2212,7 @@ INT scheduler(void)
              eq->stats.events_sent + eq->events_sent >= eq_info->event_limit &&
              run_state == STATE_RUNNING) {
             /* stop run */
-            if (cm_transition(TR_STOP, 0, str, sizeof(str), SYNC, FALSE) != CM_SUCCESS)
+            if (cm_transition(TR_STOP, 0, str, sizeof(str), TR_SYNC, FALSE) != CM_SUCCESS)
                cm_msg(MERROR, "scheduler", "cannot stop run: %s", str);
 
             /* check if autorestart, main loop will take care of it */
@@ -2381,9 +2381,9 @@ INT scheduler(void)
                   if (!buffer_done) {
                      rpc_set_option(-1, RPC_OTRANSPORT, RPC_FTCP);
                      rpc_flush_event();
-                     err = bm_flush_cache(equipment[i].buffer_handle, ASYNC);
+                     err = bm_flush_cache(equipment[i].buffer_handle, BM_NO_WAIT);
                      if ((err != BM_SUCCESS) && (err != BM_ASYNC_RETURN)) {
-                        cm_msg(MERROR, "scheduler", "bm_flush_cache(ASYNC) error %d",
+                        cm_msg(MERROR, "scheduler", "bm_flush_cache(BM_NO_WAIT) error %d",
                                err);
                         return err;
                      }
@@ -2420,7 +2420,7 @@ INT scheduler(void)
             }
 
             cm_msg(MTALK, "main", "starting new run");
-            status = cm_transition(TR_START, run_number + 1, NULL, 0, SYNC, FALSE);
+            status = cm_transition(TR_START, run_number + 1, NULL, 0, TR_SYNC, FALSE);
             if (status != CM_SUCCESS)
                cm_msg(MERROR, "main", "cannot restart run");
          }

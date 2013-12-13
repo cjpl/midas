@@ -130,11 +130,11 @@ int main(int argc, char *argv[])
    status = cm_get_experiment_database(&hDB, NULL);
    assert(status == CM_SUCCESS);
 
-   int tr_flag = SYNC;
+   int tr_flag = TR_SYNC;
    if (multithread)
-     tr_flag = MTHREAD|SYNC;
+     tr_flag = TR_MTHREAD|TR_SYNC;
    if (asyncmultithread)
-     tr_flag = MTHREAD|ASYNC;
+     tr_flag = TR_MTHREAD|TR_ASYNC;
 
    for (int i=1; i<argc; i++) {
 

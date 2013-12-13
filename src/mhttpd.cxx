@@ -15205,7 +15205,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       if (!check_web_password(cookie_wpwd, "?cmd=pause", experiment))
          return;
       
-      status = cm_transition(TR_PAUSE, 0, str, sizeof(str), MTHREAD | ASYNC, FALSE);
+      status = cm_transition(TR_PAUSE, 0, str, sizeof(str), TR_MTHREAD | TR_ASYNC, FALSE);
       if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
          show_error(str);
       else if (isparam("redir"))
@@ -15231,7 +15231,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       if (!check_web_password(cookie_wpwd, "?cmd=resume", experiment))
          return;
       
-      status = cm_transition(TR_RESUME, 0, str, sizeof(str), MTHREAD | ASYNC, FALSE);
+      status = cm_transition(TR_RESUME, 0, str, sizeof(str), TR_MTHREAD | TR_ASYNC, FALSE);
       if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
          show_error(str);
       else if (isparam("redir"))
@@ -15287,7 +15287,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
             return;
          }
          
-         status = cm_transition(TR_START, i, str, sizeof(str), MTHREAD | ASYNC, FALSE);
+         status = cm_transition(TR_START, i, str, sizeof(str), TR_MTHREAD | TR_ASYNC, FALSE);
          if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION) {
             show_error(str);
          } else {
@@ -15315,7 +15315,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       if (!check_web_password(cookie_wpwd, "?cmd=stop", experiment))
          return;
       
-      status = cm_transition(TR_STOP, 0, str, sizeof(str), MTHREAD | ASYNC, FALSE);
+      status = cm_transition(TR_STOP, 0, str, sizeof(str), TR_MTHREAD | TR_ASYNC, FALSE);
       if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
          show_error(str);
       else if (isparam("redir"))
