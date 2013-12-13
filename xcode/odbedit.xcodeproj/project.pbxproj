@@ -7,16 +7,18 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D5310FBF185702FD00004A4D /* json_paste.cxx in Sources */ = {isa = PBXBuildFile; fileRef = D5310FBE185702FD00004A4D /* json_paste.cxx */; };
+		D5EAE015185703CC000FD8F3 /* mjson.cxx in Sources */ = {isa = PBXBuildFile; fileRef = D5EAE014185703CC000FD8F3 /* mjson.cxx */; };
 		D5EF354C1399A32500BD0BDE /* alarm.c in Sources */ = {isa = PBXBuildFile; fileRef = D5EF35471399A32500BD0BDE /* alarm.c */; };
 		D5EF354D1399A32500BD0BDE /* midas.c in Sources */ = {isa = PBXBuildFile; fileRef = D5EF35481399A32500BD0BDE /* midas.c */; };
 		D5EF354E1399A32500BD0BDE /* odb.c in Sources */ = {isa = PBXBuildFile; fileRef = D5EF35491399A32500BD0BDE /* odb.c */; };
-		D5EF354F1399A32500BD0BDE /* odbedit.c in Sources */ = {isa = PBXBuildFile; fileRef = D5EF354A1399A32500BD0BDE /* odbedit.c */; };
+		D5EF354F1399A32500BD0BDE /* odbedit.cxx in Sources */ = {isa = PBXBuildFile; fileRef = D5EF354A1399A32500BD0BDE /* odbedit.cxx */; };
 		D5EF35501399A32500BD0BDE /* system.c in Sources */ = {isa = PBXBuildFile; fileRef = D5EF354B1399A32500BD0BDE /* system.c */; };
 		D5EF35521399A61400BD0BDE /* elog.c in Sources */ = {isa = PBXBuildFile; fileRef = D5EF35511399A61400BD0BDE /* elog.c */; };
 		D5EF35571399A62100BD0BDE /* mxml.c in Sources */ = {isa = PBXBuildFile; fileRef = D5EF35531399A62100BD0BDE /* mxml.c */; };
 		D5EF35581399A62100BD0BDE /* strlcpy.c in Sources */ = {isa = PBXBuildFile; fileRef = D5EF35551399A62100BD0BDE /* strlcpy.c */; };
 		D5EF355A1399A63B00BD0BDE /* mrpc.c in Sources */ = {isa = PBXBuildFile; fileRef = D5EF35591399A63B00BD0BDE /* mrpc.c */; };
-		D5EF355C1399A65100BD0BDE /* cmdedit.c in Sources */ = {isa = PBXBuildFile; fileRef = D5EF355B1399A65100BD0BDE /* cmdedit.c */; };
+		D5EF355C1399A65100BD0BDE /* cmdedit.cxx in Sources */ = {isa = PBXBuildFile; fileRef = D5EF355B1399A65100BD0BDE /* cmdedit.cxx */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -33,11 +35,13 @@
 
 /* Begin PBXFileReference section */
 		D5168C4617985ACA0094813D /* git-revision.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "git-revision.h"; path = "/midas/include/git-revision.h"; sourceTree = "<absolute>"; };
+		D5310FBE185702FD00004A4D /* json_paste.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = json_paste.cxx; path = /midas/src/json_paste.cxx; sourceTree = "<absolute>"; };
 		D54515A11399A2CA0037D7FB /* odbedit */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = odbedit; sourceTree = BUILT_PRODUCTS_DIR; };
+		D5EAE014185703CC000FD8F3 /* mjson.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mjson.cxx; path = /midas/src/mjson.cxx; sourceTree = "<absolute>"; };
 		D5EF35471399A32500BD0BDE /* alarm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = alarm.c; path = /midas/src/alarm.c; sourceTree = "<absolute>"; };
 		D5EF35481399A32500BD0BDE /* midas.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = midas.c; path = /midas/src/midas.c; sourceTree = "<absolute>"; };
 		D5EF35491399A32500BD0BDE /* odb.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = odb.c; path = /midas/src/odb.c; sourceTree = "<absolute>"; };
-		D5EF354A1399A32500BD0BDE /* odbedit.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = odbedit.c; path = /midas/src/odbedit.c; sourceTree = "<absolute>"; };
+		D5EF354A1399A32500BD0BDE /* odbedit.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = odbedit.cxx; path = /midas/src/odbedit.cxx; sourceTree = "<absolute>"; };
 		D5EF354B1399A32500BD0BDE /* system.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = system.c; path = /midas/src/system.c; sourceTree = "<absolute>"; };
 		D5EF35511399A61400BD0BDE /* elog.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = elog.c; path = /midas/src/elog.c; sourceTree = "<absolute>"; };
 		D5EF35531399A62100BD0BDE /* mxml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mxml.c; path = /mxml/mxml.c; sourceTree = "<absolute>"; };
@@ -45,7 +49,7 @@
 		D5EF35551399A62100BD0BDE /* strlcpy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = strlcpy.c; path = /mxml/strlcpy.c; sourceTree = "<absolute>"; };
 		D5EF35561399A62100BD0BDE /* strlcpy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = strlcpy.h; path = /mxml/strlcpy.h; sourceTree = "<absolute>"; };
 		D5EF35591399A63B00BD0BDE /* mrpc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mrpc.c; path = /midas/src/mrpc.c; sourceTree = "<absolute>"; };
-		D5EF355B1399A65100BD0BDE /* cmdedit.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = cmdedit.c; path = /midas/src/cmdedit.c; sourceTree = "<absolute>"; };
+		D5EF355B1399A65100BD0BDE /* cmdedit.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = cmdedit.cxx; path = /midas/src/cmdedit.cxx; sourceTree = "<absolute>"; };
 		D5EF355E1399A92500BD0BDE /* midas.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = midas.h; path = /midas/include/midas.h; sourceTree = "<absolute>"; };
 		D5EF355F1399A92500BD0BDE /* midasinc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = midasinc.h; path = /midas/include/midasinc.h; sourceTree = "<absolute>"; };
 		D5EF35601399A92500BD0BDE /* msystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = msystem.h; path = /midas/include/msystem.h; sourceTree = "<absolute>"; };
@@ -82,7 +86,9 @@
 		D54515A41399A2CA0037D7FB /* Source Files */ = {
 			isa = PBXGroup;
 			children = (
-				D5EF355B1399A65100BD0BDE /* cmdedit.c */,
+				D5EAE014185703CC000FD8F3 /* mjson.cxx */,
+				D5310FBE185702FD00004A4D /* json_paste.cxx */,
+				D5EF355B1399A65100BD0BDE /* cmdedit.cxx */,
 				D5EF35591399A63B00BD0BDE /* mrpc.c */,
 				D5EF35531399A62100BD0BDE /* mxml.c */,
 				D5EF35551399A62100BD0BDE /* strlcpy.c */,
@@ -90,7 +96,7 @@
 				D5EF35471399A32500BD0BDE /* alarm.c */,
 				D5EF35481399A32500BD0BDE /* midas.c */,
 				D5EF35491399A32500BD0BDE /* odb.c */,
-				D5EF354A1399A32500BD0BDE /* odbedit.c */,
+				D5EF354A1399A32500BD0BDE /* odbedit.cxx */,
 				D5EF354B1399A32500BD0BDE /* system.c */,
 			);
 			name = "Source Files";
@@ -165,13 +171,15 @@
 				D5EF354C1399A32500BD0BDE /* alarm.c in Sources */,
 				D5EF354D1399A32500BD0BDE /* midas.c in Sources */,
 				D5EF354E1399A32500BD0BDE /* odb.c in Sources */,
-				D5EF354F1399A32500BD0BDE /* odbedit.c in Sources */,
+				D5310FBF185702FD00004A4D /* json_paste.cxx in Sources */,
+				D5EF354F1399A32500BD0BDE /* odbedit.cxx in Sources */,
+				D5EAE015185703CC000FD8F3 /* mjson.cxx in Sources */,
 				D5EF35501399A32500BD0BDE /* system.c in Sources */,
 				D5EF35521399A61400BD0BDE /* elog.c in Sources */,
 				D5EF35571399A62100BD0BDE /* mxml.c in Sources */,
 				D5EF35581399A62100BD0BDE /* strlcpy.c in Sources */,
 				D5EF355A1399A63B00BD0BDE /* mrpc.c in Sources */,
-				D5EF355C1399A65100BD0BDE /* cmdedit.c in Sources */,
+				D5EF355C1399A65100BD0BDE /* cmdedit.cxx in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -181,6 +189,8 @@
 		D54515A81399A2CA0037D7FB /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -188,6 +198,7 @@
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_INPUT_FILETYPE = automatic;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					DEBUG,
@@ -196,14 +207,14 @@
 					USE_POSIX_SHM,
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
-				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				GCC_VERSION = "";
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};
@@ -212,6 +223,8 @@
 		D54515A91399A2CA0037D7FB /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -219,19 +232,20 @@
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_INPUT_FILETYPE = automatic;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					OS_LINUX,
 					OS_DARWIN,
 					USE_POSIX_SHM,
 				);
-				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				GCC_VERSION = "";
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				SDKROOT = macosx;
 			};
 			name = Release;

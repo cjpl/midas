@@ -1,6 +1,6 @@
 /********************************************************************\
 
-  Name:         odbedit.c
+  Name:         odbedit.cxx
   Created by:   Stefan Ritt
 
   Contents:     Command-line interface to the MIDAS online data base.
