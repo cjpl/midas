@@ -144,9 +144,8 @@ endif
 # ARM Cross-compilation, change GCC_PREFIX
 #
 ifeq ($(OSTYPE),crosslinuxarm)
-XDIR=/ladd/data0/olchansk/MityARM/TI/ti-sdk-am335x-evm-05.05.00.00/linux-devkit
-XEXT=arm-arago-linux-gnueabi
-#GCC_PREFIX=$(HOME)/linuxdcc/Cross-Compiler/gcc-4.0.2/build/gcc-4.0.2-glibc-2.3.6/powerpc-405-linux-gnu
+XDIR=/ladd/data0/olchansk/MityARM/TI/ti-sdk-am335x-evm-06.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr
+XEXT=arm-linux-gnueabihf
 GCC_BIN=$(XDIR)/bin/$(XEXT)-
 LIBS=-Wl,-rpath,$(XDIR)/$(XEXT)/lib -pthread -lutil -lrt -ldl
 CC  = $(GCC_BIN)gcc
@@ -154,6 +153,7 @@ CXX = $(GCC_BIN)g++
 OSTYPE = linux-arm
 OS_DIR = $(OSTYPE)
 CFLAGS += -DOS_LINUX
+CFLAGS += -fPIC
 NEED_MYSQL=
 HAVE_ODBC=
 HAVE_SQLITE=
