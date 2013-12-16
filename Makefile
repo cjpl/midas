@@ -144,10 +144,30 @@ endif
 # ARM Cross-compilation, change GCC_PREFIX
 #
 ifeq ($(OSTYPE),crosslinuxarm)
-XDIR=/ladd/data0/olchansk/MityARM/TI/ti-sdk-am335x-evm-06.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr
-XEXT=arm-linux-gnueabihf
-GCC_BIN=$(XDIR)/bin/$(XEXT)-
-LIBS=-Wl,-rpath,$(XDIR)/$(XEXT)/lib -pthread -lutil -lrt -ldl
+
+ifndef USE_TI_ARM
+USE_YOCTO_ARM=1
+endif
+
+ifdef USE_TI_ARM
+# settings for the TI Sitara ARM SDK
+TI_DIR=/ladd/data0/olchansk/MityARM/TI/ti-sdk-am335x-evm-06.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr
+TI_EXT=arm-linux-gnueabihf
+GCC_BIN=$(TI_DIR)/bin/$(TI_EXT)-
+LIBS=-Wl,-rpath,$(TI_DIR)/$(TI_EXT)/lib -pthread -lutil -lrt -ldl
+endif
+
+ifdef USE_YOCTO_ARM
+# settings for the Yocto poky cross compilers
+POKY_DIR=/ladd/data0/olchansk/MityARM/Yocto/opt/poky/1.5/sysroots
+POKY_EXT=arm-poky-linux-gnueabi
+POKY_HOST=x86_64-pokysdk-linux
+POKY_ARM=armv7a-vfp-neon-poky-linux-gnueabi
+GCC_BIN=$(POKY_DIR)/$(POKY_HOST)/usr/bin/$(POKY_EXT)/$(POKY_EXT)-
+LIBS=--sysroot $(POKY_DIR)/$(POKY_ARM) -Wl,-rpath,$(POKY_DIR)/$(POKY_ARM)/usr/lib -pthread -lutil -lrt -ldl
+CFLAGS += --sysroot $(POKY_DIR)/$(POKY_ARM)
+endif
+
 CC  = $(GCC_BIN)gcc
 CXX = $(GCC_BIN)g++
 OSTYPE = linux-arm
