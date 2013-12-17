@@ -936,6 +936,8 @@ void show_seq_page()
          strlcat(seq.filename, getparam("fs"), sizeof(seq.filename));
       
       strlcpy(str, seq.path, sizeof(str));
+      if (strlen(str)>1 && str[strlen(str)-1] != DIR_SEPARATOR)
+         strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
       strlcat(str, seq.filename, sizeof(str));
       seq.error[0] = 0;
       seq.error_line = 0;
@@ -1051,6 +1053,8 @@ void show_seq_page()
    /*---- save script ----*/
    if (equal_ustring(getparam("cmd"), "Save")) {
       strlcpy(str, seq.path, sizeof(str));
+      if (strlen(str)>1 && str[strlen(str)-1] != DIR_SEPARATOR)
+         strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
       strlcat(str, seq.filename, sizeof(str));
       fh = open(str, O_RDWR | O_TRUNC | O_TEXT, 0644);
       if (fh > 0 && isparam("scripttext")) {
@@ -1059,6 +1063,8 @@ void show_seq_page()
          close(fh);
       }
       strlcpy(str, seq.path, sizeof(str));
+      if (strlen(str)>1 && str[strlen(str)-1] != DIR_SEPARATOR)
+         strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
       strlcat(str, seq.filename, sizeof(str));
       seq.error[0] = 0;
       if (pnseq) {
@@ -1491,6 +1497,8 @@ void show_seq_page()
       else
          dir[0] = 0;
       strlcpy(path, seq.path, sizeof(path));
+      if (strlen(str)>1 && str[strlen(str)-1] != DIR_SEPARATOR)
+         strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
 
       if (isparam("fs")) {
          strlcpy(str, getparam("fs"), sizeof(str));
@@ -1556,6 +1564,8 @@ void show_seq_page()
       n = ss_file_find(path, (char *)"*.msl", &flist);
       for (i=0 ; i<n ; i++) {
          strlcpy(str, path, sizeof(str));
+         if (strlen(str)>1 && str[strlen(str)-1] != DIR_SEPARATOR)
+            strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
          strlcat(str, flist+i*MAX_STRING_LENGTH, sizeof(str));
          
          if (msl_parse(str, error, sizeof(error), &error_line)) {
@@ -1615,9 +1625,12 @@ void show_seq_page()
             rsprintf("<tr><td colspan=2>Filename:<b>%s</b>&nbsp;&nbsp;", seq.filename);
             rsprintf("<input type=submit name=cmd value=\"Save\">\n");
             rsprintf("<input type=submit name=cmd value=\"Cancel\">\n");
+            rsprintf("<div align=\"right\"><a target=\"_blank\" href=\"http://ladd00.triumf.ca/~daqweb/doc/midas-old/html/RC_Sequencer.html\">Syntax Help</a></div>");
             rsprintf("</td></tr>\n");
             rsprintf("<tr><td colspan=2><textarea rows=30 cols=80 name=\"scripttext\" style=\"font-family:monospace;font-size:medium;\">\n");
             strlcpy(str, seq.path, sizeof(str));
+            if (strlen(str)>1 && str[strlen(str)-1] != DIR_SEPARATOR)
+               strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
             strlcat(str, seq.filename, sizeof(str));
             f = fopen(str, "rt");
             if (f) {
@@ -1704,6 +1717,8 @@ void show_seq_page()
                
             if (stristr(seq.filename, ".msl")) {
                strlcpy(str, seq.path, sizeof(str));
+               if (strlen(str)>1 && str[strlen(str)-1] != DIR_SEPARATOR)
+                  strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
                strlcat(str, seq.filename, sizeof(str));
                fh = open(str, O_RDONLY | O_TEXT, 0644);
                if (fh > 0) {
@@ -1766,6 +1781,8 @@ void show_seq_page()
             rsprintf("<a onClick=\"show_lines();return false;\" href=\"#\" id=\"upperarrow\" style=\"display:none;\">&#x25B2</a><br>\n");
             
             strlcpy(str, seq.path, sizeof(str));
+            if (strlen(str)>1 && str[strlen(str)-1] != DIR_SEPARATOR)
+               strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
             strlcat(str, seq.filename, sizeof(str));
             if (strchr(str, '.')) {
                *strchr(str, '.') = 0;
