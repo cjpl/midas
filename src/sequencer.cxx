@@ -1115,7 +1115,7 @@ void show_seq_page()
       size = sizeof(state);
       db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT, FALSE);
       if (state != STATE_STOPPED)
-         cm_transition(TR_STOP, 0, str, sizeof(str), TR_DETACH, FALSE);
+         cm_transition(TR_STOP, 0, str, sizeof(str), TR_MTHREAD | TR_SYNC, FALSE);
       
       db_set_record(hDB, hKey, &seq, sizeof(seq), 0);
       cm_msg(MTALK, "show_seq_page", "Sequencer is finished.");
@@ -2148,7 +2148,7 @@ void sequencer()
             if (state != STATE_RUNNING) {
                size = sizeof(run_number);
                db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, FALSE);
-               status = cm_transition(TR_START, run_number+1, str, sizeof(str), TR_DETACH, FALSE);
+               status = cm_transition(TR_START, run_number+1, str, sizeof(str), TR_MTHREAD | TR_SYNC, FALSE);
                if (status != CM_SUCCESS) {
                   sprintf(str, "Cannot start run: %s", str);
                   seq_error(str);
@@ -2169,7 +2169,7 @@ void sequencer()
             size = sizeof(state);
             db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT, FALSE);
             if (state != STATE_STOPPED) {
-               status = cm_transition(TR_STOP, 0, str, sizeof(str), TR_DETACH, FALSE);
+               status = cm_transition(TR_STOP, 0, str, sizeof(str), TR_MTHREAD | TR_SYNC, FALSE);
                if (status != CM_SUCCESS) {
                   sprintf(str, "Cannot stop run: %s", str);
                   seq_error(str);
