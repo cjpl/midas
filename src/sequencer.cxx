@@ -1056,7 +1056,7 @@ void show_seq_page()
       if (strlen(str)>1 && str[strlen(str)-1] != DIR_SEPARATOR)
          strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
       strlcat(str, seq.filename, sizeof(str));
-      fh = open(str, O_RDWR | O_TRUNC | O_TEXT, 0644);
+      fh = open(str, O_RDWR | O_TRUNC | O_CREAT | O_TEXT, 0644);
       if (fh > 0 && isparam("scripttext")) {
          i = strlen(getparam("scripttext"));
          write(fh, getparam("scripttext"), i);
@@ -1425,12 +1425,13 @@ void show_seq_page()
    
    rsprintf("<form name=\"form1\" method=\"GET\" action=\".\">\n");
    
-   /*---- body needs wrapper div to pin footer ----*/
+   // body needs wrapper div to pin footer
    rsprintf("<div class=\"wrapper\">\n");
    
    show_navigation_bar("Sequencer");
 
    rsprintf("<table>");  //generic table for menu row
+
    /*---- menu buttons ----*/
    
    if (!equal_ustring(getparam("cmd"), "Load Script") && !isparam("fs")) {
@@ -1485,6 +1486,7 @@ void show_seq_page()
    
    rsprintf("<table><tr><td>"); //wrapper table to keep all sub-tables the same width
    rsprintf("<table id=\"topTable\" class=\"sequencerTable\" width=100%%>");  //first table ends up being different things depending on context; refactor.
+   
    /*---- file selector ----*/
    
    if (equal_ustring(getparam("cmd"), "Load Script") || isparam("fs")) {
@@ -1619,10 +1621,52 @@ void show_seq_page()
    /*---- show XML file ----*/
    
    else {
-      if (seq.filename[0]) {
+      if (equal_ustring(getparam("cmd"), "New Script")) {
+         rsprintf("<tr><th class=\"subStatusTitle\">Script Editor</th></tr>");
+         rsprintf("<tr><td colspan=2>");
+         rsprintf("<script type=\"text/javascript\">\n");
+         rsprintf("function queryFilename()\n");
+         rsprintf("{\n");
+         rsprintf("  var f = prompt('Please enter filename');\n");
+         rsprintf("  if (f != null && f != '') {\n");
+         rsprintf("    if (!f.search('.'))\n");
+         rsprintf("       f = f+'.msl';\n");
+         rsprintf("    ODBSet('/Sequencer/State/Filename', f);\n");
+         rsprintf("    return true;\n");
+         rsprintf("  } else\n");
+         rsprintf("    return false;");
+         rsprintf("}\n");
+         rsprintf("</script>\n");
+         rsprintf("<input type=submit name=cmd onClick=\"return queryFilename();\" value=\"Save\">\n");
+         rsprintf("<input type=submit name=cmd value=\"Cancel\">\n");
+         rsprintf("<div align=\"right\"><a target=\"_blank\" href=\"http://ladd00.triumf.ca/~daqweb/doc/midas-old/html/RC_Sequencer.html\">Syntax Help</a></div>");
+         rsprintf("</td></tr>\n");
+         rsprintf("<tr><td colspan=2><textarea rows=30 cols=80 name=\"scripttext\" style=\"font-family:monospace;font-size:medium;\">\n");
+         rsprintf("</textarea></td></tr>\n");
+         rsprintf("<tr><td style=\"text-align:center;\" colspan=2>\n");
+         rsprintf("<input type=submit name=cmd value=\"Save\">\n");
+         rsprintf("<input type=submit name=cmd value=\"Cancel\">\n");
+         rsprintf("</td></tr>\n");
+      } else if (seq.filename[0]) {
          if (equal_ustring(getparam("cmd"), "Edit Script")) {
             rsprintf("<tr><th class=\"subStatusTitle\">Script Editor</th></tr>");
-            rsprintf("<tr><td colspan=2>Filename:<b>%s</b>&nbsp;&nbsp;", seq.filename);
+            rsprintf("<tr><td colspan=2>\n");
+            rsprintf("<script type=\"text/javascript\">\n");
+            rsprintf("function queryFilename()\n");
+            rsprintf("{\n");
+            rsprintf("  var f = prompt('Please enter new filename');\n");
+            rsprintf("  if (f != null && f != '') {\n");
+            rsprintf("    if (!f.search('.'))\n");
+            rsprintf("       f = f+'.msl';\n");
+            rsprintf("    ODBSet('/Sequencer/State/Filename', f);\n");
+            rsprintf("    var o=document.createElement('input');o.type='hidden';o.name='cmd';o.value='Save';\n");
+            rsprintf("    document.form1.appendChild(o);\n");
+            rsprintf("    document.form1.submit();\n");
+            rsprintf("  }\n");
+            rsprintf("  return false;");
+            rsprintf("}\n");
+            rsprintf("</script>\n");
+            rsprintf("Filename:<a onClick=\"return queryFilename();\" href=\"#\">%s</a>&nbsp;&nbsp;", seq.filename);
             rsprintf("<input type=submit name=cmd value=\"Save\">\n");
             rsprintf("<input type=submit name=cmd value=\"Cancel\">\n");
             rsprintf("<div align=\"right\"><a target=\"_blank\" href=\"http://ladd00.triumf.ca/~daqweb/doc/midas-old/html/RC_Sequencer.html\">Syntax Help</a></div>");
@@ -1894,14 +1938,12 @@ void show_seq_page()
          }
          rsprintf("</table>\n");
       } else {
-         rsprintf("<div><b>No script loaded</b></div>\n");
+         rsprintf("<tr><td><div class=\"subStatusTitle\" style=\"text-align:center\">&nbsp;&nbsp;No script loaded&nbsp;&nbsp;</div></td></tr>\n");
+         rsprintf("<tr><td style=\"text-align:center\"><input type=submit name=cmd value=\"New Script\"></td></tr></table>\n");
       }
    }
    
-
-
    rsprintf("</td></tr></table>"); //end wrapper table
-   //rsprintf("</form>\r\n");
    page_footer(TRUE);
 }
 
