@@ -48,7 +48,7 @@ The main core C-code for Midas.
 
 /********************************************************************/
 /* data type sizes */
-INT tid_size[] = {
+static const INT tid_size[] = {
    0,                           /* tid == 0 not defined                               */
    1,                           /* TID_BYTE      unsigned byte         0       255    */
    1,                           /* TID_SBYTE     signed byte         -128      127    */
@@ -69,7 +69,7 @@ INT tid_size[] = {
 };
 
 /* data type names */
-char *tid_name[] = {
+static const char *tid_name[] = {
    "NULL",
    "BYTE",
    "SBYTE",
@@ -8696,7 +8696,7 @@ INT rpc_tid_size(INT id)
    return 0;
 }
 
-char *rpc_tid_name(INT id)
+const char *rpc_tid_name(INT id)
 {
    if (id >= 0 && id < TID_LAST)
       return tid_name[id];

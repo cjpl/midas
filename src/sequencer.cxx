@@ -1530,38 +1530,6 @@ void show_seq_page()
             rsprintf("<option onDblClick=\"document.form1.submit()\">[%s]</option>\n", flist+i*MAX_STRING_LENGTH);
       }
       
-      /*---- go over XML files in sequencer directory ----*/
-      /*
-      n = ss_file_find(path, (char *)"*.xml", &flist);
-      for (i=0 ; i<n ; i++) {
-         strlcpy(str, path, sizeof(str));
-         strlcat(str, flist+i*MAX_STRING_LENGTH, sizeof(str));
-         comment[0] = 0;
-         if (pnseq) {
-            mxml_free_tree(pnseq);
-            pnseq = NULL;
-         }
-         pnseq = mxml_parse_file(str, error, sizeof(error), &error_line);
-         if (error[0])
-            sprintf(comment, "Error in XML: %s", error);
-         else {
-            if (pnseq) {
-               pn = mxml_find_node(pnseq, "RunSequence/Comment");
-               if (pn)
-                  strlcpy(comment, mxml_get_value(pn), sizeof(comment));
-               else
-                  strcpy(comment, "<No description in XML file>");
-            }
-         }
-         if (pnseq) {
-            mxml_free_tree(pnseq);
-            pnseq = NULL;
-         }
-         
-         rsprintf("<option onClick=\"document.getElementById('cmnt').innerHTML='%s'\">%s</option>\n", comment, flist+i*MAX_STRING_LENGTH);
-      }
-      */
-      
       /*---- go over MSL files in sequencer directory ----*/
       n = ss_file_find(path, (char *)"*.msl", &flist);
       for (i=0 ; i<n ; i++) {
@@ -1629,7 +1597,7 @@ void show_seq_page()
          rsprintf("{\n");
          rsprintf("  var f = prompt('Please enter filename');\n");
          rsprintf("  if (f != null && f != '') {\n");
-         rsprintf("    if (!f.search('.'))\n");
+         rsprintf("    if (f.indexOf('.') == -1)\n");
          rsprintf("       f = f+'.msl';\n");
          rsprintf("    ODBSet('/Sequencer/State/Filename', f);\n");
          rsprintf("    return true;\n");
@@ -1639,14 +1607,14 @@ void show_seq_page()
          rsprintf("</script>\n");
          rsprintf("<input type=submit name=cmd onClick=\"return queryFilename();\" value=\"Save\">\n");
          rsprintf("<input type=submit name=cmd value=\"Cancel\">\n");
-         rsprintf("<div align=\"right\"><a target=\"_blank\" href=\"http://ladd00.triumf.ca/~daqweb/doc/midas-old/html/RC_Sequencer.html\">Syntax Help</a></div>");
+         rsprintf("<div align=\"right\"><a target=\"_blank\" href=\"https://midas.triumf.ca/MidasWiki/index.php/Sequencer\">Syntax Help</a></div>");
          rsprintf("</td></tr>\n");
          rsprintf("<tr><td colspan=2><textarea rows=30 cols=80 name=\"scripttext\" style=\"font-family:monospace;font-size:medium;\">\n");
          rsprintf("</textarea></td></tr>\n");
          rsprintf("<tr><td style=\"text-align:center;\" colspan=2>\n");
-         rsprintf("<input type=submit name=cmd value=\"Save\">\n");
+         rsprintf("<input type=submit name=cmd onClick=\"return queryFilename();\" value=\"Save\">\n");
          rsprintf("<input type=submit name=cmd value=\"Cancel\">\n");
-         rsprintf("</td></tr>\n");
+         rsprintf("</td></tr></table>\n");
       } else if (seq.filename[0]) {
          if (equal_ustring(getparam("cmd"), "Edit Script")) {
             rsprintf("<tr><th class=\"subStatusTitle\">Script Editor</th></tr>");
@@ -1656,7 +1624,7 @@ void show_seq_page()
             rsprintf("{\n");
             rsprintf("  var f = prompt('Please enter new filename');\n");
             rsprintf("  if (f != null && f != '') {\n");
-            rsprintf("    if (!f.search('.'))\n");
+            rsprintf("    if (f.indexOf('.') == -1)\n");
             rsprintf("       f = f+'.msl';\n");
             rsprintf("    ODBSet('/Sequencer/State/Filename', f);\n");
             rsprintf("    var o=document.createElement('input');o.type='hidden';o.name='cmd';o.value='Save';\n");
@@ -1669,7 +1637,7 @@ void show_seq_page()
             rsprintf("Filename:<a onClick=\"return queryFilename();\" href=\"#\">%s</a>&nbsp;&nbsp;", seq.filename);
             rsprintf("<input type=submit name=cmd value=\"Save\">\n");
             rsprintf("<input type=submit name=cmd value=\"Cancel\">\n");
-            rsprintf("<div align=\"right\"><a target=\"_blank\" href=\"http://ladd00.triumf.ca/~daqweb/doc/midas-old/html/RC_Sequencer.html\">Syntax Help</a></div>");
+            rsprintf("<div align=\"right\"><a target=\"_blank\" href=\"https://midas.triumf.ca/MidasWiki/index.php/Sequencer\">Syntax Help</a></div>");
             rsprintf("</td></tr>\n");
             rsprintf("<tr><td colspan=2><textarea rows=30 cols=80 name=\"scripttext\" style=\"font-family:monospace;font-size:medium;\">\n");
             strlcpy(str, seq.path, sizeof(str));

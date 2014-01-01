@@ -58,8 +58,6 @@ INT _database_entries = 0;
 static RECORD_LIST *_record_list;
 static INT _record_list_entries = 0;
 
-extern char *tid_name[];
-
 INT db_save_xml_key(HNDLE hDB, HNDLE hKey, INT level, MXML_WRITER * writer);
 
 /*------------------------------------------------------------------*/
@@ -5976,7 +5974,7 @@ INT db_copy(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size, const char *
             if (status != DB_SUCCESS)
                continue;
             if (key.num_values == 1) {
-               sprintf(line, "%s = %s : ", key.name, tid_name[key.type]);
+               sprintf(line, "%s = %s : ", key.name, rpc_tid_name(key.type));
 
                if (key.type == TID_STRING && strchr(data, '\n') != NULL) {
                   /* multiline string */
@@ -6012,7 +6010,7 @@ INT db_copy(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size, const char *
                   sprintf(line + strlen(line), "%s\n", str);
                }
             } else {
-               sprintf(line, "%s = %s[%d] :\n", key.name, tid_name[key.type], key.num_values);
+               sprintf(line, "%s = %s[%d] :\n", key.name, rpc_tid_name(key.type), key.num_values);
 
                for (j = 0; j < key.num_values; j++) {
                   if (key.type == TID_STRING || key.type == TID_LINK)
@@ -6110,7 +6108,7 @@ INT db_copy(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size, const char *
          }
 
          if (key.num_values == 1) {
-            sprintf(line + strlen(line), "%s = %s : ", key.name, tid_name[key.type]);
+            sprintf(line + strlen(line), "%s = %s : ", key.name, rpc_tid_name(key.type));
 
             if (key.type == TID_STRING && strchr(data, '\n') != NULL) {
                /* multiline string */
@@ -6149,7 +6147,7 @@ INT db_copy(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size, const char *
                sprintf(line + strlen(line), "%s\n", str);
             }
          } else {
-            sprintf(line + strlen(line), "%s = %s[%d] :\n", key.name, tid_name[key.type], key.num_values);
+            sprintf(line + strlen(line), "%s = %s[%d] :\n", key.name, rpc_tid_name(key.type), key.num_values);
 
             for (j = 0; j < key.num_values; j++) {
                if (key.type == TID_STRING || key.type == TID_LINK)
@@ -6304,7 +6302,7 @@ INT db_paste(HNDLE hDB, HNDLE hKeyRoot, const char *buffer)
             }
 
             for (tid = 0; tid < TID_LAST; tid++)
-               if (strcmp(tid_name[tid], line) == 0)
+               if (strcmp(rpc_tid_name(tid), line) == 0)
                   break;
 
             string_length = 0;
@@ -6547,7 +6545,7 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
 
       strlcpy(type, mxml_get_attribute(node, "type"), sizeof(type));
       for (tid = 0; tid < TID_LAST; tid++)
-         if (strcmp(tid_name[tid], type) == 0)
+         if (strcmp(rpc_tid_name(tid), type) == 0)
             break;
       if (tid == TID_LAST) {
          cm_msg(MERROR, "db_paste_node", "found unknown data type \"%s\" in XML data", type);
@@ -6804,7 +6802,7 @@ static void db_save_tree_struct(HNDLE hDB, HNDLE hKey, int hfile, INT level)
             strcpy(line, "char");
             break;
          default:
-            strcpy(line, tid_name[key.type]);
+            strcpy(line, rpc_tid_name(key.type));
             break;
          }
 
@@ -9114,7 +9112,7 @@ INT db_check_record(HNDLE hDB, HNDLE hKey, const char *keyname, const char *rec_
             }
 
             for (tid = 0; tid < TID_LAST; tid++)
-               if (strcmp(tid_name[tid], line) == 0)
+               if (strcmp(rpc_tid_name(tid), line) == 0)
                   break;
 
             string_length = 0;
