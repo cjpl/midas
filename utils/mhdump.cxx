@@ -94,21 +94,21 @@ const char *tid_name[] = {
 
 struct Tag
 {
-  int event_id;
-  std::string name;
-  int offset;
-  int arraySize;
-  int typeSize;
-  int typeCode;
+   int event_id;
+   std::string name;
+   int offset;
+   int arraySize;
+   int typeSize;
+   int typeCode;
 };
 
 struct Event
 {
-  bool printAllTags;
-  int size;
-  std::map<std::string,Tag*> tags;
-  std::vector<std::string> tagNames;
-  std::vector<int> tagIndexes;
+   bool printAllTags;
+   int size;
+   std::map<std::string,Tag*> tags;
+   std::vector<std::string> tagNames;
+   std::vector<int> tagIndexes;
 };
 
 std::map<int,Event*> gTags;
