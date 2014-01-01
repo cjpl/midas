@@ -22,122 +22,122 @@ std::map<int,const char*> gEventName;
 
 int copyHstFile(FILE*f, MidasHistoryInterface *mh)
 {
-  assert(f!=NULL);
+   assert(f!=NULL);
 
-  while (1)
-    {
-      HIST_RECORD rec;
+   while (1)
+      {
+         HIST_RECORD rec;
 
-      int rd = fread(&rec, sizeof(rec), 1, f);
-      if (!rd)
-	break;
+         int rd = fread(&rec, sizeof(rec), 1, f);
+         if (!rd)
+            break;
 
 #if 0
-      printf("HIST_RECORD:\n");
-      printf("  Record type: 0x%x\n", rec.record_type);
-      printf("  Event ID: %d\n", rec.event_id);
-      printf("  Time: %d\n", rec.time);
-      printf("  Offset: 0x%x\n", rec.def_offset);
-      printf("  Size: 0x%x\n", rec.data_size);
+         printf("HIST_RECORD:\n");
+         printf("  Record type: 0x%x\n", rec.record_type);
+         printf("  Event ID: %d\n", rec.event_id);
+         printf("  Time: %d\n", rec.time);
+         printf("  Offset: 0x%x\n", rec.def_offset);
+         printf("  Size: 0x%x\n", rec.data_size);
 #endif
 
-      switch (rec.record_type)
-	{
-	default:
-	  printf("Unexpected record type: 0x%x\n", rec.record_type);
-	  return -1;
-	  break;
+         switch (rec.record_type)
+            {
+            default:
+               printf("Unexpected record type: 0x%x\n", rec.record_type);
+               return -1;
+               break;
 
-	case 0x46445348: // RT_DEF:
-	  {
-	    char event_name[NAME_LENGTH];
-	    rd = fread(event_name, 1, NAME_LENGTH, f);
-	    assert(rd == NAME_LENGTH);
+            case 0x46445348: // RT_DEF:
+               {
+                  char event_name[NAME_LENGTH];
+                  rd = fread(event_name, 1, NAME_LENGTH, f);
+                  assert(rd == NAME_LENGTH);
 	    
-	    int size = rec.data_size;
-	    int ntags = size/sizeof(TAG);
+                  int size = rec.data_size;
+                  int ntags = size/sizeof(TAG);
 
-	    //  printf("Event %d, \"%s\", size %d, %d tags.\n", rec.event_id, event_name, size, ntags);
+                  //  printf("Event %d, \"%s\", size %d, %d tags.\n", rec.event_id, event_name, size, ntags);
 
-	    assert(size > 0);
-	    assert(size < 1*1024*1024);
-	    assert(size == ntags*(int)sizeof(TAG));
+                  assert(size > 0);
+                  assert(size < 1*1024*1024);
+                  assert(size == ntags*(int)sizeof(TAG));
 	    
-	    TAG *tags = new TAG[ntags];
-	    rd = fread(tags, 1, size, f);
-	    assert(rd == size);
+                  TAG *tags = new TAG[ntags];
+                  rd = fread(tags, 1, size, f);
+                  assert(rd == size);
 
-            mh->hs_define_event(event_name, ntags, tags);
+                  mh->hs_define_event(event_name, ntags, tags);
 
-            gEventName[rec.event_id] = strdup(event_name);
+                  gEventName[rec.event_id] = strdup(event_name);
 
-	    delete tags;
-	    break;
-	  }
+                  delete tags;
+                  break;
+               }
 
-	case 0x41445348: // RT_DATA:
-	  {
-	    int size = rec.data_size;
+            case 0x41445348: // RT_DATA:
+               {
+                  int size = rec.data_size;
 
-	    if (0)
-	      printf("Data record, size %d.\n", size);
+                  if (0)
+                     printf("Data record, size %d.\n", size);
 
-	    assert(size > 0);
-	    assert(size < 1*1024*1024);
+                  assert(size > 0);
+                  assert(size < 1*1024*1024);
 	    
-	    static char *buf = NULL;
-            static int bufSize = 0;
+                  static char *buf = NULL;
+                  static int bufSize = 0;
 
-            if (size > bufSize)
-              {
-                bufSize = 1024*((size+1023)/1024);
-                buf = (char*)realloc(buf, bufSize);
-                assert(buf != NULL);
-              }
+                  if (size > bufSize)
+                     {
+                        bufSize = 1024*((size+1023)/1024);
+                        buf = (char*)realloc(buf, bufSize);
+                        assert(buf != NULL);
+                     }
 
-	    rd = fread(buf, 1, size, f);
-	    assert(rd == size);
+                  rd = fread(buf, 1, size, f);
+                  assert(rd == size);
 
-	    time_t t = (time_t)rec.time;
+                  time_t t = (time_t)rec.time;
 
-            mh->hs_write_event(gEventName[rec.event_id], t, size, buf);
+                  mh->hs_write_event(gEventName[rec.event_id], t, size, buf);
           
-            break;
-	  }
-	}
-    }
+                  break;
+               }
+            }
+      }
 
-  return 0;
+   return 0;
 }
 
 int copyHst(const char* name, MidasHistoryInterface* mh)
 {
-  FILE* f = fopen(name,"r");
-  if (!f)
-    {
-      fprintf(stderr,"Error: Cannot open \'%s\', errno %d (%s)\n", name, errno, strerror(errno));
-      exit(1);
-    }
+   FILE* f = fopen(name,"r");
+   if (!f)
+      {
+         fprintf(stderr,"Error: Cannot open \'%s\', errno %d (%s)\n", name, errno, strerror(errno));
+         exit(1);
+      }
 
-  copyHstFile(f, mh);
-  fclose(f);
-  mh->hs_flush_buffers();
-  return 0;
+   copyHstFile(f, mh);
+   fclose(f);
+   mh->hs_flush_buffers();
+   return 0;
 }
 
 void help()
 {
-  fprintf(stderr,"Usage: mh2sql [-h] [switches...] file1.hst file2.hst ...\n");
-  fprintf(stderr,"\n");
-  fprintf(stderr,"Switches:\n");
-  fprintf(stderr,"  -h --- print this help message\n");
-  fprintf(stderr,"  --hs-debug <hs_debug_flag> --- set the history debug flag\n");
-  fprintf(stderr,"  --odbc <ODBC_DSN> --- write to ODBC (SQL) history using given ODBC DSN\n");
-  fprintf(stderr,"  --sqlite <path> --- write to SQLITE database at the given path\n");
-  fprintf(stderr,"\n");
-  fprintf(stderr,"Examples:\n");
-  fprintf(stderr,"  mh2sql --hs-debug 1 --sqlite . 130813.hst\n");
-  exit(1);
+   fprintf(stderr,"Usage: mh2sql [-h] [switches...] file1.hst file2.hst ...\n");
+   fprintf(stderr,"\n");
+   fprintf(stderr,"Switches:\n");
+   fprintf(stderr,"  -h --- print this help message\n");
+   fprintf(stderr,"  --hs-debug <hs_debug_flag> --- set the history debug flag\n");
+   fprintf(stderr,"  --odbc <ODBC_DSN> --- write to ODBC (SQL) history using given ODBC DSN\n");
+   fprintf(stderr,"  --sqlite <path> --- write to SQLITE database at the given path\n");
+   fprintf(stderr,"\n");
+   fprintf(stderr,"Examples:\n");
+   fprintf(stderr,"  mh2sql --hs-debug 1 --sqlite . 130813.hst\n");
+   exit(1);
 }
 
 int main(int argc,char*argv[])
@@ -219,4 +219,10 @@ int main(int argc,char*argv[])
    return 0;
 }
 
-// end
+/* emacs
+ * Local Variables:
+ * tab-width: 8
+ * c-basic-offset: 3
+ * indent-tabs-mode: nil
+ * End:
+ */
