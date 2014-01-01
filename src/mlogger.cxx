@@ -2731,7 +2731,7 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info);
 
 static std::vector<MidasHistoryInterface*> mh;
 
-static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hKey, int ntags, const TAG* tags, int period, int hotlink)
+static int add_event(int* indexp, time_t timestamp, int event_id, const char* event_name, HNDLE hKey, int ntags, const TAG* tags, int period, int hotlink)
 {
    int status;
    int size, i;
@@ -2789,7 +2789,7 @@ static int add_event(int* indexp, int event_id, const char* event_name, HNDLE hK
    }
    
    for (unsigned i=0; i<mh.size(); i++) {
-      status = mh[i]->hs_define_event(event_name, ntags, tags);
+      status = mh[i]->hs_define_event(event_name, timestamp, ntags, tags);
       if (status != HS_SUCCESS) {
          cm_msg(MERROR, "add_event", "Cannot define event \"%s\", hs_define_event() status %d", event_name, status);
          return 0;
@@ -2848,6 +2848,8 @@ INT open_history()
    BOOL single_names;
    int count_events = 0;
    int global_per_variable_history = 0;
+
+   time_t now = time(NULL);
 
    // delete old history channels
 
@@ -2914,6 +2916,42 @@ INT open_history()
       size = sizeof(debug);
       status = db_get_value(hDB, 0, "/Logger/History/2/Debug", &debug, &size, TID_INT, TRUE);
       assert(status==DB_SUCCESS);
+
+      // create entry for MYSQL history
+
+      strlcpy(type, "MYSQL", sizeof(type));
+      size = sizeof(type);
+      status = db_get_value(hDB, 0, "/Logger/History/3/Type", type, &size, TID_STRING, TRUE);
+      assert(status==DB_SUCCESS);
+
+      active = 0;
+      size = sizeof(active);
+      status = db_get_value(hDB, 0, "/Logger/History/3/Active", &active, &size, TID_BOOL, TRUE);
+      assert(status==DB_SUCCESS);
+
+      debug = 0;
+      size = sizeof(debug);
+      status = db_get_value(hDB, 0, "/Logger/History/3/Debug", &debug, &size, TID_INT, TRUE);
+      assert(status==DB_SUCCESS);
+
+      // create entry for FILE history
+
+      strlcpy(type, "FILE", sizeof(type));
+      size = sizeof(type);
+      status = db_get_value(hDB, 0, "/Logger/History/4/Type", type, &size, TID_STRING, TRUE);
+      assert(status==DB_SUCCESS);
+
+      active = 0;
+      size = sizeof(active);
+      status = db_get_value(hDB, 0, "/Logger/History/4/Active", &active, &size, TID_BOOL, TRUE);
+      assert(status==DB_SUCCESS);
+
+      debug = 0;
+      size = sizeof(debug);
+      status = db_get_value(hDB, 0, "/Logger/History/4/Debug", &debug, &size, TID_INT, TRUE);
+      assert(status==DB_SUCCESS);
+
+      // get newly created /Logger/History
 
       status = db_find_key(hDB, 0, "/Logger/History", &hKeyHist);
    }
@@ -3223,7 +3261,7 @@ INT open_history()
 
                assert(i_tag <= n_tags);
 
-               status = add_event(&index, event_id, event_name, hKey, i_tag, tag, history, 1);
+               status = add_event(&index, now, event_id, event_name, hKey, i_tag, tag, history, 1);
                if (status != DB_SUCCESS)
                   return status;
 
@@ -3237,7 +3275,7 @@ INT open_history()
          if (!per_variable_history && i_tag>0) {
             assert(i_tag <= n_tags);
 
-            status = add_event(&index, eq_id, eq_name, hKeyVar, i_tag, tag, history, 1);
+            status = add_event(&index, now, eq_id, eq_name, hKeyVar, i_tag, tag, history, 1);
             if (status != DB_SUCCESS)
                return status;
 
@@ -3343,7 +3381,7 @@ INT open_history()
                db_open_record(hDB, hHistKey, NULL, size, MODE_READ, log_system_history,
                               (void *) (POINTER_T) index);
 
-            status = add_event(&index, max_event_id, hist_name, hHistKey, n_var, tag, 10, 0);
+            status = add_event(&index, now, max_event_id, hist_name, hHistKey, n_var, tag, 10, 0);
             if (status != DB_SUCCESS)
                return status;
 
@@ -3371,7 +3409,7 @@ INT open_history()
    const char* event_name = "Run transitions";
 
    for (unsigned i=0; i<mh.size(); i++) {
-      status = mh[i]->hs_define_event(event_name, 2, tag);
+      status = mh[i]->hs_define_event(event_name, now, 2, tag);
       if (status != HS_SUCCESS) {
          cm_msg(MERROR, "add_event", "Cannot define event \"%s\", hs_define_event() status %d", event_name, status);
          return 0;

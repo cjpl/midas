@@ -3,8 +3,6 @@
 //
 // Author: Konstantin Olchanski / TRIUMF, August-2008
 //
-// $Id$
-//
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,124 +18,186 @@
 
 std::map<int,const char*> gEventName;
 
-int copyHstFile(FILE*f, MidasHistoryInterface *mh)
+bool print_empty = false;
+bool print_dupe = false;
+bool print_string = false;
+
+bool had_empty = false;
+bool had_dupe = false;
+bool had_string = false;
+
+bool report_empty = true;
+bool report_dupe = true;
+bool report_string = true;
+
+int copyHstFile(const char* filename, FILE*f, MidasHistoryInterface *mh)
 {
-  assert(f!=NULL);
+   assert(f!=NULL);
 
-  while (1)
-    {
-      HIST_RECORD rec;
+   while (1)
+      {
+         HIST_RECORD rec;
 
-      int rd = fread(&rec, sizeof(rec), 1, f);
-      if (!rd)
-	break;
+         int rd = fread(&rec, sizeof(rec), 1, f);
+         if (!rd)
+            break;
 
 #if 0
-      printf("HIST_RECORD:\n");
-      printf("  Record type: 0x%x\n", rec.record_type);
-      printf("  Event ID: %d\n", rec.event_id);
-      printf("  Time: %d\n", rec.time);
-      printf("  Offset: 0x%x\n", rec.def_offset);
-      printf("  Size: 0x%x\n", rec.data_size);
+         printf("HIST_RECORD:\n");
+         printf("  Record type: 0x%x\n", rec.record_type);
+         printf("  Event ID: %d\n", rec.event_id);
+         printf("  Time: %d\n", rec.time);
+         printf("  Offset: 0x%x\n", rec.def_offset);
+         printf("  Size: 0x%x\n", rec.data_size);
 #endif
 
-      switch (rec.record_type)
-	{
-	default:
-	  printf("Unexpected record type: 0x%x\n", rec.record_type);
-	  return -1;
-	  break;
+         switch (rec.record_type)
+            {
+            default:
+               fprintf(stderr, "Error: %s: Unexpected record type: 0x%x\n", filename, rec.record_type);
+               return -1;
+               break;
 
-	case 0x46445348: // RT_DEF:
-	  {
-	    char event_name[NAME_LENGTH];
-	    rd = fread(event_name, 1, NAME_LENGTH, f);
-	    assert(rd == NAME_LENGTH);
+            case 0x46445348: // RT_DEF:
+               {
+                  char event_name[NAME_LENGTH];
+                  rd = fread(event_name, 1, NAME_LENGTH, f);
+                  assert(rd == NAME_LENGTH);
 	    
-	    int size = rec.data_size;
-	    int ntags = size/sizeof(TAG);
+                  int size = rec.data_size;
+                  int ntags = size/sizeof(TAG);
 
-	    //  printf("Event %d, \"%s\", size %d, %d tags.\n", rec.event_id, event_name, size, ntags);
+                  //  printf("Event %d, \"%s\", size %d, %d tags.\n", rec.event_id, event_name, size, ntags);
 
-	    assert(size > 0);
-	    assert(size < 1*1024*1024);
-	    assert(size == ntags*(int)sizeof(TAG));
+                  assert(size > 0);
+                  assert(size < 1*1024*1024);
+                  assert(size == ntags*(int)sizeof(TAG));
 	    
-	    TAG *tags = new TAG[ntags];
-	    rd = fread(tags, 1, size, f);
-	    assert(rd == size);
+                  TAG *tags = new TAG[ntags];
+                  rd = fread(tags, 1, size, f);
+                  assert(rd == size);
 
-            mh->hs_define_event(event_name, ntags, tags);
+                  // need to sanitize the tag names
+                  
+                  for (int i=0; i<ntags; i++) {
+                     if (tags[i].type == TID_STRING) {
+                        if (print_string)
+                           fprintf(stderr, "Warning: %s: Event \"%s\": Fixed by truncation at forbidden TID_STRING tag \"%s\" at index %d\n", filename, event_name, tags[i].name, i);
+                        ntags = i;
+                        had_string = true;
+                        break;
+                     }
 
-            gEventName[rec.event_id] = strdup(event_name);
+                     if (strlen(tags[i].name) < 1) {
+                        sprintf(tags[i].name, "empty_%d", i);
+                        if (print_empty)
+                           fprintf(stderr, "Warning: %s: Event \"%s\": Fixed empty tag name for tag %d: replaced with \"%s\"\n", filename, event_name, i, tags[i].name);
+                        had_empty = true;
+                     }
 
-	    delete tags;
-	    break;
-	  }
+                     for (int j=i+1; j<ntags; j++) {
+                        if (strcmp(tags[i].name, tags[j].name) == 0) {
+                           char str[256];
+                           sprintf(str, "_dup%d", j);
+                           strlcat(tags[j].name, str, sizeof(tags[j].name));
+                           if (print_dupe)
+                              fprintf(stderr, "Warning: %s: Event \"%s\": Fixed duplicate tag names: tag \"%s\" at index %d duplicate at index %d replaced with \"%s\"\n", filename, event_name, tags[i].name, i, j, tags[j].name);
+                           had_dupe = true;
+                        }
+                     }
+                  }
 
-	case 0x41445348: // RT_DATA:
-	  {
-	    int size = rec.data_size;
+                  mh->hs_define_event(event_name, rec.time, ntags, tags);
 
-	    if (0)
-	      printf("Data record, size %d.\n", size);
+                  gEventName[rec.event_id] = strdup(event_name);
 
-	    assert(size > 0);
-	    assert(size < 1*1024*1024);
+                  delete tags;
+                  break;
+               }
+
+            case 0x41445348: // RT_DATA:
+               {
+                  int size = rec.data_size;
+
+                  if (0)
+                     printf("Data record, size %d.\n", size);
+
+                  assert(size > 0);
+                  assert(size < 1*1024*1024);
 	    
-	    static char *buf = NULL;
-            static int bufSize = 0;
+                  static char *buf = NULL;
+                  static int bufSize = 0;
 
-            if (size > bufSize)
-              {
-                bufSize = 1024*((size+1023)/1024);
-                buf = (char*)realloc(buf, bufSize);
-                assert(buf != NULL);
-              }
+                  if (size > bufSize)
+                     {
+                        bufSize = 1024*((size+1023)/1024);
+                        buf = (char*)realloc(buf, bufSize);
+                        assert(buf != NULL);
+                     }
 
-	    rd = fread(buf, 1, size, f);
-	    assert(rd == size);
+                  rd = fread(buf, 1, size, f);
+                  assert(rd == size);
 
-	    time_t t = (time_t)rec.time;
+                  time_t t = (time_t)rec.time;
 
-            mh->hs_write_event(gEventName[rec.event_id], t, size, buf);
+                  mh->hs_write_event(gEventName[rec.event_id], t, size, buf);
           
-            break;
-	  }
-	}
-    }
+                  break;
+               }
+            }
+      }
 
-  return 0;
+   return 0;
 }
 
 int copyHst(const char* name, MidasHistoryInterface* mh)
 {
-  FILE* f = fopen(name,"r");
-  if (!f)
-    {
-      fprintf(stderr,"Error: Cannot open \'%s\', errno %d (%s)\n", name, errno, strerror(errno));
-      exit(1);
-    }
+   FILE* f = fopen(name,"r");
+   if (!f)
+      {
+         fprintf(stderr, "Error: Cannot open \'%s\', errno %d (%s)\n", name, errno, strerror(errno));
+         return -1;
+      }
 
-  copyHstFile(f, mh);
-  fclose(f);
-  mh->hs_flush_buffers();
-  return 0;
+   fprintf(stderr, "Reading %s\n", name);
+   copyHstFile(name, f, mh);
+   fclose(f);
+   mh->hs_flush_buffers();
+
+   if (had_empty && report_empty) {
+      report_empty = false;
+      fprintf(stderr, "Notice: Automatically repaired some empty tag names\n");
+   }
+
+   if (had_dupe && report_dupe) {
+      report_dupe = false;
+      fprintf(stderr, "Notice: Automatically repaired some duplicate tag names\n");
+   }
+
+   if (had_string && report_string) {
+      report_string = false;
+      fprintf(stderr, "Notice: Automatically truncated events that contain tags of forbidden type TID_STRING\n");
+   }
+
+   return 0;
 }
 
 void help()
 {
-  fprintf(stderr,"Usage: mh2sql [-h] [switches...] file1.hst file2.hst ...\n");
-  fprintf(stderr,"\n");
-  fprintf(stderr,"Switches:\n");
-  fprintf(stderr,"  -h --- print this help message\n");
-  fprintf(stderr,"  --hs-debug <hs_debug_flag> --- set the history debug flag\n");
-  fprintf(stderr,"  --odbc <ODBC_DSN> --- write to ODBC (SQL) history using given ODBC DSN\n");
-  fprintf(stderr,"  --sqlite <path> --- write to SQLITE database at the given path\n");
-  fprintf(stderr,"\n");
-  fprintf(stderr,"Examples:\n");
-  fprintf(stderr,"  mh2sql --hs-debug 1 --sqlite . 130813.hst\n");
-  exit(1);
+   fprintf(stderr,"Usage: mh2sql [-h] [switches...] file1.hst file2.hst ...\n");
+   fprintf(stderr,"\n");
+   fprintf(stderr,"Switches:\n");
+   fprintf(stderr,"  -h --- print this help message\n");
+   fprintf(stderr,"  --report-repaired-tags --- print messages about all repaired empty and duplicate tag names\n");
+   fprintf(stderr,"  --hs-debug <hs_debug_flag> --- set the history debug flag\n");
+   fprintf(stderr,"  --odbc <ODBC_DSN> --- write to ODBC (SQL) history using given ODBC DSN\n");
+   fprintf(stderr,"  --sqlite <path> --- write to SQLITE database at the given path\n");
+   fprintf(stderr,"  --mysql <connect string> --- write to MYSQL database\n");
+   fprintf(stderr,"  --file <path> --- write to FILE database at the given path\n");
+   fprintf(stderr,"\n");
+   fprintf(stderr,"Examples:\n");
+   fprintf(stderr,"  mh2sql --hs-debug 1 --sqlite . 130813.hst\n");
+   exit(1);
 }
 
 int main(int argc,char*argv[])
@@ -164,6 +224,10 @@ int main(int argc,char*argv[])
       
       if (strcmp(arg, "-h")==0) {
          help(); // DOES NOT RETURN
+      } else if (strcmp(arg, "--report-repaired-tags") == 0) {
+         print_empty = true;
+         print_dupe = true;
+         print_string = true;
       } else if (strcmp(arg, "--hs-debug") == 0) {
          hs_debug_flag = atoi(argv[iarg+1]);
          iarg++;
@@ -177,6 +241,22 @@ int main(int argc,char*argv[])
          iarg++;
       } else if (strcmp(arg, "--sqlite") == 0) {
          mh = MakeMidasHistorySqlite();
+         assert(mh);
+         mh->hs_set_debug(hs_debug_flag);
+         status = mh->hs_connect(argv[iarg+1]);
+         if (status != HS_SUCCESS)
+            exit(1);
+         iarg++;
+      } else if (strcmp(arg, "--mysql") == 0) {
+         mh = MakeMidasHistoryMysql();
+         assert(mh);
+         mh->hs_set_debug(hs_debug_flag);
+         status = mh->hs_connect(argv[iarg+1]);
+         if (status != HS_SUCCESS)
+            exit(1);
+         iarg++;
+      } else if (strcmp(arg, "--file") == 0) {
+         mh = MakeMidasHistoryFile();
          assert(mh);
          mh->hs_set_debug(hs_debug_flag);
          status = mh->hs_connect(argv[iarg+1]);
@@ -219,4 +299,11 @@ int main(int argc,char*argv[])
    return 0;
 }
 
-// end
+/* emacs
+ * Local Variables:
+ * tab-width: 8
+ * c-basic-offset: 3
+ * indent-tabs-mode: nil
+ * End:
+ */
+

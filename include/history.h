@@ -28,6 +28,8 @@ MidasHistoryInterface* MakeMidasHistory();
 MidasHistoryInterface* MakeMidasHistoryODBC();
 MidasHistoryInterface* MakeMidasHistorySqlite();
 MidasHistoryInterface* MakeMidasHistorySqlDebug();
+MidasHistoryInterface* MakeMidasHistoryMysql();
+MidasHistoryInterface* MakeMidasHistoryFile();
 
 #define HS_GET_READER   1
 #define HS_GET_WRITER   2
@@ -75,7 +77,7 @@ class MidasHistoryInterface
 
   // functions for writing into the history, used by mlogger
 
-  virtual int hs_define_event(const char* event_name, int ntags, const TAG tags[]) = 0; ///< see hs_define_event(), returns HS_SUCCESS or HS_FILE_ERROR
+  virtual int hs_define_event(const char* event_name, time_t timestamp, int ntags, const TAG tags[]) = 0; ///< see hs_define_event(), returns HS_SUCCESS or HS_FILE_ERROR
 
   virtual int hs_write_event(const char*  event_name, time_t timestamp, int data_size, const char* data) = 0; ///< see hs_write_event(), returns HS_SUCCESS or HS_FILE_ERROR
 

@@ -1349,7 +1349,7 @@ public:
    //             Functions used by mlogger              //
    ////////////////////////////////////////////////////////
 
-   int hs_define_event(const char* event_name, int ntags, const TAG tags[])
+   int hs_define_event(const char* event_name, time_t timestamp, int ntags, const TAG tags[])
    {
       int status;
 
@@ -1393,13 +1393,11 @@ public:
       if (!ie) {
          std::string table_name = MidasNameToSqlName(event_name);
 
-         double now = time(NULL);
-         
          char sss[102400];
          sprintf(sss, "INSERT INTO _history_index (event_name, table_name, itimestamp) VALUES (\'%s\', \'%s\', \'%.0f\');",
                  event_name,
                  table_name.c_str(),
-                 now);
+                 (double)timestamp);
          
          int status = fSql->Exec(sss);
          if (status != DB_SUCCESS)
@@ -1459,14 +1457,12 @@ public:
 
                // add tag name to column name translation to the history index
 
-               double now = time(NULL);
-      
                char sss[102400];
                sprintf(sss, "INSERT INTO _history_index (event_name, tag_name, column_name, itimestamp) VALUES (\'%s\', \'%s\', \'%s\', \'%.0f\');",
                        event_name,
                        tagname.c_str(),
                        colname.c_str(),
-                       now);
+                       (double)timestamp);
                
                int status = fSql->Exec(sss);
                if (status != DB_SUCCESS)
@@ -2155,4 +2151,10 @@ MidasHistoryInterface* MakeMidasHistorySqlDebug()
    return new SqlHistory(new SqlDebug());
 }
 
-// end
+/* emacs
+ * Local Variables:
+ * tab-width: 8
+ * c-basic-offset: 3
+ * indent-tabs-mode: nil
+ * End:
+ */

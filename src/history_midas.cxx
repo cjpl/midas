@@ -491,7 +491,7 @@ public:
 
    /*------------------------------------------------------------------*/
 
-   int hs_define_event(const char* event_name, int ntags, const TAG tags[])
+   int hs_define_event(const char* event_name, time_t timestamp, int ntags, const TAG tags[])
    {
       int event_id = FindEventId(event_name);
       if (event_id < 0)
@@ -1410,6 +1410,55 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
          
          if (debug_flag)
             cm_msg(MINFO, "hs_get_history", "Connected history channel \'%s\' type SQLITE in %s", key.name, path);
+      }
+   } else if (strcasecmp(type, "FILE")==0) {
+
+      char path[1024];
+      path[0] = 0;
+
+      size = sizeof(path);
+      //strlcpy(path, ".", sizeof(path));
+      status = db_get_value(hDB, hKey, "History dir", path, &size, TID_STRING, TRUE);
+      assert(status == DB_SUCCESS);
+
+      if (active || (flags & HS_GET_INACTIVE)) {
+         *mh = MakeMidasHistoryFile();
+         assert(*mh);
+         
+         (*mh)->hs_set_debug(debug);
+         
+         status = (*mh)->hs_connect(path);
+         if (status != HS_SUCCESS) {
+            cm_msg(MERROR, "hs_get_history", "Cannot connect to FILE history, status %d", status);
+            return status;
+         }
+         
+         if (debug_flag)
+            cm_msg(MINFO, "hs_get_history", "Connected history channel \'%s\' type SQLITE in %s", key.name, path);
+      }
+   } else if (strcasecmp(type, "MYSQL")==0) {
+
+      char str[1024];
+      str[0] = 0;
+
+      size = sizeof(str);
+      status = db_get_value(hDB, hKey, "Connect string", str, &size, TID_STRING, TRUE);
+      assert(status == DB_SUCCESS);
+
+      if (active || (flags & HS_GET_INACTIVE)) {
+         *mh = MakeMidasHistoryMysql();
+         assert(*mh);
+         
+         (*mh)->hs_set_debug(debug);
+         
+         status = (*mh)->hs_connect(str);
+         if (status != HS_SUCCESS) {
+            cm_msg(MERROR, "hs_get_history", "Cannot connect to MYSQL history, status %d", status);
+            return status;
+         }
+         
+         if (debug_flag)
+            cm_msg(MINFO, "hs_get_history", "Connected history channel \'%s\' type MYSQL at %s", key.name, str);
       }
    }
 
