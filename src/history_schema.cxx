@@ -564,7 +564,7 @@ struct HsFileSchema : public HsSchema {
 
 void HsSchema::print(bool print_tags) const
 {
-   int nv = this->variables.size();
+   unsigned nv = this->variables.size();
    printf("event [%s], time %s..%s, variables [%d]\n", this->event_name.c_str(), TimeToString(this->time_from).c_str(), TimeToString(this->time_to).c_str(), nv);
    if (print_tags)
       for (unsigned j=0; j<nv; j++)
@@ -573,7 +573,7 @@ void HsSchema::print(bool print_tags) const
 
 void HsSqlSchema::print(bool print_tags) const
 {
-   int nv = this->variables.size();
+   unsigned nv = this->variables.size();
    printf("event [%s], sql_table [%s], time %s..%s, variables [%d]\n", this->event_name.c_str(), this->table_name.c_str(), TimeToString(this->time_from).c_str(), TimeToString(this->time_to).c_str(), nv);
    if (print_tags)
       for (unsigned j=0; j<nv; j++) {
@@ -585,7 +585,7 @@ void HsSqlSchema::print(bool print_tags) const
 
 void HsFileSchema::print(bool print_tags) const
 {
-   int nv = this->variables.size();
+   unsigned nv = this->variables.size();
    printf("event [%s], file_name [%s], time %s..%s, variables [%d]\n", this->event_name.c_str(), this->file_name.c_str(), TimeToString(this->time_from).c_str(), TimeToString(this->time_to).c_str(), nv);
    if (print_tags) {
       for (unsigned j=0; j<nv; j++)
@@ -1993,7 +1993,7 @@ public:
 
       for (int i=0; i<num_var; i++) {
          bool done = false;
-         for (int ss=0; ss<fSchema.size(); ss++) {
+         for (unsigned ss=0; ss<fSchema.size(); ss++) {
             HsSchema* s = fSchema[ss];
             // schema is too new
             if (s->time_from && s->time_from >= timestamp)
@@ -2605,7 +2605,7 @@ int HsSqlSchema::write_event(const time_t t, const char* data, const int data_si
    std::string tags;
    std::string values;
    
-   for (int i=0; i<s->variables.size(); i++) {
+   for (unsigned i=0; i<s->variables.size(); i++) {
       if (s->variables[i].name.length() < 1)
          continue;
 
@@ -3675,12 +3675,12 @@ class FileHistory: public SchemaHistoryBase
 {
 protected:
    std::string fPath;
-   struct timespec last_mtimespec;
+   time_t last_mtime;
 
 public:
    FileHistory() // ctor
    {
-      memset(&last_mtimespec, 0, sizeof(last_mtimespec));
+      last_mtime = 0;
    }
 
    int hs_connect(const char* connect_string)
@@ -3725,21 +3725,21 @@ int FileHistory::read_schema(HsSchemaVector* sv, const char* event_name, const t
    int status;
 
    struct stat stat_buf;
-   status = lstat(fPath.c_str(), &stat_buf);
+   status = stat(fPath.c_str(), &stat_buf);
    if (status != 0) {
-      cm_msg(MERROR, "FileHistory::read_schema", "Cannot lstat(%s), errno %d (%s)", fPath.c_str(), errno, strerror(errno));
+      cm_msg(MERROR, "FileHistory::read_schema", "Cannot stat(%s), errno %d (%s)", fPath.c_str(), errno, strerror(errno));
       return HS_FILE_ERROR;
    }
 
    //printf("dir [%s], mtime: %d %d last: %d %d, mtime %s", fPath.c_str(), stat_buf.st_mtimespec.tv_sec, stat_buf.st_mtimespec.tv_nsec, last_mtimespec.tv_sec, last_mtimespec.tv_nsec, ctime(&stat_buf.st_mtimespec.tv_sec));
 
-   if (memcmp(&stat_buf.st_mtimespec, &last_mtimespec, sizeof(last_mtimespec))==0) {
+   if (stat_buf.st_mtime == last_mtime) {
       if (fDebug)
          printf("FileHistory::read_schema: loading schema for event [%s] at time %s: nothing to reload, history directory mtime did not change\n", event_name, TimeToString(timestamp).c_str());
       return HS_SUCCESS;
    }
 
-   last_mtimespec = stat_buf.st_mtimespec;
+   last_mtime = stat_buf.st_mtime;
 
    if (fDebug)
       printf("FileHistory::read_schema: loading schema for event [%s] at time %s\n", event_name, TimeToString(timestamp).c_str());
@@ -3842,7 +3842,7 @@ HsSchema* FileHistory::new_event(const char* event_name, time_t timestamp, int n
          }
 
       if (same)
-         if (s->variables.size() != ntags) {
+         if (s->variables.size() != (unsigned)ntags) {
             if (xdebug)
                printf("BBB: event [%s]: ntags: %d -> %d!\n", event_name, (int)s->variables.size(), ntags);
             same = false;
@@ -3855,12 +3855,12 @@ HsSchema* FileHistory::new_event(const char* event_name, time_t timestamp, int n
                   printf("CCC: event [%s] index %d: name [%s] -> [%s]!\n", event_name, i, s->variables[i].name.c_str(), tags[i].name);
                same = false;
             }
-            if (s->variables[i].type != tags[i].type) {
+            if (s->variables[i].type != (int)tags[i].type) {
                if (xdebug)
                   printf("DDD: event [%s] index %d: type %d -> %d!\n", event_name, i, s->variables[i].type, tags[i].type);
                same = false;
             }
-            if (s->variables[i].n_data != tags[i].n_data) {
+            if (s->variables[i].n_data != (int)tags[i].n_data) {
                if (xdebug)
                   printf("EEE: event [%s] index %d: n_data %d -> %d!\n", event_name, i, s->variables[i].n_data, tags[i].n_data);
                same = false;
