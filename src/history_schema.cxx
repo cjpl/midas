@@ -26,6 +26,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <algorithm>
 
 #ifndef HAVE_STRLCPY
 #include "strlcpy.h"
