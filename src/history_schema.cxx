@@ -1035,10 +1035,12 @@ int Sqlite::ConnectTable(const char* table_name)
       Exec(table_name, "PRAGMA journal_size_limit;");
    }
 
+#ifdef SQLITE_LIMIT_COLUMN
    if (0) {
       int max_columns = sqlite3_limit(db, SQLITE_LIMIT_COLUMN, -1);
       printf("Sqlite::Connect: SQLITE_LIMIT_COLUMN=%d\n", max_columns);
    }
+#endif
 
    if (fDebug)
       cm_msg(MINFO, "Sqlite::Connect", "Table %s: connected to Sqlite file \'%s\'", table_name, fname.c_str());
