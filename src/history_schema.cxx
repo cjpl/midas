@@ -166,72 +166,10 @@ static bool MatchTagName(const char* tag_name, const char* var_tag_name, const i
    return false;
 }
 
-////////////////////////////////////////
-// Definitions extracted from midas.c //
-////////////////////////////////////////
-
-////////////////////////////////////////
-//       MIDAS data types             //
-////////////////////////////////////////
-
-/********************************************************************/
-/* data type sizes */
-static const int tid_size[TID_LAST] = {
-   0,                           /* tid == 0 not defined                               */
-   1,                           /* TID_BYTE      unsigned byte         0       255    */
-   1,                           /* TID_SBYTE     signed byte         -128      127    */
-   1,                           /* TID_CHAR      single character      0       255    */
-   2,                           /* TID_WORD      two bytes             0      65535   */
-   2,                           /* TID_SHORT     signed word        -32768    32767   */
-   4,                           /* TID_DWORD     four bytes            0      2^32-1  */
-   4,                           /* TID_INT       signed dword        -2^31    2^31-1  */
-   4,                           /* TID_BOOL      four bytes bool       0        1     */
-   4,                           /* TID_FLOAT     4 Byte float format                  */
-   8,                           /* TID_DOUBLE    8 Byte float format                  */
-   1,                           /* TID_BITFIELD  8 Bits Bitfield    00000000 11111111 */
-   0,                           /* TID_STRING    zero terminated string               */
-   0,                           /* TID_ARRAY     variable length array of unkown type */
-   0,                           /* TID_STRUCT    C structure                          */
-   0,                           /* TID_KEY       key in online database               */
-   0                            /* TID_LINK      link in online database              */
-};
-
-/* data type names */
-static const char *tid_name[TID_LAST] = {
-   "NULL",
-   "BYTE",
-   "SBYTE",
-   "CHAR",
-   "WORD",
-   "SHORT",
-   "DWORD",
-   "INT",
-   "BOOL",
-   "FLOAT",
-   "DOUBLE",
-   "BITFIELD",
-   "STRING",
-   "ARRAY",
-   "STRUCT",
-   "KEY",
-   "LINK"
-};
-
-static const char* midasTypeName(int tid)
-{
-   if (tid>=0 && tid<TID_LAST)
-      return tid_name[tid];
-
-   // FIXME: returning pointer to private array, non-thread-safe
-   static char buf[1024];
-   sprintf(buf, "TID_%d", tid);
-   return buf;
-}
-
-static int midasType(const char* type_name)
+static int midas_tid(const char* type_name)
 {
    for (int i=0; i<TID_LAST; i++)
-      if (strcmp(type_name, tid_name[i]) == 0)
+      if (strcmp(type_name, rpc_tid_name(i)) == 0)
          return i;
    return 0;
 }
@@ -629,7 +567,7 @@ void HsSchema::print(bool print_tags) const
    printf("event [%s], time %s..%s, variables [%d]\n", this->event_name.c_str(), TimeToString(this->time_from).c_str(), TimeToString(this->time_to).c_str(), nv);
    if (print_tags)
       for (unsigned j=0; j<nv; j++)
-         printf("  %d: name [%s], type [%s] tid %d, n_data %d, n_bytes %d, offset %d\n", j, this->variables[j].name.c_str(), midasTypeName(this->variables[j].type), this->variables[j].type, this->variables[j].n_data, this->variables[j].n_bytes, this->offsets[j]);
+         printf("  %d: name [%s], type [%s] tid %d, n_data %d, n_bytes %d, offset %d\n", j, this->variables[j].name.c_str(), rpc_tid_name(this->variables[j].type), this->variables[j].type, this->variables[j].n_data, this->variables[j].n_bytes, this->offsets[j]);
 };
 
 void HsSqlSchema::print(bool print_tags) const
@@ -638,7 +576,7 @@ void HsSqlSchema::print(bool print_tags) const
    printf("event [%s], sql_table [%s], time %s..%s, variables [%d]\n", this->event_name.c_str(), this->table_name.c_str(), TimeToString(this->time_from).c_str(), TimeToString(this->time_to).c_str(), nv);
    if (print_tags)
       for (unsigned j=0; j<nv; j++) {
-         printf("  %d: name [%s], type [%s] tid %d, n_data %d, n_bytes %d", j, this->variables[j].name.c_str(), midasTypeName(this->variables[j].type), this->variables[j].type, this->variables[j].n_data, this->variables[j].n_bytes);
+         printf("  %d: name [%s], type [%s] tid %d, n_data %d, n_bytes %d", j, this->variables[j].name.c_str(), rpc_tid_name(this->variables[j].type), this->variables[j].type, this->variables[j].n_data, this->variables[j].n_bytes);
          printf(", sql_column [%s], sql_type [%s], offset %d", this->column_names[j].c_str(), this->column_types[j].c_str(), this->offsets[j]);
          printf("\n");
       }
@@ -650,7 +588,7 @@ void HsFileSchema::print(bool print_tags) const
    printf("event [%s], file_name [%s], time %s..%s, variables [%d]\n", this->event_name.c_str(), this->file_name.c_str(), TimeToString(this->time_from).c_str(), TimeToString(this->time_to).c_str(), nv);
    if (print_tags) {
       for (unsigned j=0; j<nv; j++)
-         printf("  %d: name [%s], type [%s] tid %d, n_data %d, n_bytes %d, offset %d\n", j, this->variables[j].name.c_str(), midasTypeName(this->variables[j].type), this->variables[j].type, this->variables[j].n_data, this->variables[j].n_bytes, this->offsets[j]);
+         printf("  %d: name [%s], type [%s] tid %d, n_data %d, n_bytes %d, offset %d\n", j, this->variables[j].name.c_str(), rpc_tid_name(this->variables[j].type), this->variables[j].type, this->variables[j].n_data, this->variables[j].n_bytes, this->offsets[j]);
       printf("  record_size: %d, data_offset: %d\n", this->record_size, this->data_offset);
    }
 }
@@ -787,18 +725,21 @@ bool Mysql::IsConnected()
 int Mysql::OpenTransaction(const char* table_name)
 {
    // FIXME
+   // Exec(table_name, "START TRANSACTION");
    return DB_SUCCESS;
 }
 
 int Mysql::CommitTransaction(const char* table_name)
 {
    // FIXME
+   // Exec(table_name, "COMMIT");
    return DB_SUCCESS;
 }
 
 int Mysql::RollbackTransaction(const char* table_name)
 {
    // FIXME
+   // Exec(table_name, "ROLLBACK");
    return DB_SUCCESS;
 }
 
@@ -918,7 +859,7 @@ const char* Mysql::ColumnType(int midas_tid)
 bool Mysql::TypesCompatible(int midas_tid, const char* sql_type)
 {
    if (0)
-      printf("compare types midas \'%s\'=\'%s\' and sql \'%s\'\n", midasTypeName(midas_tid), ColumnType(midas_tid), sql_type);
+      printf("compare types midas \'%s\'=\'%s\' and sql \'%s\'\n", rpc_tid_name(midas_tid), ColumnType(midas_tid), sql_type);
 
    //if (sql2midasType_mysql(sql_type) == midas_tid)
    //   return true;
@@ -1006,7 +947,7 @@ const char* Sqlite::ColumnType(int midas_tid)
 bool Sqlite::TypesCompatible(int midas_tid, const char* sql_type)
 {
    if (0)
-      printf("compare types midas \'%s\'=\'%s\' and sql \'%s\'\n", midasTypeName(midas_tid), ColumnType(midas_tid), sql_type);
+      printf("compare types midas \'%s\'=\'%s\' and sql \'%s\'\n", rpc_tid_name(midas_tid), ColumnType(midas_tid), sql_type);
 
    //if (sql2midasType_sqlite(sql_type) == midas_tid)
    //   return true;
@@ -1417,7 +1358,7 @@ int Sqlite::Exec(const char* table_name, const char* sql)
 static void PrintTags(int ntags, const TAG tags[])
 {
    for (int i=0; i<ntags; i++)
-      printf("tag %d: %s %s[%d]\n", i, midasTypeName(tags[i].type), tags[i].name, tags[i].n_data);
+      printf("tag %d: %s %s[%d]\n", i, rpc_tid_name(tags[i].type), tags[i].name, tags[i].n_data);
 }
 
 // convert MIDAS names to SQL names
@@ -3233,9 +3174,9 @@ static int ReadSqliteColumnNames(SqlBase* sql, HsSchemaVector *sv, const char* t
             if (col_name != s->column_names[j])
                continue;
             s->variables[j].name = tag_name;
-            s->variables[j].type = midasType(tag_type.c_str());
+            s->variables[j].type = midas_tid(tag_type.c_str());
             s->variables[j].n_data = 1;
-            s->variables[j].n_bytes = tid_size[s->variables[j].type];
+            s->variables[j].n_bytes = rpc_tid_size(s->variables[j].type);
          }
       }
    }
@@ -3408,14 +3349,14 @@ static int UpdateSqliteSchema1(HsSqlSchema* s, const time_t timestamp, const int
                if (s->sql->TypesCompatible(tagtype, s->column_types[j].c_str())) {
                   if (count == 0) {
                      s->offsets[j] = offset;
-                     offset += tid_size[tagtype];
+                     offset += rpc_tid_size(tagtype);
                   }
                   count++;
                } else {
                   // column with incompatible type, mark it as unused
                   schema_ok = false;
                   if (write_enable) {
-                     status = UpdateSqliteColumn(s->sql, s->table_name.c_str(), s->column_names[j].c_str(), s->column_types[j].c_str(), "" /*tagname*/, midasTypeName(tagtype), timestamp, have_transaction, debug);
+                     status = UpdateSqliteColumn(s->sql, s->table_name.c_str(), s->column_names[j].c_str(), s->column_types[j].c_str(), "" /*tagname*/, rpc_tid_name(tagtype), timestamp, have_transaction, debug);
                      if (status != HS_SUCCESS)
                         return status;
                   }
@@ -3470,7 +3411,7 @@ static int UpdateSqliteSchema1(HsSqlSchema* s, const time_t timestamp, const int
                if (status != HS_SUCCESS)
                   return status;
 
-               status = UpdateSqliteColumn(s->sql, s->table_name.c_str(), col_name.c_str(), col_type, tagname.c_str(), midasTypeName(tagtype), timestamp, have_transaction, debug);
+               status = UpdateSqliteColumn(s->sql, s->table_name.c_str(), col_name.c_str(), col_type, tagname.c_str(), rpc_tid_name(tagtype), timestamp, have_transaction, debug);
                if (status != HS_SUCCESS)
                   return status;
             }
@@ -4085,7 +4026,7 @@ int FileHistory::create_file(const char* event_name, time_t timestamp, int ntags
    bool xdebug = false; // (strcmp(event_name, "u_Beam") == 0);
 
    for (int i=0; i<ntags; i++) {
-      int tsize = tid_size[tags[i].type];
+      int tsize = rpc_tid_size(tags[i].type);
       int n_bytes = tags[i].n_data*tsize;
       int xalign = (offset % tsize);
 
@@ -4118,7 +4059,7 @@ assert(pad_bytes > 0);
       }
 
       ss += "tag: ";
-      ss    += midasTypeName(tags[i].type);
+      ss    += rpc_tid_name(tags[i].type);
       ss    += " ";
       ss    += SmallIntToString(tags[i].n_data);
       ss    += " ";
@@ -4252,7 +4193,7 @@ HsFileSchema* FileHistory::read_file_schema(const char* filename)
          if (bbb) {
             *bbb = 0;
             HsSchemaEntry t;
-            t.type = midasType(midas_type);
+            t.type = midas_tid(midas_type);
             bbb++;
             while (*bbb == ' ')
                bbb++;
