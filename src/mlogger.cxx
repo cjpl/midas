@@ -117,7 +117,7 @@ void logger_init()
 
    /*---- create /logger entries -----*/
 
-   cm_get_path(str);
+   cm_get_path1(str, sizeof(str));
    size = sizeof(str);
    db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING, TRUE);
 
@@ -318,18 +318,18 @@ int mysql_query_debug(MYSQL * db, char *query)
          db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING, TRUE);
          if (dir[0] != 0)
             if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
-               strcat(dir, DIR_SEPARATOR_STR);
+               strlcat(dir, DIR_SEPARATOR_STR, sizeof(dir));
 
-         strcpy(path, dir);
-         strcat(path, filename);
+         strlcpy(path, dir, sizeof(path));
+         strlcat(path, filename, sizeof(path));
       } else {
-         cm_get_path(dir);
+         cm_get_path1(dir, sizeof(dir));
          if (dir[0] != 0)
             if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
-               strcat(dir, DIR_SEPARATOR_STR);
+               strlcat(dir, DIR_SEPARATOR_STR, sizeof(dir));
 
-         strcpy(path, dir);
-         strcat(path, filename);
+         strlcpy(path, dir, sizeof(path));
+         strlcat(path, filename, sizeof(path));
       }
 
       fh = open(path, O_WRONLY | O_CREAT | O_APPEND | O_LARGEFILE, 0644);

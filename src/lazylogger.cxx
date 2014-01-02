@@ -552,7 +552,7 @@ Function value:      number of elements
 std::string list_filename(const char* lazyname, const char* listname)
 {
    char path[256];
-   cm_get_path(path);
+   cm_get_path1(path, sizeof(path));
 
    std::string s;
    s += path;

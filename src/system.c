@@ -125,10 +125,10 @@ static void check_shm_type(const char* shm_type)
    char* s;
    FILE *fp;
 
-   cm_get_path(path);
+   cm_get_path1(path, sizeof(path));
    if (path[0] == 0) {
-      getcwd(path, 256);
-      strcat(path, "/");
+      getcwd(path, sizeof(path));
+      strlcat(path, "/", sizeof(path));
    }
 
    strlcpy(file_name, path, file_name_size);
@@ -209,12 +209,12 @@ static void check_shm_host()
 
    cm_get_path1(path, sizeof(path));
    if (path[0] == 0) {
-      getcwd(path, 256);
+      getcwd(path, sizeof(path));
 #if defined(OS_VMS)
 #elif defined(OS_UNIX)
-      strcat(path, "/");
+      strlcat(path, "/", sizeof(path));
 #elif defined(OS_WINNT)
-      strcat(path, "\\");
+      strlcat(path, "\\", sizeof(path));
 #endif
    }
 
@@ -285,12 +285,12 @@ static int ss_shm_name(const char* name, char* mem_name, int mem_name_size, char
    assert(strlen(exptname) > 0);
 
    if (path[0] == 0) {
-      getcwd(path, 256);
+      getcwd(path, sizeof(path));
 #if defined(OS_VMS)
 #elif defined(OS_UNIX)
-      strcat(path, "/");
+      strlcat(path, "/", sizeof(path));
 #elif defined(OS_WINNT)
-      strcat(path, "\\");
+      strlcat(path, "\\", sizeof(path));
 #endif
    }
 
@@ -402,13 +402,13 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
          because NT doesn't use ftok. So if different experiments are
          running in different directories, they should not see the same
          shared memory */
-      cm_get_path(path);
-      strcpy(str, path);
+      cm_get_path1(path, sizeof(path));
+      strlcpy(str, path, sizeof(path));
 
       /* replace special chars by '*' */
       while (strpbrk(str, "\\: "))
          *strpbrk(str, "\\: ") = '*';
-      strcat(str, mem_name);
+      strlcat(str, mem_name, sizeof(path));
 
       /* convert to uppercase */
       p = str;
@@ -813,23 +813,23 @@ INT ss_shm_close(const char *name, void *adr, HNDLE handle, INT destroy_flag)
    sprintf(mem_name, "SM_%s", name);
 
    /* append .SHM and preceed the path for the shared memory file name */
-   cm_get_path(path);
+   cm_get_path1(path, sizeof(path));
    if (path[0] == 0) {
-      getcwd(path, 256);
+      getcwd(path, sizeof(path));
 #if defined(OS_VMS)
 #elif defined(OS_UNIX)
-      strcat(path, "/");
+      strlcat(path, "/", sizeof(path));
 #elif defined(OS_WINNT)
-      strcat(path, "\\");
+      strlcat(path, "\\", sizeof(path));
 #endif
    }
 
-   strcpy(file_name, path);
+   strlcpy(file_name, path, sizeof(file_name));
 #if defined (OS_UNIX)
-   strcat(file_name, ".");      /* dot file under UNIX */
+   strlcat(file_name, ".", sizeof(file_name));      /* dot file under UNIX */
 #endif
-   strcat(file_name, name);
-   strcat(file_name, ".SHM");
+   strlcat(file_name, name, sizeof(file_name));
+   strlcat(file_name, ".SHM", sizeof(file_name));
 
 #ifdef OS_WINNT
 
@@ -2239,16 +2239,16 @@ INT ss_semaphore_create(const char *name, HNDLE * semaphore_handle)
          char path[256], file_name[256];
 
          /* Build the filename out of the path and the name of the semaphore */
-         cm_get_path(path);
+         cm_get_path1(path, sizeof(path));
          if (path[0] == 0) {
-            getcwd(path, 256);
-            strcat(path, "/");
+            getcwd(path, sizeof(path));
+            strlcat(path, "/", sizeof(path));
          }
 
-         strcpy(file_name, path);
-         strcat(file_name, ".");
-         strcat(file_name, name);
-         strcat(file_name, ".SHM");
+         strlcpy(file_name, path, sizeof(file_name));
+         strlcat(file_name, ".", sizeof(file_name));
+         strlcat(file_name, name, sizeof(file_name));
+         strlcat(file_name, ".SHM", sizeof(file_name));
 
          /* create a unique key from the file name */
          key = ftok(file_name, 'M');

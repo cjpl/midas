@@ -424,7 +424,7 @@ INT cm_msg_log(INT message_type, const char *message)
                   strcat(lpath, linkname);
                }
             } else {
-               cm_get_path(dir);
+               cm_get_path1(dir, sizeof(dir));
                if (dir[0] != 0)
                   if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
                      strcat(dir, DIR_SEPARATOR_STR);
@@ -570,7 +570,7 @@ INT cm_msg_log1(INT message_type, const char *message, const char *facility)
                strcpy(path, dir);
                strcat(path, filename);
             } else {
-               cm_get_path(dir);
+               cm_get_path1(dir, sizeof(dir));
                if (dir[0] != 0)
                   if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
                      strcat(dir, DIR_SEPARATOR_STR);
@@ -1157,19 +1157,19 @@ INT cm_msg_retrieve(INT n_message, char *message, INT buf_size)
             strcpy(path, dir);
             strcat(path, filename2);
          } else {
-            cm_get_path(dir);
+            cm_get_path1(dir, sizeof(dir));
             if (dir[0] != 0)
                if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
-                  strcat(dir, DIR_SEPARATOR_STR);
+                  strlcat(dir, DIR_SEPARATOR_STR, sizeof(dir));
 
-            strcpy(path, dir);
-            strcat(path, filename2);
+            strlcpy(path, dir, sizeof(path));
+            strlcat(path, filename2, sizeof(path));
          }
       } else {
-         strcpy(path, filename2);
+         strlcpy(path, filename2, sizeof(path));
       }
    } else
-      strcpy(path, "midas.log");
+      strlcpy(path, "midas.log", sizeof(path));
 
    n = cm_msg_retrieve1(path, n_message, message, buf_size);
 
@@ -1192,16 +1192,16 @@ INT cm_msg_retrieve(INT n_message, char *message, INT buf_size)
             strcpy(path, dir);
             strcat(path, filename2);
          } else {
-            cm_get_path(dir);
+            cm_get_path1(dir, sizeof(dir));
             if (dir[0] != 0)
                if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
-                  strcat(dir, DIR_SEPARATOR_STR);
+                  strlcat(dir, DIR_SEPARATOR_STR, sizeof(dir));
 
-            strcpy(path, dir);
-            strcat(path, filename2);
+            strlcpy(path, dir, sizeof(path));
+            strlcat(path, filename2, sizeof(path));
          }
       } else {
-         strcpy(path, filename2);
+         strlcpy(path, filename2, sizeof(path));
       }
 
       message2 = (char *) malloc(buf_size);
@@ -1370,6 +1370,11 @@ INT cm_get_path(char *path)
 
 INT cm_get_path1(char *path, int path_size)
 {
+   // check that we were not accidentally called
+   // with the size of the pointer to a string
+   // instead of the size of the string buffer
+   assert(path_size != sizeof(char*));
+
    strlcpy(path, _path_name, path_size);
 
    return CM_SUCCESS;
@@ -2200,7 +2205,7 @@ INT cm_connect_experiment1(const char *host_name, const char *exp_name,
    db_set_value(hDB, 0, "/Experiment/Name", exp_name1, NAME_LENGTH, 1, TID_STRING);
 
    /* set data dir in ODB */
-   cm_get_path(str);
+   cm_get_path1(str, sizeof(str));
    size = sizeof(str);
    db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING, TRUE);
 
