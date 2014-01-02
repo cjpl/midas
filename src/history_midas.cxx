@@ -1369,11 +1369,12 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
       if (active || (flags & HS_GET_INACTIVE)) {
          if (debug == 2) {
             *mh = MakeMidasHistorySqlDebug();
-            assert(*mh);
          } else if (strlen(dsn) > 1) {
             *mh = MakeMidasHistoryODBC();
-            assert(*mh);
          }
+
+         if (*mh == NULL)
+            return HS_FILE_ERROR;
          
          (*mh)->hs_set_debug(debug);
 
@@ -1398,7 +1399,8 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
 
       if (active || (flags & HS_GET_INACTIVE)) {
          *mh = MakeMidasHistorySqlite();
-         assert(*mh);
+         if (*mh == NULL)
+            return HS_FILE_ERROR;
          
          (*mh)->hs_set_debug(debug);
          
@@ -1423,7 +1425,8 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
 
       if (active || (flags & HS_GET_INACTIVE)) {
          *mh = MakeMidasHistoryFile();
-         assert(*mh);
+         if (*mh == NULL)
+            return HS_FILE_ERROR;
          
          (*mh)->hs_set_debug(debug);
          
@@ -1447,7 +1450,8 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
 
       if (active || (flags & HS_GET_INACTIVE)) {
          *mh = MakeMidasHistoryMysql();
-         assert(*mh);
+         if (*mh == NULL)
+            return HS_FILE_ERROR;
          
          (*mh)->hs_set_debug(debug);
          
@@ -1460,6 +1464,9 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
          if (debug_flag)
             cm_msg(MINFO, "hs_get_history", "Connected history channel \'%s\' type MYSQL at %s", key.name, str);
       }
+   } else {
+      cm_msg(MERROR, "hs_get_history", "Logger history channel /Logger/History/%s/Type has invalid value \'%s\', valid values are MIDAS, ODBC, SQLITE, MYSQL and FILE", key.name, type);
+      return HS_FILE_ERROR;
    }
 
    if (*mh == NULL)
