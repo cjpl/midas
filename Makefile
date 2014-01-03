@@ -57,16 +57,9 @@ NEED_RPATH=1
 NEED_LIBROOTA=
 
 #
-# Optional libmysqlclient library for mlogger
+# Optional MYSQL library for mlogger and for the history
 #
-# To add mySQL support to the logger, say "make ... NEED_MYSQL=1"
-#
-# Here we try to figure out automatically if mySQL is installed
-MYSQL_CONFIG := $(shell which mysql_config 2> /dev/null)
-ifdef MYSQL_CONFIG
-  MYSQLINCDIR := $(shell mysql_config --cflags | sed -e 's,^.*-I\([^ ]*\).*$$,\1,' -e s/\'//g)
-  NEED_MYSQL := $(shell if [ -e $(MYSQLINCDIR)/mysql.h ]; then echo 1; fi)
-endif
+HAVE_MYSQL := $(shell mysql_config --include 2> /dev/null)
 
 #
 # Optional ODBC history support
@@ -432,10 +425,9 @@ $(GIT_REVISION): $(SRC_DIR)/midas.c $(SRC_DIR)/odb.c $(SRC_DIR)/system.c
 # main binaries
 #
 
-ifeq ($(NEED_MYSQL),1)
+ifdef HAVE_MYSQL
 CFLAGS      += -DHAVE_MYSQL $(shell mysql_config --include)
-MYSQL_LIBS  := -L/usr/lib/mysql $(shell mysql_config --libs)
-# only for mlogger LIBS        += $(MYSQL_LIBS)
+MYSQL_LIBS  += -L/usr/lib/mysql $(shell mysql_config --libs)
 NEED_ZLIB = 1
 endif
 
