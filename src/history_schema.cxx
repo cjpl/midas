@@ -151,7 +151,7 @@ static bool MatchEventName(const char* event_name, const char* var_event_name)
    }
 }
 
-static bool MatchTagName(const char* tag_name, const char* var_tag_name, const int var_tag_index)
+static bool MatchTagName(const char* tag_name, int n_data, const char* var_tag_name, const int var_tag_index)
 {
    char alt_tag_name[1024]; // maybe this is an array without "Names"?
    sprintf(alt_tag_name, "%s[%d]", var_tag_name, var_tag_index);
@@ -159,7 +159,8 @@ static bool MatchTagName(const char* tag_name, const char* var_tag_name, const i
    //printf("  looking for tag [%s] alt [%s], try column name [%s]\n", var_tag_name, alt_tag_name, tag_name);
    
    if (strcmp(tag_name, var_tag_name) == 0)
-      return true;
+      if (var_tag_index >= 0 && var_tag_index < n_data)
+         return true;
    
    if (strcmp(tag_name, alt_tag_name) == 0)
       return true;
@@ -317,7 +318,7 @@ struct HsSchema
                                  time_t* last_written) = 0;
    virtual int read_data(const time_t start_time,
                          const time_t end_time,
-                         const int num_var, const int var_schema_index[],
+                         const int num_var, const int var_schema_index[], const int var_index[],
                          const int debug,
                          MidasHistoryBufferInterface* buffer[]) = 0;
 };
@@ -515,7 +516,7 @@ struct HsSqlSchema : public HsSchema {
                          time_t* last_written);
    int read_data(const time_t start_time,
                  const time_t end_time,
-                 const int num_var, const int var_schema_index[],
+                 const int num_var, const int var_schema_index[], const int var_index[],
                  const int debug,
                  MidasHistoryBufferInterface* buffer[]);
 };
@@ -553,7 +554,7 @@ struct HsFileSchema : public HsSchema {
                          time_t* last_written);
    int read_data(const time_t start_time,
                  const time_t end_time,
-                 const int num_var, const int var_schema_index[],
+                 const int num_var, const int var_schema_index[], const int var_index[],
                  const int debug,
                  MidasHistoryBufferInterface* buffer[]);
 };
@@ -677,7 +678,7 @@ int Mysql::Connect(const char* connect_string)
       Disconnect();
 
    if (fDebug)
-      cm_msg(MINFO, "Mysql::Connect", "Connecting to Mysql database specified in \'%s\'", connect_string);
+      cm_msg(MINFO, "Mysql::Connect", "Connecting to Mysql database specified by \'%s\'", connect_string);
 
    std::string host_name;
    std::string user_name;
@@ -688,7 +689,7 @@ int Mysql::Connect(const char* connect_string)
 
    FILE* fp = fopen(connect_string, "r");
    if (!fp) {
-      cm_msg(MERROR, "Mysql::Connect", "Cannot read \'%s\', fopen() error %d (%s)", connect_string, errno, strerror(errno));
+      cm_msg(MERROR, "Mysql::Connect", "Cannot read MYSQL connection parameters from \'%s\', fopen() error %d (%s)", connect_string, errno, strerror(errno));
       return DB_FILE_ERROR;
    }
 
@@ -1128,7 +1129,7 @@ const char* xsqlite3_errstr(sqlite3* db, int errcode)
 
 int Sqlite::ConnectTable(const char* table_name)
 {
-   std::string fname = fPath + "/" + "mh_" + table_name + ".sqlite3";
+   std::string fname = fPath + "mh_" + table_name + ".sqlite3";
 
    sqlite3* db = NULL;
 
@@ -1198,8 +1199,14 @@ int Sqlite::Connect(const char* path)
 
    fPath = path;
 
+   // add trailing '/'
+   if (fPath.length() > 0) {
+      if (fPath[fPath.length()-1] != DIR_SEPARATOR)
+         fPath += DIR_SEPARATOR_STR;
+   }
+
    if (fDebug)
-      cm_msg(MINFO, "Sqlite::Connect", "Connected to Sqlite database in \'%s\'", path);
+      cm_msg(MINFO, "Sqlite::Connect", "Connected to Sqlite database in \'%s\'", fPath.c_str());
 
    fIsConnected = true;
 
@@ -1802,7 +1809,7 @@ int HsFileSchema::read_last_written(const time_t timestamp,
 
 int HsFileSchema::read_data(const time_t start_time,
                             const time_t end_time,
-                            const int num_var, const int var_schema_index[],
+                            const int num_var, const int var_schema_index[], const int var_index[],
                             const int debug,
                             MidasHistoryBufferInterface* buffer[])
 {
@@ -1880,6 +1887,7 @@ int HsFileSchema::read_data(const time_t start_time,
             break;
          
          char* data = buf + 4;
+
          
          count++;
          for (int i=0; i<num_var; i++) {
@@ -1889,40 +1897,44 @@ int HsFileSchema::read_data(const time_t start_time,
             double v = 0;
             void* ptr = data + s->offsets[si];
 
+            int ii = var_index[i];
+            assert(ii >= 0);
+            assert(ii < s->variables[si].n_data);
+
             switch (s->variables[si].type) {
             default:
                // FIXME!!!
                abort();
                break;
             case TID_BYTE:
-               v = *((uint8_t*)ptr);
+               v = ((uint8_t*)ptr)[ii];
                break;
             case TID_SBYTE:
-               v = *((int8_t*)ptr);
+               v = ((int8_t*)ptr)[ii];
                break;
             case TID_CHAR:
-               v = *((char*)ptr);
+               v = ((char*)ptr)[ii];
                break;
             case TID_WORD:
-               v = *((uint16_t*)ptr);
+               v = ((uint16_t*)ptr)[ii];
                break;
             case TID_SHORT:
-               v = *((int16_t*)ptr);
+               v = ((int16_t*)ptr)[ii];
                break;
             case TID_DWORD:
-               v = *((uint32_t*)ptr);
+               v = ((uint32_t*)ptr)[ii];
                break;
             case TID_INT:
-               v = *((int32_t*)ptr);
+               v = ((int32_t*)ptr)[ii];
                break;
             case TID_BOOL:
-               v = *((uint32_t*)ptr);
+               v = ((uint32_t*)ptr)[ii];
                break;
             case TID_FLOAT:
-               v = *((float*)ptr);
+               v = ((float*)ptr)[ii];
                break;
             case TID_DOUBLE:
-               v = *((double*)ptr);
+               v = ((double*)ptr)[ii];
                break;
             }
 
@@ -2235,7 +2247,7 @@ public:
       for (int i=slist.size()-1; i>=0; i--) {
          HsSchema* s = slist[i];
       
-         int status = s->read_data(start_time, end_time, num_var, smap[s], fDebug, buffer);
+         int status = s->read_data(start_time, end_time, num_var, smap[s], var_index, fDebug, buffer);
 
          if (status == HS_SUCCESS)
             for (int j=0; j<num_var; j++) {
@@ -2711,7 +2723,7 @@ int HsSchema::match_event_var(const char* event_name, const char* var_name, cons
       return -1;
 
    for (unsigned j=0; j<this->variables.size(); j++) {
-      if (MatchTagName(this->variables[j].name.c_str(), var_name, var_index))
+      if (MatchTagName(this->variables[j].name.c_str(), this->variables[j].n_data, var_name, var_index))
          return j;
    }
 
@@ -2890,7 +2902,7 @@ int HsSqlSchema::read_last_written(const time_t timestamp,
 
 int HsSqlSchema::read_data(const time_t start_time,
                            const time_t end_time,
-                           const int num_var, const int var_schema_index[],
+                           const int num_var, const int var_schema_index[], const int var_index[],
                            const int debug,
                            MidasHistoryBufferInterface* buffer[])
 {
@@ -4081,35 +4093,8 @@ public:
       last_mtime = 0;
    }
 
-   int hs_connect(const char* connect_string)
-   {
-      if (fDebug)
-         printf("hs_connect [%s]!\n", connect_string);
-
-      hs_disconnect();
-
-      if (!connect_string || strlen(connect_string) < 1) {
-         // FIXME: should use "logger dir" or some such default, that code should be in hs_get_history(), not here
-         connect_string = ".";
-      }
-    
-      fConnectString = connect_string;
-      fPath = connect_string;
-    
-      return HS_SUCCESS;
-   }
-
-   int hs_disconnect()
-   {
-      if (fDebug)
-         printf("hs_disconnect!\n");
-
-      hs_flush_buffers();
-      hs_clear_cache();
-      
-      return HS_SUCCESS;
-   }
-
+   int hs_connect(const char* connect_string);
+   int hs_disconnect();
    int read_schema(HsSchemaVector* sv, const char* event_name, const time_t timestamp);
    HsSchema* new_event(const char* event_name, time_t timestamp, int ntags, const TAG tags[]);
 
@@ -4117,6 +4102,36 @@ protected:
    int create_file(const char* event_name, time_t timestamp, int ntags, const TAG tags[], std::string* filenamep);
    HsFileSchema* read_file_schema(const char* filename);
 };
+
+int FileHistory::hs_connect(const char* connect_string)
+{
+   if (fDebug)
+      printf("hs_connect [%s]!\n", connect_string);
+
+   hs_disconnect();
+
+   fConnectString = connect_string;
+   fPath = connect_string;
+
+   // add trailing '/'
+   if (fPath.length() > 0) {
+      if (fPath[fPath.length()-1] != DIR_SEPARATOR)
+         fPath += DIR_SEPARATOR_STR;
+   }
+    
+   return HS_SUCCESS;
+}
+
+int FileHistory::hs_disconnect()
+{
+   if (fDebug)
+      printf("hs_disconnect!\n");
+   
+   hs_flush_buffers();
+   hs_clear_cache();
+   
+   return HS_SUCCESS;
+}
 
 int FileHistory::read_schema(HsSchemaVector* sv, const char* event_name, const time_t timestamp)
 {
@@ -4186,7 +4201,7 @@ int FileHistory::read_schema(HsSchemaVector* sv, const char* event_name, const t
    }
 
    for (unsigned i=0; i<flist.size(); i++) {
-      std::string file_name = fPath + "/" + flist[i];
+      std::string file_name = fPath + flist[i];
       bool dupe = false;
       for (unsigned ss=0; ss<sv->size(); ss++) {
          HsFileSchema* ssp = (HsFileSchema*)(*sv)[ss];
@@ -4364,7 +4379,6 @@ int FileHistory::create_file(const char* event_name, time_t timestamp, int ntags
 
    std::string filename;
    filename += fPath;
-   filename += "/";
    filename += "mhf_";
    filename += TimeToString(timestamp);
    filename += "_";
