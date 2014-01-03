@@ -1246,7 +1246,7 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
       char hschanname[NAME_LENGTH];
 
       size = sizeof(hschanname);
-      strlcpy(hschanname, "0", sizeof(hschanname));
+      hschanname[0] = 0;
 
       status = db_get_value(hDB, 0, "/History/LoggerHistoryChannel", hschanname, &size, TID_STRING, TRUE);
       assert(status == DB_SUCCESS);
@@ -1257,12 +1257,33 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
          return status;
       }
 
-      status = db_find_key(hDB, hKeyChan, hschanname, &hKey);
-      if (status == DB_NO_KEY) {
-         cm_msg(MERROR, "hs_get_history", "Misconfigured history, /History/LoggerHistoryChannel is \'%s\', not present in /Logger/History, db_find_key() status %d", hschanname, status);
-         return HS_FILE_ERROR;
+      if (strlen(hschanname) < 1) {
+         bool found = false;
+         for (int ichan=0; ; ichan++) {
+            status = db_enum_key(hDB, hKeyChan, ichan, &hKey);
+            if (status != DB_SUCCESS)
+               break;
+
+            active = 0;
+            size = sizeof(active);
+            status = db_get_value(hDB, hKey, "Active", &active, &size, TID_BOOL, FALSE);
+            if (status == DB_SUCCESS && active != 0) {
+               found = true;
+               break;
+            }
+         }
+         if (!found) {
+            cm_msg(MERROR, "hs_get_history", "Cannot find default history: /History/LoggerHistoryChannel is empty and there are no active history channels in /Logger/History");
+            return HS_FILE_ERROR;
+         }
+      } else {
+         status = db_find_key(hDB, hKeyChan, hschanname, &hKey);
+         if (status == DB_NO_KEY) {
+            cm_msg(MERROR, "hs_get_history", "Misconfigured history, /History/LoggerHistoryChannel is \'%s\', not present in /Logger/History, db_find_key() status %d", hschanname, status);
+            return HS_FILE_ERROR;
+         }
+         assert(status == DB_SUCCESS);
       }
-      assert(status == DB_SUCCESS);
    }
 
    status = db_get_key(hDB, hKey, &key);
@@ -1293,7 +1314,7 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
       size = sizeof(i);
       status = db_get_value(hDB, 0, "/Logger/WriteFileHistory", &i, &size, TID_BOOL, FALSE);
       if (status==DB_SUCCESS) {
-         cm_msg(MERROR, "hs_get_history", "mlogger ODB setting /Logger/WriteFileHistory is obsolete, please delete it. Use /Logger/History/0/Active instead");
+         cm_msg(MERROR, "hs_get_history", "mlogger ODB setting /Logger/WriteFileHistory is obsolete, please delete it. Use /Logger/History/MIDAS/Active instead");
          if (i==0)
             active = 0;
       }
@@ -1323,12 +1344,12 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
          size = sizeof(i);
          status = db_get_value(hDB, 0, "/Logger/ODBC_Debug", &i, &size, TID_INT, FALSE);
          if (status==DB_SUCCESS) {
-            cm_msg(MERROR, "hs_get_history", "mlogger ODB setting /Logger/ODBC_Debug is obsolete, please delete it. Use /Logger/History/1/Debug instead");
+            cm_msg(MERROR, "hs_get_history", "mlogger ODB setting /Logger/ODBC_Debug is obsolete, please delete it. Use /Logger/History/ODBC/Debug instead");
          }
 
          status = db_get_value(hDB, 0, "/History/ODBC_Debug", &i, &size, TID_INT, FALSE);
          if (status==DB_SUCCESS) {
-            cm_msg(MERROR, "hs_get_history", "mhttpd ODB setting /History/ODBC_Debug is obsolete, please delete it. Use /Logger/History/1/Debug instead");
+            cm_msg(MERROR, "hs_get_history", "mhttpd ODB setting /History/ODBC_Debug is obsolete, please delete it. Use /Logger/History/ODBC/Debug instead");
          }
       
          char dsn[256];
@@ -1337,12 +1358,12 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
       
          status = db_get_value(hDB, 0, "/Logger/ODBC_DSN", dsn, &size, TID_STRING, FALSE);
          if (status==DB_SUCCESS) {
-            cm_msg(MERROR, "hs_get_history", "mlogger ODB setting /Logger/ODBC_DSN is obsolete, please delete it. Use /Logger/History/1/Writer_ODBC_DSN instead");
+            cm_msg(MERROR, "hs_get_history", "mlogger ODB setting /Logger/ODBC_DSN is obsolete, please delete it. Use /Logger/History/ODBC/Writer_ODBC_DSN instead");
          }
 
          status = db_get_value(hDB, 0, "/History/ODBC_DSN", dsn, &size, TID_STRING, FALSE);
          if (status==DB_SUCCESS) {
-            cm_msg(MERROR, "hs_get_history", "mhttpd ODB setting /History/ODBC_DSN is obsolete, please delete it. Use /Logger/History/1/Reader_ODBC_DSN instead");
+            cm_msg(MERROR, "hs_get_history", "mhttpd ODB setting /History/ODBC_DSN is obsolete, please delete it. Use /Logger/History/ODBC/Reader_ODBC_DSN instead");
          }
       }
 
@@ -1389,13 +1410,27 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
       }
    } else if (strcasecmp(type, "SQLITE")==0) {
 
-      char path[1024];
-      path[0] = 0;
+      char expt_path[1024];
+      cm_get_path1(expt_path, sizeof(expt_path));
 
-      size = sizeof(path);
-      //strlcpy(path, ".", sizeof(path));
-      status = db_get_value(hDB, hKey, "Sqlite dir", path, &size, TID_STRING, TRUE);
+      char dir[1024];
+      dir[0] = 0;
+
+      std::string path;
+
+      size = sizeof(dir);
+      status = db_get_value(hDB, hKey, "Sqlite dir", dir, &size, TID_STRING, TRUE);
       assert(status == DB_SUCCESS);
+
+      if (dir[0] == DIR_SEPARATOR)
+         path = dir;
+      else {
+         path = expt_path;
+         // normally expt_path has the trailing '/', see midas.c::cm_set_path()
+         if (path[path.length()-1] != DIR_SEPARATOR)
+            path += DIR_SEPARATOR_STR;
+         path += dir;
+      }
 
       if (active || (flags & HS_GET_INACTIVE)) {
          *mh = MakeMidasHistorySqlite();
@@ -1403,25 +1438,39 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
             return HS_FILE_ERROR;
          
          (*mh)->hs_set_debug(debug);
-         
-         status = (*mh)->hs_connect(path);
+
+         status = (*mh)->hs_connect(path.c_str());
          if (status != HS_SUCCESS) {
-            cm_msg(MERROR, "hs_get_history", "Cannot connect to SQLITE history, status %d", status);
+            cm_msg(MERROR, "hs_get_history", "Cannot connect to SQLITE history, status %d, see messages", status);
             return status;
          }
-         
+
          if (debug_flag)
-            cm_msg(MINFO, "hs_get_history", "Connected history channel \'%s\' type SQLITE in %s", key.name, path);
+            cm_msg(MINFO, "hs_get_history", "Connected history channel \'%s\' type SQLITE in \'%s\'", key.name, path.c_str());
       }
    } else if (strcasecmp(type, "FILE")==0) {
 
-      char path[1024];
-      path[0] = 0;
+      char expt_path[1024];
+      cm_get_path1(expt_path, sizeof(expt_path));
 
-      size = sizeof(path);
-      //strlcpy(path, ".", sizeof(path));
-      status = db_get_value(hDB, hKey, "History dir", path, &size, TID_STRING, TRUE);
+      char dir[1024];
+      dir[0] = 0;
+
+      std::string path;
+
+      size = sizeof(dir);
+      status = db_get_value(hDB, hKey, "History dir", dir, &size, TID_STRING, TRUE);
       assert(status == DB_SUCCESS);
+
+      if (dir[0] == DIR_SEPARATOR)
+         path = dir;
+      else {
+         path = expt_path;
+         // normally expt_path has the trailing '/', see midas.c::cm_set_path()
+         if (path[path.length()-1] != DIR_SEPARATOR)
+            path += DIR_SEPARATOR_STR;
+         path += dir;
+      }
 
       if (active || (flags & HS_GET_INACTIVE)) {
          *mh = MakeMidasHistoryFile();
@@ -1430,23 +1479,51 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
          
          (*mh)->hs_set_debug(debug);
          
-         status = (*mh)->hs_connect(path);
+         status = (*mh)->hs_connect(path.c_str());
          if (status != HS_SUCCESS) {
-            cm_msg(MERROR, "hs_get_history", "Cannot connect to FILE history, status %d", status);
+            cm_msg(MERROR, "hs_get_history", "Cannot connect to FILE history, status %d, see messages", status);
             return status;
          }
          
          if (debug_flag)
-            cm_msg(MINFO, "hs_get_history", "Connected history channel \'%s\' type SQLITE in %s", key.name, path);
+            cm_msg(MINFO, "hs_get_history", "Connected history channel \'%s\' type FILE in \'%s\'", key.name, path.c_str());
       }
    } else if (strcasecmp(type, "MYSQL")==0) {
 
-      char str[1024];
-      str[0] = 0;
-
-      size = sizeof(str);
-      status = db_get_value(hDB, hKey, "Connect string", str, &size, TID_STRING, TRUE);
+      char writer_dsn[256];
+      char reader_dsn[256];
+      
+      size = sizeof(writer_dsn);
+      strlcpy(writer_dsn, "mysql_writer.txt", sizeof(writer_dsn));
+      status = db_get_value(hDB, hKey, "MYSQL Writer", writer_dsn, &size, TID_STRING, TRUE);
       assert(status == DB_SUCCESS);
+
+      size = sizeof(reader_dsn);
+      strlcpy(reader_dsn, "mysql_reader.txt", sizeof(reader_dsn));
+      status = db_get_value(hDB, hKey, "MYSQL Reader", reader_dsn, &size, TID_STRING, TRUE);
+      assert(status == DB_SUCCESS);
+      
+      const char* dsn = "";
+
+      if (flags & HS_GET_READER)
+         dsn = reader_dsn;
+      else if (flags & HS_GET_WRITER)
+         dsn = writer_dsn;
+
+      std::string path;
+
+      if (dsn[0] == DIR_SEPARATOR)
+         path = dsn;
+      else {
+         char expt_path[1024];
+         cm_get_path1(expt_path, sizeof(expt_path));
+
+         path = expt_path;
+         // normally expt_path has the trailing '/', see midas.c::cm_set_path()
+         if (path[path.length()-1] != DIR_SEPARATOR)
+            path += DIR_SEPARATOR_STR;
+         path += dsn;
+      }
 
       if (active || (flags & HS_GET_INACTIVE)) {
          *mh = MakeMidasHistoryMysql();
@@ -1455,14 +1532,14 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
          
          (*mh)->hs_set_debug(debug);
          
-         status = (*mh)->hs_connect(str);
+         status = (*mh)->hs_connect(path.c_str());
          if (status != HS_SUCCESS) {
             cm_msg(MERROR, "hs_get_history", "Cannot connect to MYSQL history, status %d", status);
             return status;
          }
          
          if (debug_flag)
-            cm_msg(MINFO, "hs_get_history", "Connected history channel \'%s\' type MYSQL at %s", key.name, str);
+            cm_msg(MINFO, "hs_get_history", "Connected history channel \'%s\' type MYSQL at \'%s\'", key.name, path.c_str());
       }
    } else {
       cm_msg(MERROR, "hs_get_history", "Logger history channel /Logger/History/%s/Type has invalid value \'%s\', valid values are MIDAS, ODBC, SQLITE, MYSQL and FILE", key.name, type);

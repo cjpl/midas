@@ -2870,85 +2870,85 @@ INT open_history()
 
       strlcpy(type, "MIDAS", sizeof(type));
       size = sizeof(type);
-      status = db_get_value(hDB, 0, "/Logger/History/0/Type", type, &size, TID_STRING, TRUE);
+      status = db_get_value(hDB, 0, "/Logger/History/MIDAS/Type", type, &size, TID_STRING, TRUE);
       assert(status==DB_SUCCESS);
 
       active = 1;
       size = sizeof(active);
-      status = db_get_value(hDB, 0, "/Logger/History/0/Active", &active, &size, TID_BOOL, TRUE);
+      status = db_get_value(hDB, 0, "/Logger/History/MIDAS/Active", &active, &size, TID_BOOL, TRUE);
       assert(status==DB_SUCCESS);
 
       debug = 0;
       size = sizeof(debug);
-      status = db_get_value(hDB, 0, "/Logger/History/0/Debug", &debug, &size, TID_INT, TRUE);
+      status = db_get_value(hDB, 0, "/Logger/History/MIDAS/Debug", &debug, &size, TID_INT, TRUE);
       assert(status==DB_SUCCESS);
 
       // create entry for ODBC (MySQL) history
 
       strlcpy(type, "ODBC", sizeof(type));
       size = sizeof(type);
-      status = db_get_value(hDB, 0, "/Logger/History/1/Type", type, &size, TID_STRING, TRUE);
+      status = db_get_value(hDB, 0, "/Logger/History/ODBC/Type", type, &size, TID_STRING, TRUE);
       assert(status==DB_SUCCESS);
 
       active = 0;
       size = sizeof(active);
-      status = db_get_value(hDB, 0, "/Logger/History/1/Active", &active, &size, TID_BOOL, TRUE);
+      status = db_get_value(hDB, 0, "/Logger/History/ODBC/Active", &active, &size, TID_BOOL, TRUE);
       assert(status==DB_SUCCESS);
 
       debug = 0;
       size = sizeof(debug);
-      status = db_get_value(hDB, 0, "/Logger/History/1/Debug", &debug, &size, TID_INT, TRUE);
+      status = db_get_value(hDB, 0, "/Logger/History/ODBC/Debug", &debug, &size, TID_INT, TRUE);
       assert(status==DB_SUCCESS);
 
       // create entry for SQLITE history
 
       strlcpy(type, "SQLITE", sizeof(type));
       size = sizeof(type);
-      status = db_get_value(hDB, 0, "/Logger/History/2/Type", type, &size, TID_STRING, TRUE);
+      status = db_get_value(hDB, 0, "/Logger/History/SQLITE/Type", type, &size, TID_STRING, TRUE);
       assert(status==DB_SUCCESS);
 
       active = 0;
       size = sizeof(active);
-      status = db_get_value(hDB, 0, "/Logger/History/2/Active", &active, &size, TID_BOOL, TRUE);
+      status = db_get_value(hDB, 0, "/Logger/History/SQLITE/Active", &active, &size, TID_BOOL, TRUE);
       assert(status==DB_SUCCESS);
 
       debug = 0;
       size = sizeof(debug);
-      status = db_get_value(hDB, 0, "/Logger/History/2/Debug", &debug, &size, TID_INT, TRUE);
+      status = db_get_value(hDB, 0, "/Logger/History/SQLITE/Debug", &debug, &size, TID_INT, TRUE);
       assert(status==DB_SUCCESS);
 
-      // create entry for MYSQL history
+      // create entry for MYSQL history writer
 
       strlcpy(type, "MYSQL", sizeof(type));
       size = sizeof(type);
-      status = db_get_value(hDB, 0, "/Logger/History/3/Type", type, &size, TID_STRING, TRUE);
+      status = db_get_value(hDB, 0, "/Logger/History/MYSQL/Type", type, &size, TID_STRING, TRUE);
       assert(status==DB_SUCCESS);
 
       active = 0;
       size = sizeof(active);
-      status = db_get_value(hDB, 0, "/Logger/History/3/Active", &active, &size, TID_BOOL, TRUE);
+      status = db_get_value(hDB, 0, "/Logger/History/MYSQL/Active", &active, &size, TID_BOOL, TRUE);
       assert(status==DB_SUCCESS);
 
       debug = 0;
       size = sizeof(debug);
-      status = db_get_value(hDB, 0, "/Logger/History/3/Debug", &debug, &size, TID_INT, TRUE);
+      status = db_get_value(hDB, 0, "/Logger/History/MYSQL/Debug", &debug, &size, TID_INT, TRUE);
       assert(status==DB_SUCCESS);
 
       // create entry for FILE history
 
       strlcpy(type, "FILE", sizeof(type));
       size = sizeof(type);
-      status = db_get_value(hDB, 0, "/Logger/History/4/Type", type, &size, TID_STRING, TRUE);
+      status = db_get_value(hDB, 0, "/Logger/History/FILE/Type", type, &size, TID_STRING, TRUE);
       assert(status==DB_SUCCESS);
 
       active = 0;
       size = sizeof(active);
-      status = db_get_value(hDB, 0, "/Logger/History/4/Active", &active, &size, TID_BOOL, TRUE);
+      status = db_get_value(hDB, 0, "/Logger/History/FILE/Active", &active, &size, TID_BOOL, TRUE);
       assert(status==DB_SUCCESS);
 
       debug = 0;
       size = sizeof(debug);
-      status = db_get_value(hDB, 0, "/Logger/History/4/Debug", &debug, &size, TID_INT, TRUE);
+      status = db_get_value(hDB, 0, "/Logger/History/FILE/Debug", &debug, &size, TID_INT, TRUE);
       assert(status==DB_SUCCESS);
 
       // get newly created /Logger/History
@@ -2981,9 +2981,19 @@ INT open_history()
             
             if (i)
                global_per_variable_history = 1;
+	 } else if (strcasecmp(hi->type, "FILE")==0) {
+            i = 0;
+            size = sizeof(i);
+            status = db_get_value(hDB, hKey, "PerVariableHistory", &i, &size, TID_INT, TRUE);
+            assert(status==DB_SUCCESS);
+            
+            if (i)
+               global_per_variable_history = 1;
          } else if (strcasecmp(hi->type, "ODBC")==0) {
             global_per_variable_history = 1;
          } else if (strcasecmp(hi->type, "SQLITE")==0) {
+            global_per_variable_history = 1;
+         } else if (strcasecmp(hi->type, "MYSQL")==0) {
             global_per_variable_history = 1;
          }
 
@@ -3007,7 +3017,7 @@ INT open_history()
    size = sizeof(i);
    status = db_get_value(hDB, 0, "/History/PerVariableHistory", &i, &size, TID_INT, FALSE);
    if (status==DB_SUCCESS) {
-      cm_msg(MERROR, "open_history", "mlogger ODB setting /History/PerVariableHistory is obsolete, please delete it. Use /Logger/History/0/PerVariableHistory instead");
+      cm_msg(MERROR, "open_history", "mlogger ODB setting /History/PerVariableHistory is obsolete, please delete it. Use /Logger/History/MIDAS/PerVariableHistory instead");
       if (i)
          global_per_variable_history = i;
    }
