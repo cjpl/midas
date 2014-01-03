@@ -1350,7 +1350,7 @@ INT cm_set_path(const char *path)
 
    /* check for trailing directory seperator */
    if (strlen(_path_name) > 0 && _path_name[strlen(_path_name) - 1] != DIR_SEPARATOR)
-      strcat(_path_name, DIR_SEPARATOR_STR);
+      strlcat(_path_name, DIR_SEPARATOR_STR, sizeof(_path_name));
 
    return CM_SUCCESS;
 }
