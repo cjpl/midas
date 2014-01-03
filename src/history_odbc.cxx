@@ -1,11 +1,9 @@
 /********************************************************************\
 
-  Name:         history_sql.cxx
+  Name:         history_odbc.cxx
   Created by:   Konstantin Olchanski
 
-  Contents:     Interface class for writing MIDAS history data to SQL databases
-
-  $Id$
+  Contents:     Interface class for writing MIDAS history data to SQL databases throught the ODBC interface layer
 
 \********************************************************************/
 
