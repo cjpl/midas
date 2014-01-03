@@ -3560,7 +3560,11 @@ INT ss_suspend_init_ipc(INT idx)
    bind_addr.sin_addr.s_addr = 0;
    bind_addr.sin_port = 0;
 
+#ifdef OS_DARWIN
+   strlcpy(local_host_name, "localhost", sizeof(local_host_name));
+#else
    gethostname(local_host_name, sizeof(local_host_name));
+#endif
 
 #ifdef OS_VXWORKS
    {
@@ -3572,7 +3576,7 @@ INT ss_suspend_init_ipc(INT idx)
 #else
    phe = gethostbyname(local_host_name);
    if (phe == NULL) {
-      cm_msg(MERROR, "ss_suspend_init_ipc", "cannot get host name");
+      cm_msg(MERROR, "ss_suspend_init_ipc", "cannot get IP address for host name \'%s\'", local_host_name);
       return SS_SOCKET_ERROR;
    }
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
@@ -3613,6 +3617,12 @@ INT ss_suspend_init_ipc(INT idx)
    }
 #else
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
+#endif
+
+#ifdef OS_DARWIN
+   status = bind(sock, (struct sockaddr *) &bind_addr, sizeof(bind_addr));
+   if (status < 0)
+      return SS_SOCKET_ERROR;
 #endif
 
    memcpy(&_suspend_struct[idx].bind_addr, &bind_addr, sizeof(bind_addr));
