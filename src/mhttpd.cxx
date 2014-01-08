@@ -3850,6 +3850,10 @@ void submit_elog()
    size = sizeof(host_name);
    db_get_value(hDB, 0, "/Elog/Host name", host_name, &size, TID_STRING, TRUE);
 
+   // K.O. FIXME: we cannot guess the Elog URL like this because
+   // we do not know if access is through a proxy or redirect
+   // we do not know if it's http: or https:, etc. Better
+   // to read the whole "mhttpd_full_url" string from ODB.
    if (tcp_port == 80)
       sprintf(mhttpd_full_url, "http://%s/", host_name);
    else
@@ -15970,16 +15974,6 @@ void server_loop()
       return;
    }
 
-   /* do ODB record checking */
-   if (!check_odb_records()) {
-      // check_odb_records() fails with nothing printed to the terminal
-      // because mhttpd does not print cm_msg(MERROR, ...) messages to the terminal.
-      // At least print something!
-      printf("check_odb_records() failed, see messages and midas.log, bye!\n");
-      cm_disconnect_experiment();
-      return;
-   }
-   
    printf("Server listening on port %d...\n", tcp_port);
 
    do {
@@ -16352,8 +16346,6 @@ void server_loop()
       sequencer();
 
    } while (!_abort);
-
-   cm_disconnect_experiment();
 }
 
 /*------------------------------------------------------------------*/
@@ -16593,42 +16585,51 @@ int find_file_mg(const char* filename, std::string& path, FILE** fpp, bool trace
    return SS_FILE_ERROR;
 }
 
-int start_mg(int argc, const char* argv[])
+int start_mg(const char* tcp_ports, int verbose)
 {
+   HNDLE hDB;
+   int size;
    int status;
 
-   if (0) {
-      for (int i=0; i<argc; i++) {
-         printf("mongoose argv[%d]: %s\n", i, argv[i]);
-      }
-   }
+   if (verbose)
+      debug_mg = 1;
 
    // List of options. Last element must be NULL.
    //const char *options[] = {"num_threads", "5", "listening_ports", "8081,8043s", "ssl_certificate", "ssl_cert.pem", NULL};
+
+   status = cm_get_experiment_database(&hDB, NULL);
+   assert(status == CM_SUCCESS);
+
+   char mongoose_ports[256];
+   char mongoose_acl[256];
+
+   size = sizeof(mongoose_ports);
+   STRLCPY(mongoose_ports, "8080r,8443s");
+   db_get_value(hDB, 0, "/Experiment/Mongoose listening_port", mongoose_ports, &size, TID_STRING, TRUE);
+
+   size = sizeof(mongoose_acl);
+   STRLCPY(mongoose_acl, "");
+   db_get_value(hDB, 0, "/Experiment/Mongoose access_control_list", mongoose_acl, &size, TID_STRING, TRUE);
 
    bool have_ports = false;
    bool need_cert_file = false;
    bool need_password_file = false;
 
-   add_option_mg("num_threads", "5");
+   add_option_mg("num_threads", "1");
 
-   for (int i=0; i<argc; i++) {
-      const char* arg = argv[i];
-      //printf("arg [%s]\n", arg);
-      if (strcmp(arg, "--mgdebug")==0) {
-         debug_mg = 1;
-      } else if (strncmp(arg, "--mgports=", 10)==0) {
-         const char* ports = arg + 10;
-         //printf("ports [%s]\n", ports);
-         add_option_mg("listening_ports", ports);
-         have_ports = true;
-         if (strchr(ports, 's')) {
-            need_cert_file = true;
-            need_password_file = true;
-         }
-         cm_msg(MINFO, "mongoose", "mongoose web server will listen on ports \"%s\"", ports);
-         //printf("mongoose web server will listen on ports \"%s\" (use https:// for ports marked \'s\')\n", ports);
+   if (!tcp_ports)
+      tcp_ports = mongoose_ports;
+
+   if (tcp_ports) {
+      //printf("ports [%s]\n", ports);
+      add_option_mg("listening_ports", tcp_ports);
+      have_ports = true;
+      if (strchr(tcp_ports, 's')) {
+         need_cert_file = true;
+         need_password_file = true;
       }
+      cm_msg(MINFO, "mongoose", "mongoose web server will listen on ports \"%s\"", tcp_ports);
+      //printf("mongoose web server will listen on ports \"%s\" (use https:// for ports marked \'s\')\n", ports);
    }
 
    if (!have_ports)
@@ -16708,6 +16709,11 @@ int start_mg(int argc, const char* argv[])
       cm_msg(MINFO, "mongoose", "mongoose web server will use authentication realm \"%s\", password file \"%s\"", realm, path.c_str());
    }
 
+   if (strlen(mongoose_acl) > 0) {
+      cm_msg(MINFO, "mongoose", "mongoose web server access control list: \"%s\"", mongoose_acl);
+      add_option_mg("access_control_list", mongoose_acl);
+   }
+
    const char** options = get_options_mg();
    
    if (debug_mg)
@@ -16742,6 +16748,26 @@ int stop_mg()
    return SUCCESS;
 }
 
+int loop_mg()
+{
+   int status = SUCCESS;
+   
+   /* establish Ctrl-C handler - will set _abort to TRUE */
+   ss_ctrlc_handler(ctrlc_handler);
+
+   while (!_abort) {
+      /* check for shutdown message */
+      status = cm_yield(1000);
+      if (status == RPC_SHUTDOWN)
+         break;
+      
+      /* call sequencer periodically */
+      sequencer();
+   }
+
+   return status;
+}
+
 #endif
 
 /*------------------------------------------------------------------*/
@@ -16751,6 +16777,8 @@ int main(int argc, const char *argv[])
    int i, status;
    int daemon = FALSE;
    char str[256];
+   int use_mg = 0;
+   const char* tcp_ports = NULL;
    const char *myname = "mhttpd";
 
    setbuf(stdout, NULL);
@@ -16772,16 +16800,22 @@ int main(int argc, const char *argv[])
          verbose = TRUE;
       else if (argv[i][0] == '-' && argv[i][1] == 'E')
          elog_mode = TRUE;
-      else if (argv[i][0] == '-' && argv[i][1] == 'H')
+      else if (argv[i][0] == '-' && argv[i][1] == 'H') {
          history_mode = TRUE;
-      else if (argv[i][0] == '-' && argv[i][1] == '-' && argv[i][2] == 'm' && argv[i][3] == 'g') {
-         // starts with "--mg" is for the mongoose web server
+#ifdef HAVE_MG
+      } else if (strcmp(argv[i], "--mg") == 0) {
+         use_mg = 1;
+      } else if (strcmp(argv[i], "--nomg") == 0) {
+         use_mg = 0;
+#endif
       } else if (argv[i][0] == '-') {
          if (i + 1 >= argc || argv[i + 1][0] == '-')
             goto usage;
-         if (argv[i][1] == 'p')
-            tcp_port = atoi(argv[++i]);
-         else if (argv[i][1] == 'h')
+         if (argv[i][1] == 'p') {
+            i++;
+            tcp_port = atoi(argv[i]);
+            tcp_ports = argv[i];
+         } else if (argv[i][1] == 'h')
             strlcpy(midas_hostname, argv[++i], sizeof(midas_hostname));
          else if (argv[i][1] == 'e')
             strlcpy(midas_expt, argv[++i], sizeof(midas_hostname));
@@ -16790,15 +16824,17 @@ int main(int argc, const char *argv[])
                strlcpy(allowed_host[n_allowed_hosts++], argv[++i], sizeof(allowed_host[0]));
          } else {
           usage:
-            printf("usage: %s [-h Hostname] [-e Experiment] [-p port] [-v] [-D] [-c] [-a Hostname]\n\n", argv[0]);
+            printf("usage: %s [-h Hostname[:port]] [-e Experiment] [-p [host:]port] [-v] [-D] [-a Hostname] [--mg] [--nomg]\n\n", argv[0]);
             printf("       -h connect to midas server (mserver) on given host\n");
             printf("       -e experiment to connect to\n");
+            printf("       -p listen on tcp port\n");
             printf("       -v display verbose HTTP communication\n");
             printf("       -D become a daemon\n");
             printf("       -E only display ELog system\n");
             printf("       -H only display history plots\n");
-            printf("       -a only allow access for specific host(s), several\n");
-            printf("          [-a Hostname] statements might be given\n");
+            printf("       -a only allow access for specific host(s), several [-a Hostname] statements might be given\n");
+            printf("       --mg use the mongoose web server\n");
+            printf("       --nomg use the old mhttpd web server\n");
             return 0;
          }
       }
@@ -16835,11 +16871,29 @@ int main(int argc, const char *argv[])
       return 1;
    }
 
+   /* do ODB record checking */
+   if (!check_odb_records()) {
+      // check_odb_records() fails with nothing printed to the terminal
+      // because mhttpd does not print cm_msg(MERROR, ...) messages to the terminal.
+      // At least print something!
+      printf("check_odb_records() failed, see messages and midas.log, bye!\n");
+      cm_disconnect_experiment();
+      return 1;
+   }
+
    /* initialize sequencer */
    init_sequencer();
 
 #ifdef HAVE_MG
-   status = start_mg(argc, argv);
+   if (use_mg) {
+      status = start_mg(tcp_ports, verbose);
+      if (status != SUCCESS) {
+         // At least print something!
+         printf("could not start the mongoose web server, see messages and midas.log, bye!\n");
+         cm_disconnect_experiment();
+         return 1;
+      }
+   }
 #endif
    
    /* place a request for system messages */
@@ -16848,12 +16902,21 @@ int main(int argc, const char *argv[])
    /* redirect message display, turn on message logging */
    cm_set_msg_print(MT_ALL, MT_ALL, print_message);
 
-   server_loop();
-
 #ifdef HAVE_MG
-   stop_mg();
+   if (!use_mg)
+      server_loop();
+   else
+      loop_mg();
+#else
+   server_loop();
 #endif
 
+#ifdef HAVE_MG
+   if (use_mg)
+      stop_mg();
+#endif
+
+   cm_disconnect_experiment();
    return 0;
 }
 
