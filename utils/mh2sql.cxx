@@ -217,6 +217,9 @@ int main(int argc,char*argv[])
    status = cm_get_experiment_database(&hDB, NULL);
    assert(status == HS_SUCCESS);
 
+   // turn off watchdog checks
+   cm_set_watchdog_params(FALSE, 0);
+
    for (int iarg=1; iarg<argc; iarg++) {
       const char* arg = argv[iarg];
       if (arg[0] != '-')
