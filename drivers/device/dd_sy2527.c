@@ -536,9 +536,9 @@ INT dd_sy2527_current_get (DDSY2527_INFO * info, WORD channel, float *pvalue)
 
   int isPrimary = isFirst(info, channel);
 
-  //do the normal thing for 12 channel cards and channel 0 of 48 chan cards;
+  //do the normal thing for 12 and 24 channel cards and channel 0 of 48 chan cards;
   //return an error code for non-primary channels of 48 chan cards.
-  if(nChan == 12 || isPrimary == 1 ){
+  if(nChan == 12 || nChan == 24 || isPrimary == 1 ){
     ret = dd_sy2527_fParam_get (info, 1, channel, "IMon", pvalue);
     return ret == 0 ? FE_SUCCESS : 0;
   } else {
@@ -604,34 +604,25 @@ INT dd_sy2527_crateMap_get (DDSY2527_INFO * info, WORD channel, INT *dummy)
   unsigned char *FmwRelMinList, *FmwRelMaxList;
  
   CAENHVGetCrateMap(info->dd_sy2527_settings.name, &NrOfSlot, &NrOfChList, &ModelList, &DescriptionList, &SerNumList, &FmwRelMinList, &FmwRelMaxList);
-  //*dummy = NrOfChList[0];
   *dummy = 0;
-  /*
-  if(NrOfSlot == 12){
-    *dummy = 1;
-  }
-  if(NrOfSlot == 16){
-    *dummy = 2;
-  }
-  */
   int i = 0;
   //cm_msg (MINFO, "cratemap", "dummy start: %d", *dummy);
+  //slots packed from most significant bit down (ie slot 0 in bits 31 and 30, slot 1 in 29 and 28....)
+  //00 -> empty slot, 01 -> 12chan card, 10 -> 24chan card, 11->48chan card 
   for(i=0; i<NrOfSlot; i++){
-    if(NrOfChList[i] == 12){
-      *dummy = *dummy | (1 << (i*2));
-    } else if(NrOfChList[i] == 0){
-      *dummy = *dummy;
-    } else{
-      *dummy = *dummy | (2 << (i*2));
-    }
-    //cm_msg (MINFO, "cratemap", "dummy step: %d", *dummy);
+    if(NrOfChList[i] == 12)
+      *dummy = *dummy | (1 << (30 - 2*i));
+    else if(NrOfChList[i] == 24)
+      *dummy = *dummy | (2 << (30 - 2*i));
+    else if(NrOfChList[i] == 48)
+      *dummy = *dummy | (3 << (30 - 2*i));
   }
-  //terminating bit pattern = 111; position indicates 6 or 12 slot crate, absence indicates 16 slot crate:
+  //lowest 2 bits == 10 -> 6 slot crate, == 11 -> 12 slot crate, == anything else -> 16 slot crate (in the last slot, must be either empty or 12chan == 00 or 01)
   if(NrOfSlot == 6){
-    *dummy = *dummy | (7 << 12);
+    *dummy = *dummy | 2;
   }
   else if(NrOfSlot == 12){
-    *dummy = *dummy | (7 << 24);
+    *dummy = *dummy | 3;
   }
 
     //cm_msg (MINFO, "cratemap", "%lu", *dummy);
@@ -733,9 +724,9 @@ INT dd_sy2527_current_limit_get (DDSY2527_INFO * info, WORD channel, float *pval
 
   int isPrimary = isFirst(info, channel);
 
-  //do the normal thing for 12 channel cards and channel 0 of 48 chan cards;
+  //do the normal thing for 12 and 24 channel cards and channel 0 of 48 chan cards;
   //return an error code for non-primary channels of 48 chan cards.
-  if(nChan == 12 || isPrimary == 1 ){
+  if(nChan == 12 || nChan == 24 || isPrimary == 1 ){
     ret = dd_sy2527_fParam_get (info, 1, channel, "I0Set", pvalue);
     return ret == 0 ? FE_SUCCESS : 0;
   } else {
@@ -788,9 +779,9 @@ INT dd_sy2527_voltage_limit_get (DDSY2527_INFO * info, WORD channel, float *pval
 
   int isPrimary = isFirst(info, channel);  
 
-  //do the normal thing for 12 channel cards and channel 0 of 48 chan cards;
+  //do the normal thing for 12 and 24 channel cards and channel 0 of 48 chan cards;
   //return an error code for non-primary channels of 48 chan cards.
-  if(nChan == 12 || isPrimary == 1 ){   
+  if(nChan == 12 || nChan == 24 || isPrimary == 1 ){   
     ret = dd_sy2527_fParam_get (info, 1, channel, "SVMax", pvalue);
     return ret == 0 ? FE_SUCCESS : 0;
   } else {
@@ -838,8 +829,8 @@ INT dd_sy2527_trip_time_get (DDSY2527_INFO * info, WORD channel, float *pvalue)
   //how many channels are in this slot?
   int nChan = howBig(info, islot);
 
-  //do the normal thing for 12 channel cards
-  if(nChan == 12 ){
+  //do the normal thing for 12 and 24 channel cards
+  if(nChan == 12 || nChan == 24){
     ret = dd_sy2527_fParam_get (info, 1, channel, "Trip", pvalue);
     return ret == 0 ? FE_SUCCESS : 0;
   } else {
