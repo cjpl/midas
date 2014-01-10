@@ -117,7 +117,7 @@ void logger_init()
 
    /*---- create /logger entries -----*/
 
-   cm_get_path1(str, sizeof(str));
+   cm_get_path(str, sizeof(str));
    size = sizeof(str);
    db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING, TRUE);
 
@@ -323,7 +323,7 @@ int mysql_query_debug(MYSQL * db, char *query)
          strlcpy(path, dir, sizeof(path));
          strlcat(path, filename, sizeof(path));
       } else {
-         cm_get_path1(dir, sizeof(dir));
+         cm_get_path(dir, sizeof(dir));
          if (dir[0] != 0)
             if (dir[strlen(dir) - 1] != DIR_SEPARATOR)
                strlcat(dir, DIR_SEPARATOR_STR, sizeof(dir));

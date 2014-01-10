@@ -125,7 +125,7 @@ static void check_shm_type(const char* shm_type)
    char* s;
    FILE *fp;
 
-   cm_get_path1(path, sizeof(path));
+   cm_get_path(path, sizeof(path));
    if (path[0] == 0) {
       getcwd(path, sizeof(path));
       strlcat(path, "/", sizeof(path));
@@ -207,7 +207,7 @@ static void check_shm_host()
 
    //printf("hostname [%s]\n", hostname);
 
-   cm_get_path1(path, sizeof(path));
+   cm_get_path(path, sizeof(path));
    if (path[0] == 0) {
       getcwd(path, sizeof(path));
 #if defined(OS_VMS)
@@ -277,7 +277,7 @@ static int ss_shm_name(const char* name, char* mem_name, int mem_name_size, char
    /* append .SHM and preceed the path for the shared memory file name */
 
    cm_get_experiment_name(exptname, sizeof(exptname));
-   cm_get_path1(path, sizeof(path));
+   cm_get_path(path, sizeof(path));
 
    //printf("shm name [%s], expt name [%s], path [%s]\n", name, exptname, path);
 
@@ -402,7 +402,7 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
          because NT doesn't use ftok. So if different experiments are
          running in different directories, they should not see the same
          shared memory */
-      cm_get_path1(path, sizeof(path));
+      cm_get_path(path, sizeof(path));
       strlcpy(str, path, sizeof(path));
 
       /* replace special chars by '*' */
@@ -813,7 +813,7 @@ INT ss_shm_close(const char *name, void *adr, HNDLE handle, INT destroy_flag)
    sprintf(mem_name, "SM_%s", name);
 
    /* append .SHM and preceed the path for the shared memory file name */
-   cm_get_path1(path, sizeof(path));
+   cm_get_path(path, sizeof(path));
    if (path[0] == 0) {
       getcwd(path, sizeof(path));
 #if defined(OS_VMS)
@@ -2239,7 +2239,7 @@ INT ss_semaphore_create(const char *name, HNDLE * semaphore_handle)
          char path[256], file_name[256];
 
          /* Build the filename out of the path and the name of the semaphore */
-         cm_get_path1(path, sizeof(path));
+         cm_get_path(path, sizeof(path));
          if (path[0] == 0) {
             getcwd(path, sizeof(path));
             strlcat(path, "/", sizeof(path));

@@ -1824,7 +1824,7 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
          db_find_key(hDB, 0, pwd, &hKey);
 
          /* keep /Logger/Data dir if new one doesn't exist */
-         cm_get_path1(old_dir, sizeof(old_dir));
+         cm_get_path(old_dir, sizeof(old_dir));
          size = sizeof(old_dir);
          db_get_value(hDB, 0, "/Logger/Data dir", old_dir, &size, TID_STRING, TRUE);
 

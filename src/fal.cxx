@@ -262,7 +262,7 @@ void logger_init()
 
    /*---- create /logger entries -----*/
 
-   cm_get_path1(str, sizeof(str));
+   cm_get_path(str, sizeof(str));
    size = sizeof(str);
    db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING, TRUE);
 

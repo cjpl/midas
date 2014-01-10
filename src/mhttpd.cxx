@@ -16566,7 +16566,7 @@ int try_file_mg(const char* try_dir, const char* filename, std::string& path, FI
 int find_file_mg(const char* filename, std::string& path, FILE** fpp, bool trace)
 {
    char exptdir[256];
-   cm_get_path1(exptdir, sizeof(exptdir));
+   cm_get_path(exptdir, sizeof(exptdir));
 
    if (try_file_mg(".", filename, path, fpp, trace) == SUCCESS)
       return SUCCESS;

@@ -1411,7 +1411,7 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
    } else if (strcasecmp(type, "SQLITE")==0) {
 
       char expt_path[1024];
-      cm_get_path1(expt_path, sizeof(expt_path));
+      cm_get_path(expt_path, sizeof(expt_path));
 
       char dir[1024];
       dir[0] = 0;
@@ -1451,7 +1451,7 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
    } else if (strcasecmp(type, "FILE")==0) {
 
       char expt_path[1024];
-      cm_get_path1(expt_path, sizeof(expt_path));
+      cm_get_path(expt_path, sizeof(expt_path));
 
       char dir[1024];
       dir[0] = 0;
@@ -1516,7 +1516,7 @@ int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistor
          path = dsn;
       else {
          char expt_path[1024];
-         cm_get_path1(expt_path, sizeof(expt_path));
+         cm_get_path(expt_path, sizeof(expt_path));
 
          path = expt_path;
          // normally expt_path has the trailing '/', see midas.c::cm_set_path()
