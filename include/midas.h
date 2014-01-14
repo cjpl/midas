@@ -1977,7 +1977,7 @@ extern "C" {
                        INT buffer_size3, char *tag, INT tag_size);
    INT EXPRT el_search_message(char *tag, int *fh, BOOL walk);
    INT EXPRT el_search_run(int run, char *return_tag);
-   INT EXPRT el_delete_message(char *tag);
+   INT EXPRT el_delete_message(const char *tag);
 
    /*---- alarm functions ----*/
    INT EXPRT al_check();

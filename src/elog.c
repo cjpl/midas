@@ -861,7 +861,7 @@ INT el_search_run(int run, char *return_tag)
 
 
 /********************************************************************/
-INT el_delete_message(char *tag)
+INT el_delete_message(const char *tag)
 /********************************************************************\
 
   Routine: el_submit
