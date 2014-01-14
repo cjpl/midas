@@ -35,8 +35,7 @@ static unsigned long xdata last_read = 0;
 
 typedef struct {
    float p[6];
-   char str1[32];
-   char str2[32];
+   char deb_str[32];
    unsigned char baud;
 } USER_DATA;
 
@@ -44,14 +43,13 @@ USER_DATA xdata user_data;
 
 MSCB_INFO_VAR code vars[] = {
    1, UNIT_ASCII,  0, 0, MSCBF_DATALESS, "RS232",               0,
-   32, UNIT_STRING,  0, 0, 0, "str1",          &user_data.str1,
-   32, UNIT_STRING,  0, 0, 0, "str2",          &user_data.str2,
    4, UNIT_BAR, PRFX_MILLI, 0,    MSCBF_FLOAT, "P1",      &user_data.p[0],
    4, UNIT_BAR, PRFX_MILLI, 0,    MSCBF_FLOAT, "P2",      &user_data.p[1],
    4, UNIT_BAR, PRFX_MILLI, 0,    MSCBF_FLOAT, "P3",      &user_data.p[2],
    4, UNIT_BAR, PRFX_MILLI, 0,    MSCBF_FLOAT, "P4",      &user_data.p[3],
    4, UNIT_BAR, PRFX_MILLI, 0,    MSCBF_FLOAT, "P5",      &user_data.p[4],
    4, UNIT_BAR, PRFX_MILLI, 0,    MSCBF_FLOAT, "P6",      &user_data.p[5],
+   32, UNIT_STRING,  0, 0, 0, "debug",          &user_data.deb_str,
    1, UNIT_BAUD,         0, 0,              0, "Baud",    &user_data.baud,
    0
 };
@@ -157,11 +155,16 @@ void user_loop(void)
       flush();
    }
 
-   /* read parameters once each second */
-   if (time() > last_read + 100) {
+   /* read parameters once every 3 seconds */
+   if (time() > last_read + 300) {
       last_read = time();
     
       for (i=0; i<6; i++){
+
+         //DISABLE_INTERRUPTS;
+         //user_data.p[i] = 0.0;
+         //ENABLE_INTERRUPTS;
+
          // Query sensor status and value
          //printf("PR%d\r\n", i+1);
          printf(SensorStrings[i]);
@@ -169,10 +172,6 @@ void user_loop(void)
 
          // Read reply device
          r = gets_wait(str, sizeof(str), 200);
-         
-         DISABLE_INTERRUPTS;
-         strcpy(user_data.str1, str);
-         ENABLE_INTERRUPTS;
          
          if (str[0] == 6) { // 6: Acknowledged query
          //if (1) {
@@ -184,22 +183,20 @@ void user_loop(void)
             // Read sensor status and value
             r = gets_wait(str, sizeof(str), 200);
 
-            DISABLE_INTERRUPTS;
-            strcpy(user_data.str2, str);
-            ENABLE_INTERRUPTS;
+            // For diagnostics
+            if (i == 0) {
+               DISABLE_INTERRUPTS;
+               strcpy(user_data.deb_str, str);
+               ENABLE_INTERRUPTS;
+            }
 
             // Convert characters to values
             status = atoi((char *)&str[0]);
             p = atof(str+2);
 
-            if (status == 0) {
+            if (status == 0 && r == 10) { // Check if the sensor is ok and the correct amount of data read
                DISABLE_INTERRUPTS;
                user_data.p[i] = p;
-               ENABLE_INTERRUPTS;
-            }
-            else {
-               DISABLE_INTERRUPTS;
-               user_data.p[i] = 0.0;
                ENABLE_INTERRUPTS;
             }
          }
