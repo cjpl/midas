@@ -591,7 +591,7 @@ void urlEncode(char *ps, int ps_size)
    pd = str;
    p = ps;
    while (*p) {
-      if (strchr(" %&=+#\"'", *p)) {
+      if (strchr(" %&=+#\"'?", *p)) {
          sprintf(pd, "%%%02X", *p);
          pd += 3;
          p++;
@@ -2826,7 +2826,7 @@ void show_elog_query()
 
 /*------------------------------------------------------------------*/
 
-void show_elog_delete(char *path)
+void show_elog_delete(const char *path)
 {
    HNDLE hDB;
    int size, status;
@@ -3341,7 +3341,7 @@ void show_elog_submit_query(INT last_n)
 
 /*------------------------------------------------------------------*/
 
-void show_rawfile(char *path)
+void show_rawfile(const char *path)
 {
    int size, lines, i, buf_size, offset;
    char *p;
@@ -3612,7 +3612,7 @@ void show_form_query()
 
 /*------------------------------------------------------------------*/
 
-void gen_odb_attachment(char *path, char *b)
+void gen_odb_attachment(const char *path, char *b)
 {
    HNDLE hDB, hkeyroot, hkey;
    KEY key;
@@ -3786,8 +3786,8 @@ void submit_elog()
                   p = strchr(p, '=');
                   if (p != NULL) {
                      *p++ = 0;
-                     urlDecode(pitem);
-                     urlDecode(p);
+                     urlDecode(pitem); // parameter name
+                     urlDecode(p); // parameter value
 
                      setparam(pitem, p);
 
@@ -4658,11 +4658,12 @@ BOOL is_editable(char *eq_name, char *var_name)
    return FALSE;
 }
 
-void show_sc_page(char *path, int refresh)
+void show_sc_page(const char *path, int refresh)
 {
    int i, j, k, colspan, size, n_var, i_edit, i_set;
    char str[256], eq_name[32], group[32], name[32], ref[256];
-   char group_name[MAX_GROUPS][32], data[256], back_path[256], *p;
+   char group_name[MAX_GROUPS][32], data[256], back_path[256];
+   const char *p;
    HNDLE hDB, hkey, hkeyeq, hkeyset, hkeynames, hkeyvar, hkeyroot;
    KEY eqkey, key, varkey;
    char data_str[256], hex_str[256], odb_path[256];
@@ -6419,7 +6420,7 @@ bool starts_with(const std::string& s1, const char* s2)
 
 /*------------------------------------------------------------------*/
 
-void java_script_commands(const char *path, const char *cookie_cpwd)
+void javascript_commands(const char *cookie_cpwd)
 {
    int status;
    int size, i, index;
@@ -7316,7 +7317,7 @@ void java_script_commands(const char *path, const char *cookie_cpwd)
    if (equal_ustring(getparam("cmd"), "jgenmsg")) {
       
       if (*getparam("msg")) {
-         cm_msg(MINFO, "java_script_commands", "%s", getparam("msg"));
+         cm_msg(MINFO, "javascript_commands", "%s", getparam("msg"));
       }
       
       show_text_header();
@@ -8063,7 +8064,7 @@ void create_mscb_tree()
 
 /*------------------------------------------------------------------*/
 
-void show_mscb_page(char *path, int refresh)
+void show_mscb_page(const char *path, int refresh)
 {
    int i, j, n, ind, fi, fd, status, size, n_addr, *addr, cur_subm_index, cur_node, adr, show_hidden;
    unsigned int uptime;
@@ -8818,7 +8819,8 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
    char str[256], tmp_path[256], url_path[256], data_str[TEXT_SIZE], 
       hex_str[256], ref[256], keyname[32], link_name[256], link_ref[256],
       full_path[256], root_path[256], odb_path[256], colspan;
-   char *p, *pd;
+   char *p;
+   char *pd;
    char data[TEXT_SIZE];
    HNDLE hDB, hkey, hkeyroot;
    KEY key;
@@ -9230,13 +9232,15 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
 
 /*------------------------------------------------------------------*/
 
-void show_set_page(char *enc_path, int enc_path_size, char *dec_path, const char *group,
+void show_set_page(char *enc_path, int enc_path_size,
+                   char *dec_path, const char *group,
                    int index, const char *value)
 {
    int status, size;
    HNDLE hDB, hkey;
    KEY key;
-   char data_str[TEXT_SIZE], str[256], *p, eq_name[NAME_LENGTH];
+   char* p;
+   char data_str[TEXT_SIZE], str[256], eq_name[NAME_LENGTH];
    char data[TEXT_SIZE];
 
    cm_get_experiment_database(&hDB, NULL);
@@ -14336,6 +14340,8 @@ void send_icon(const char *icon)
 
    rsprintf("Content-Length: %d\r\n\r\n", length);
 
+   return_grow(length);
+
    return_length = strlen(return_buffer) + length;
    memcpy(return_buffer + strlen(return_buffer), picon, length);
 }
@@ -14868,7 +14874,7 @@ void send_alarm_sound()
 
 /*------------------------------------------------------------------*/
 
-void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *cookie_cpwd, const char *path, int refresh)
+void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *cookie_cpwd, const char *dec_path, int refresh)
 /********************************************************************\
  
  Routine: interprete
@@ -14888,32 +14894,31 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
    WORD event_id;
    HNDLE hkey, hsubkey, hDB, hconn;
    KEY key;
-   char *p, str[256];
-   char enc_path[256], dec_path[256], eq_name[NAME_LENGTH], fe_name[NAME_LENGTH];
+   const char *p;
+   char str[256];
+   char enc_path[256], eq_name[NAME_LENGTH], fe_name[NAME_LENGTH];
    char data[TEXT_SIZE];
    time_t now;
    struct tm *gmt;
+
+   //printf("dec_path [%s]\n", dec_path);
    
-   if (strstr(path, "favicon.ico") != 0 ||
-       strstr(path, "favicon.png")) {
-      send_icon(path);
+   if (strstr(dec_path, "favicon.ico") != 0 ||
+       strstr(dec_path, "favicon.png")) {
+      send_icon(dec_path);
       return;
    }
    
-   if (strstr(path, "mhttpd.css")) {
+   if (strstr(dec_path, "mhttpd.css")) {
       send_css();
       return;
    }
    
-   if (strstr(path, "mhttpd.js")) {
+   if (strstr(dec_path, "mhttpd.js")) {
       send_js();
       return;
    }
    
-   /* encode path for further usage */
-   strlcpy(dec_path, path, sizeof(dec_path));
-   urlDecode(dec_path);
-   // double URL decode not permitted, it breaks "x+y" encoded as "x%2By" into "x+y" then "x y". urlDecode(dec_path); /* necessary for %2520 -> %20 -> ' ', used e.g. in deleting ODB entries with blanks in path */
    strlcpy(enc_path, dec_path, sizeof(enc_path));
    urlEncode(enc_path, sizeof(enc_path));
    set_dec_path(dec_path);
@@ -14926,12 +14931,12 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
    const char* group = getparam("group");
    index = atoi(getparam("index"));
 
-   //printf("interprete: path [%s] dec_path [%s], command [%s] value [%s]\n", path, dec_path, command, value);
+   //printf("interprete: dec_path [%s], command [%s] value [%s]\n", dec_path, command, value);
    
    cm_get_experiment_database(&hDB, NULL);
    
    if (history_mode) {
-      if (strncmp(path, "HS/", 3) == 0) {
+      if (strncmp(dec_path, "HS/", 3) == 0) {
          if (equal_ustring(command, "config")) {
             return;
          }
@@ -15038,7 +15043,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
        equal_ustring(command, "jgenmsg") ||
        equal_ustring(command, "jrpc_rev0") ||
        equal_ustring(command, "jrpc_rev1")) {
-      java_script_commands(path, cookie_cpwd);
+      javascript_commands(cookie_cpwd);
       return;
    }
    
@@ -15063,7 +15068,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
    /*---- script command --------------------------------------------*/
    
    if (getparam("script") && *getparam("script")) {
-      sprintf(str, "%s?script=%s", path, getparam("script"));
+      sprintf(str, "%s?script=%s", dec_path, getparam("script"));
       if (!check_web_password(cookie_wpwd, str, experiment))
          return;
       
@@ -15091,7 +15096,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
    /*---- customscript command --------------------------------------*/
    
    if (getparam("customscript") && *getparam("customscript")) {
-      sprintf(str, "%s?customscript=%s", path, getparam("customscript"));
+      sprintf(str, "%s?customscript=%s", dec_path, getparam("customscript"));
       if (!check_web_password(cookie_wpwd, str, experiment))
          return;
       
@@ -15153,9 +15158,9 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       return;
    }
    
-   if (strncmp(path, "HS/", 3) == 0) {
+   if (strncmp(dec_path, "HS/", 3) == 0) {
       if (equal_ustring(command, "config")) {
-         sprintf(str, "%s?cmd=%s", path, command);
+         sprintf(str, "%s?cmd=%s", dec_path, command);
          if (!check_web_password(cookie_wpwd, str, experiment))
             return;
       }
@@ -15176,9 +15181,9 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       return;
    }
    
-   if (strncmp(path, "MS/", 3) == 0) {
+   if (strncmp(dec_path, "MS/", 3) == 0) {
       if (equal_ustring(command, "set")) {
-         sprintf(str, "%s?cmd=%s", path, command);
+         sprintf(str, "%s?cmd=%s", dec_path, command);
          if (!check_web_password(cookie_wpwd, str, experiment))
             return;
       }
@@ -15415,8 +15420,8 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
    
    /*---- set command -----------------------------------------------*/
    
-   if (equal_ustring(command, "set") && strncmp(path, "SC/", 3) != 0
-       && strncmp(path, "CS/", 3) != 0) {
+   if (equal_ustring(command, "set") && strncmp(dec_path, "SC/", 3) != 0
+       && strncmp(dec_path, "CS/", 3) != 0) {
       
       if (strchr(enc_path, '/'))
          strlcpy(str, strrchr(enc_path, '/') + 1, sizeof(str));
@@ -15425,8 +15430,9 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       strlcat(str, "?cmd=set", sizeof(str));
       if (!check_web_password(cookie_wpwd, str, experiment))
          return;
-      
-      show_set_page(enc_path, sizeof(enc_path), dec_path, group, index, value);
+
+      strlcpy(str, dec_path, sizeof(str));
+      show_set_page(enc_path, sizeof(enc_path), str, group, index, value);
       return;
    }
    
@@ -15450,7 +15456,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
    
    /*---- CAMAC CNAF command ----------------------------------------*/
    
-   if (equal_ustring(command, "CNAF") || strncmp(path, "CNAF", 4) == 0) {
+   if (equal_ustring(command, "CNAF") || strncmp(dec_path, "CNAF", 4) == 0) {
       if (!check_web_password(cookie_wpwd, "?cmd=CNAF", experiment))
          return;
       
@@ -15524,7 +15530,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       return;
    }
    
-   if (strncmp(command, "More", 4) == 0 && strncmp(path, "EL/", 3) != 0) {
+   if (strncmp(command, "More", 4) == 0 && strncmp(dec_path, "EL/", 3) != 0) {
       i = atoi(command + 4);
       if (i == 0)
          i = 100;
@@ -15540,20 +15546,22 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       return;
    }
    
-   if (strncmp(path, "EL/", 3) == 0) {
+   if (strncmp(dec_path, "EL/", 3) == 0) {
       if (equal_ustring(command, "new") || equal_ustring(command, "edit")
           || equal_ustring(command, "reply")) {
-         sprintf(str, "%s?cmd=%s", path, command);
+         sprintf(str, "%s?cmd=%s", dec_path, command);
          if (!check_web_password(cookie_wpwd, str, experiment))
             return;
       }
       
-      show_elog_page(dec_path + 3, sizeof(dec_path) - 3);
+      strlcpy(str, dec_path + 3, sizeof(str));
+      show_elog_page(str, sizeof(str));
       return;
    }
    
    if (equal_ustring(command, "Create ELog from this page")) {
-      show_elog_page(dec_path, sizeof(dec_path));
+      strlcpy(str, dec_path, sizeof(str));
+      show_elog_page(str, sizeof(str));
       return;
    }
    
@@ -15592,9 +15600,9 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
    
    /*---- slow control display --------------------------------------*/
    
-   if (strncmp(path, "SC/", 3) == 0) {
+   if (strncmp(dec_path, "SC/", 3) == 0) {
       if (equal_ustring(command, "edit")) {
-         sprintf(str, "%s?cmd=Edit&index=%d", path, index);
+         sprintf(str, "%s?cmd=Edit&index=%d", dec_path, index);
          if (!check_web_password(cookie_wpwd, str, experiment))
             return;
       }
@@ -15615,16 +15623,16 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       return;
    }
    
-   if (strncmp(path, "SEQ/", 4) == 0) {
+   if (strncmp(dec_path, "SEQ/", 4) == 0) {
       show_seq_page();
       return;
    }
    
    /*---- custom page -----------------------------------------------*/
    
-   if (strncmp(path, "CS/", 3) == 0) {
+   if (strncmp(dec_path, "CS/", 3) == 0) {
       if (equal_ustring(command, "edit")) {
-         sprintf(str, "%s?cmd=Edit&index=%d", path+3, index);
+         sprintf(str, "%s?cmd=Edit&index=%d", dec_path+3, index);
          if (!check_web_password(cookie_wpwd, str, experiment))
             return;
       }
@@ -15633,9 +15641,9 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       return;
    }
    
-   if (db_find_key(hDB, 0, "/Custom/Status", &hkey) == DB_SUCCESS && path[0] == 0) {
+   if (db_find_key(hDB, 0, "/Custom/Status", &hkey) == DB_SUCCESS && dec_path[0] == 0) {
       if (equal_ustring(command, "edit")) {
-         sprintf(str, "%s?cmd=Edit&index=%d", path, index);
+         sprintf(str, "%s?cmd=Edit&index=%d", dec_path, index);
          if (!check_web_password(cookie_wpwd, str, experiment))
             return;
       }
@@ -15646,7 +15654,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
    
    /*---- show status -----------------------------------------------*/
    
-   if (path[0] == 0) {
+   if (dec_path[0] == 0) {
       if (elog_mode) {
          redirect("EL/");
          return;
@@ -15658,51 +15666,73 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
    
    /*---- show ODB --------------------------------------------------*/
    
-   if (path[0]) {
-      show_odb_page(enc_path, sizeof(enc_path), dec_path);
+   if (dec_path[0]) {
+      strlcpy(str, dec_path, sizeof(str));
+      show_odb_page(enc_path, sizeof(enc_path), str);
       return;
    }
 }
 
 /*------------------------------------------------------------------*/
 
-void decode_get(char *string, const char *cookie_pwd, const char *cookie_wpwd, const char *cookie_cpwd, int refresh)
+void decode_query(const char *query_string)
+{
+   int len = strlen(query_string);
+   char buf[len+1];
+   memcpy(buf, query_string, len+1);
+   char* p = buf;
+   p = strtok(p, "&");
+   while (p != NULL) {
+      char *pitem = p;
+      p = strchr(p, '=');
+      if (p != NULL) {
+         *p++ = 0;
+         urlDecode(pitem); // parameter name
+         if (!equal_ustring(pitem, "format"))
+            urlDecode(p); // parameter value
+         
+         setparam(pitem, p); // decoded query parameters
+         
+         p = strtok(NULL, "&");
+      }
+   }
+}
+
+void decode_get(char *string, const char *cookie_pwd, const char *cookie_wpwd, const char *cookie_cpwd, int refresh, bool decode_url, const char* url, const char* query_string)
 {
    char path[256];
-   char *p, *pitem;
+
+   //printf("decode_get: string [%s], decode_url %d, url [%s], query_string [%s]\n", string, decode_url, url, query_string);
 
    initparam();   
-   strlcpy(path, string + 1, sizeof(path));     /* strip leading '/' */
-   path[255] = 0;
-   if (strchr(path, '?'))
-      *strchr(path, '?') = 0;
-   setparam("path", path);
+   if (url)
+      strlcpy(path, url + 1, sizeof(path));     /* strip leading '/' */
+   else {
+      strlcpy(path, string + 1, sizeof(path));     /* strip leading '/' */
+      
+      if (strchr(path, '?'))
+         *strchr(path, '?') = 0;
+   }
+   setparam("path", path); // undecoded path, is this used anywhere?
 
-   if (strchr(string, '?')) {
-      p = strchr(string, '?') + 1;
+   if (query_string)
+      decode_query(query_string);
+   else if (string && strchr(string, '?')) {
+      char* p = strchr(string, '?') + 1;
 
       /* cut trailing "/" from netscape */
       if (p[strlen(p) - 1] == '/')
          p[strlen(p) - 1] = 0;
 
-      p = strtok(p, "&");
-      while (p != NULL) {
-         pitem = p;
-         p = strchr(p, '=');
-         if (p != NULL) {
-            *p++ = 0;
-            urlDecode(pitem);
-            if (!equal_ustring(pitem, "format"))
-               urlDecode(p);
-
-            setparam(pitem, p);
-
-            p = strtok(NULL, "&");
-         }
-      }
+      decode_query(p);
    }
 
-   interprete(cookie_pwd, cookie_wpwd, cookie_cpwd, path, refresh);
+   char dec_path[256];
+   strlcpy(dec_path, path, sizeof(dec_path));
+   if (decode_url)
+      urlDecode(dec_path);
+
+   interprete(cookie_pwd, cookie_wpwd, cookie_cpwd, dec_path, refresh);
 
    freeparam();
 }
@@ -15710,20 +15740,23 @@ void decode_get(char *string, const char *cookie_pwd, const char *cookie_wpwd, c
 /*------------------------------------------------------------------*/
 
 void decode_post(const char *header, char *string, const char *boundary, int length,
-                 const char *cookie_pwd, const char *cookie_wpwd, int refresh)
+                 const char *cookie_pwd, const char *cookie_wpwd, int refresh, bool decode_url, const char* url)
 {
    char *pinit, *p, *pitem, *ptmp, file_name[256], str[256], path[256];
    int n;
 
    initparam();
 
-   strlcpy(path, header + 1, sizeof(path));     /* strip leading '/' */
-   path[255] = 0;
-   if (strchr(path, '?'))
-      *strchr(path, '?') = 0;
-   if (strchr(path, ' '))
-      *strchr(path, ' ') = 0;
-   setparam("path", path);
+   if (url) 
+      strlcpy(path, url + 1, sizeof(path));     /* strip leading '/' */
+   else {
+      strlcpy(path, header + 1, sizeof(path));     /* strip leading '/' */
+      if (strchr(path, '?'))
+         *strchr(path, '?') = 0;
+      if (strchr(path, ' '))
+         *strchr(path, ' ') = 0;
+   }
+   setparam("path", path); // undecoded path
 
    _attachment_size[0] = _attachment_size[1] = _attachment_size[2] = 0;
    pinit = string;
@@ -15759,7 +15792,7 @@ void decode_post(const char *header, char *string, const char *boundary, int len
                /* set attachment filename */
                strlcpy(file_name, p, sizeof(file_name));
                sprintf(str, "attachment%d", n);
-               setparam(str, file_name);
+               setparam(str, file_name); // file_name should be decoded?
             } else
                file_name[0] = 0;
 
@@ -15807,7 +15840,7 @@ void decode_post(const char *header, char *string, const char *boundary, int len
                while (*ptmp == '-' || *ptmp == '\n' || *ptmp == '\r')
                   *ptmp-- = 0;
             }
-            setparam(pitem, p);
+            setparam(pitem, p); // in decode_post()
          }
 
          while (*string == '-' || *string == '\n' || *string == '\r')
@@ -15816,7 +15849,12 @@ void decode_post(const char *header, char *string, const char *boundary, int len
 
    } while ((POINTER_T) string - (POINTER_T) pinit < length);
 
-   interprete(cookie_pwd, cookie_wpwd, "", path, refresh);
+   char dec_path[256];
+   strlcpy(dec_path, path, sizeof(dec_path));
+   if (decode_url)
+      urlDecode(dec_path);
+
+   interprete(cookie_pwd, cookie_wpwd, "", dec_path, refresh);
 }
 
 /*------------------------------------------------------------------*/
@@ -16291,7 +16329,7 @@ void server_loop()
                locked = true;
             }
             /* decode command and return answer */
-            decode_get(net_buffer + 4, cookie_pwd, cookie_wpwd, cookie_cpwd, refresh);
+            decode_get(net_buffer + 4, cookie_pwd, cookie_wpwd, cookie_cpwd, refresh, true, NULL, NULL);
          } else {
             if (request_mutex) {
                status = ss_mutex_wait_for(request_mutex, 0);
@@ -16299,7 +16337,8 @@ void server_loop()
                locked = true;
             }
             decode_post(net_buffer + 5, net_buffer + header_length, boundary,
-                        content_length, cookie_pwd, cookie_wpwd, refresh);
+                        content_length, cookie_pwd, cookie_wpwd, refresh,
+                        true, NULL);
          }
 
          if (return_length != -1) {
@@ -16397,28 +16436,13 @@ static int event_handler_mg(struct mg_event *event)
       // fudge refresh rate
       int refresh = 0;
 
-      // reassemble the request
-      int uri_length = strlen(event->request_info->uri);
-      int query_length = 0;
-      if (event->request_info->query_string) {
-         query_length = strlen(event->request_info->query_string);
-      }
-      int len = uri_length+1+query_length+1;
-      char buf[len];
-      strlcpy(buf, event->request_info->uri, len);
-      if (query_length) {
-         strlcat(buf, "?", len);
-         strlcat(buf, event->request_info->query_string, len);
-      }
-      //printf("len %d, buf [%s]\n", len, buf);
-
       bool locked = false;
 
       if (strcmp( event->request_info->request_method, "GET") == 0) {
          status = ss_mutex_wait_for(request_mutex, 0);
          assert(status == SS_SUCCESS);
          locked = true;
-         decode_get(buf, cookie_pwd, cookie_wpwd, cookie_cpwd, refresh);
+         decode_get(NULL, cookie_pwd, cookie_wpwd, cookie_cpwd, refresh, false, event->request_info->uri, event->request_info->query_string);
       } else if (strcmp( event->request_info->request_method, "POST") == 0) {
 
          int max_post_data = 1024*1024;
@@ -16440,7 +16464,7 @@ static int event_handler_mg(struct mg_event *event)
          status = ss_mutex_wait_for(request_mutex, 0);
          assert(status == SS_SUCCESS);
          locked = true;
-         decode_post(buf, post_data, boundary, post_data_len, cookie_pwd, cookie_wpwd, refresh);
+         decode_post(NULL, post_data, boundary, post_data_len, cookie_pwd, cookie_wpwd, refresh, false, event->request_info->uri);
       }
 
       if (debug_mg)
