@@ -677,7 +677,8 @@ INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
 {
    int size, fh = 0, offset, search_status, rd;
    char str[256], *p;
-   char message[10000], thread[256], attachment_all[256];
+   char message[10000], thread[256];
+   char attachment_all[3*256+100]; /* size of attachement1/2/3 from show_elog_submit_query() */
 
    if (tag[0]) {
       search_status = el_search_message(tag, &fh, TRUE);
