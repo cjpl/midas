@@ -16406,6 +16406,22 @@ static const char* find_header_mg(const struct mg_event *event, const char* name
    return NULL;
 }
 
+static const char* find_cookie_mg(const struct mg_event *event, const char* cookie_name)
+{
+   const char* cookies = find_header_mg(event, "Cookie");
+   if (!cookies)
+      return NULL;
+   const char* p = strstr(cookies, cookie_name);
+   if (!p)
+      return NULL;
+   const char* v = p+strlen(cookie_name);
+   if (*v != '=')
+      return NULL;
+   v++;
+   //printf("cookie [%s] value [%s]\n", cookie_name, v);
+   return v;
+}
+
 // This function will be called by mongoose on every new request.
 static int event_handler_mg(struct mg_event *event)
 {
@@ -16433,8 +16449,11 @@ static int event_handler_mg(struct mg_event *event)
       const char* cookie_wpwd = "";
       const char* cookie_cpwd = "";
 
-      // fudge refresh rate
-      int refresh = 0;
+      // extract refresh rate
+      int refresh = DEFAULT_REFRESH;
+      const char* p = find_cookie_mg(event, "midas_refr");
+      if (p)
+         refresh = atoi(p);
 
       bool locked = false;
 
