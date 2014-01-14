@@ -16781,7 +16781,7 @@ int loop_mg()
 
    while (!_abort) {
       /* check for shutdown message */
-      status = cm_yield(1000);
+      status = cm_yield(100);
       if (status == RPC_SHUTDOWN)
          break;
       
