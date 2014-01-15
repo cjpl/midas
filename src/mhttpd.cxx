@@ -16444,14 +16444,39 @@ static int event_handler_mg(struct mg_event *event)
       strlen_retbuf = 0;
       return_length = 0;
 
-      // fudge cookies
-      const char* cookie_pwd = "";
-      const char* cookie_wpwd = "";
-      const char* cookie_cpwd = "";
+      const char* p;
+
+      // extract password cookies
+
+      char cookie_pwd[256]; // general access password
+      char cookie_wpwd[256]; // "write mode" password
+      char cookie_cpwd[256]; // custom page and javascript password
+
+      cookie_pwd[0] = 0;
+      cookie_wpwd[0] = 0;
+      cookie_cpwd[0] = 0;
+
+      p = find_cookie_mg(event, "midas_pwd");
+      if (p) {
+         STRLCPY(cookie_pwd, p);
+         cookie_pwd[strcspn(cookie_pwd, " ;\r\n")] = 0;
+      }
+
+      p = find_cookie_mg(event, "midas_wpwd");
+      if (p) {
+         STRLCPY(cookie_wpwd, p);
+         cookie_wpwd[strcspn(cookie_wpwd, " ;\r\n")] = 0;
+      }
+
+      p = find_cookie_mg(event, "cpwd");
+      if (p) {
+         STRLCPY(cookie_cpwd, p);
+         cookie_cpwd[strcspn(cookie_cpwd, " ;\r\n")] = 0;
+      }
 
       // extract refresh rate
       int refresh = DEFAULT_REFRESH;
-      const char* p = find_cookie_mg(event, "midas_refr");
+      p = find_cookie_mg(event, "midas_refr");
       if (p)
          refresh = atoi(p);
 
