@@ -50,7 +50,7 @@ int strlen_retbuf;
 int return_length;
 char host_name[256];
 char referer[256];
-int tcp_port = 8080;
+int tcp_port = 80;
 
 #define MAX_GROUPS    32
 #define MAX_VARS     100
