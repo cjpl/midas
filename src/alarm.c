@@ -571,8 +571,15 @@ INT al_check()
    /* request semaphore */
    cm_get_experiment_semaphore(&semaphore, NULL, NULL, NULL);
    status = ss_semaphore_wait_for(semaphore, 100);
-   if (status != SS_SUCCESS)
+   if (status == SS_TIMEOUT)
       return AL_SUCCESS;        /* someone else is doing alarm business */
+   if (status != SS_SUCCESS) {
+      printf("al_check: Something is wrong with our semaphore, ss_semaphore_wait_for() returned %d, aborting.\n", status);
+      //abort(); // DOES NOT RETURN
+      printf("al_check: Cannot abort - this will lock you out of odb. From this point, MIDAS will not work correctly. Please read the discussion at https://midas.triumf.ca/elog/Midas/945\n");
+      // NOT REACHED
+      return AL_SUCCESS;
+   }
    
    /* check ODB alarms */
    db_find_key(hDB, 0, "/Alarms/Alarms", &hkeyroot);
@@ -779,3 +786,10 @@ INT al_get_alarms(char *result, int result_size)
 /**dox***************************************************************/
 /** @} *//* end of alfunctioncode */
 
+/* emacs
+ * Local Variables:
+ * tab-width: 8
+ * c-basic-offset: 3
+ * indent-tabs-mode: nil
+ * End:
+ */
