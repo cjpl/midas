@@ -6267,7 +6267,8 @@ char *ss_getpass(const char *prompt)
 {
    static char password[32];
 
-   printf("%s", prompt);
+   fprintf(stdout, "%s", prompt);
+   fflush(stdout);
    memset(password, 0, sizeof(password));
 
 #ifdef OS_UNIX
