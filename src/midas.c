@@ -451,6 +451,13 @@ INT cm_msg_log(INT message_type, const char *message)
 
          cm_get_experiment_semaphore(NULL, NULL, NULL, &semaphore);
          status = ss_semaphore_wait_for(semaphore, 5 * 1000);
+         if (status != SS_SUCCESS) {
+            printf("cm_msg_log: Something is wrong with our semaphore, ss_semaphore_wait_for() returned %d, aborting.\n", status);
+            //abort(); // DOES NOT RETURN
+            printf("cm_msg_log: Cannot abort - this will lock you out of odb. From this point, MIDAS will not work correctly. Please read the discussion at https://midas.triumf.ca/elog/Midas/945\n");
+            // NOT REACHED
+            return status;
+         }
 
          strcpy(str, ss_asctime());
          write(fh, str, strlen(str));
@@ -464,7 +471,7 @@ INT cm_msg_log(INT message_type, const char *message)
             symlink(path, lpath);
 #endif
 
-         ss_semaphore_release(semaphore);
+         status = ss_semaphore_release(semaphore);
       }
    }
 
