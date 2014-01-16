@@ -583,25 +583,45 @@ void urlDecode(char *p)
 
 void urlEncode(char *ps, int ps_size)
 /********************************************************************\
-   Encode the given string in-place by adding %XX escapes
+   Encode mhttpd ODB path for embedding into HTML <a href="xxx"> elements.
+   Encoding is intended to be compatible with RFC 3986 section 2 (adding of %XX escapes)
+   Note 0: it is genarally safe to percent-escape everything
+   Note 1: RFC 3986 specifies that '/' should be percent-escaped in path elements. But ODB path elements never contain '/' and the input if this function is '/'-separated paths, therefore this function does not escape '/'
+   Note 2: do not use this function to encode query URLs that already contain the query separators '?' and '&'. The URL path and the individual query elements should be encoded separately, then concatenated.
 \********************************************************************/
 {
-   char *pd, *p, str[256];
+   char *pd, *p;
+   int len = strlen(ps);
+   char *str = (char*)malloc(len*3 + 10); // at worst, each input character is expanded into 3 output characters
 
    pd = str;
    p = ps;
    while (*p) {
-      if (strchr(" %&=+#\"'?", *p)) {
-         sprintf(pd, "%%%02X", *p);
+      if (*p == '/') {
+         *pd++ = *p++;
+      } else if (*p == '.') {
+         *pd++ = *p++;
+      } else if (isalnum(*p)) {
+         *pd++ = *p++;
+      } else {
+         sprintf(pd, "%%%02X", (*p)&0xFF);
          pd += 3;
          p++;
-      } else {
-         *pd++ = *p++;
       }
    }
    *pd = '\0';
-   assert(pd - str < (int)sizeof(str));
+
+   if (0) {
+      printf("urlEncode [");
+      for (p=ps; *p!=0; p++)
+         printf("0x%02x ", (*p)&0xFF);
+      printf("]\n");
+
+      printf("urlEncode [%s] -> [%s]\n", ps, str);
+   }
+
    strlcpy(ps, str, ps_size);
+   free(str);
 }
 
 /*------------------------------------------------------------------*/
