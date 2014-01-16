@@ -325,6 +325,29 @@ int return_grow(size_t len)
 
 /*------------------------------------------------------------------*/
 
+void rmemcpy(const void *buf, int len)
+{
+   return_grow(len);
+   memcpy(return_buffer + strlen_retbuf, buf, len);
+   strlen_retbuf += len;
+   return_length = strlen_retbuf;
+}
+
+/*------------------------------------------------------------------*/
+
+void rread(const char* filename, int fh, int len)
+{
+   return_grow(len);
+   int rd = read(fh, return_buffer + strlen_retbuf, len);
+   if (rd != len) {
+      cm_msg(MERROR, "rread", "Cannot read file \'%s\', read of %d returned %d, errno %d (%s)", filename, len, rd, errno, strerror(errno));
+   }
+   strlen_retbuf += len;
+   return_length = strlen_retbuf;
+}
+
+/*------------------------------------------------------------------*/
+
 void rsputs(const char *str)
 {
    size_t len = strlen(str);
@@ -338,6 +361,8 @@ void rsputs(const char *str)
       strcpy(return_buffer + strlen_retbuf, str);
       strlen_retbuf += len;
    }
+
+   return_length = strlen_retbuf;
 }
 
 /*------------------------------------------------------------------*/
@@ -384,6 +409,8 @@ void rsputs2(const char *str)
       return_buffer[j] = 0;
       strlen_retbuf = j;
    }
+
+   return_length = strlen_retbuf;
 }
 
 /*------------------------------------------------------------------*/
@@ -408,6 +435,7 @@ void rsprintf(const char *format, ...)
       strcpy(return_buffer + strlen_retbuf, str);
 
    strlen_retbuf += strlen(str);
+   return_length = strlen_retbuf;
 }
 
 /*------------------------------------------------------------------*/
@@ -4260,15 +4288,7 @@ void show_elog_page(char *path, int path_size)
 
          rsprintf("Content-Length: %d\r\n\r\n", length);
 
-         /* return if file too big */
-         if (length > (int) (return_size - strlen(return_buffer))) {
-            printf("return buffer too small\n");
-            close(fh);
-            return;
-         }
-
-         return_length = strlen(return_buffer) + length;
-         read(fh, return_buffer + strlen(return_buffer), length);
+         rread(file_name, fh, length);
 
          close(fh);
       }
@@ -5684,13 +5704,8 @@ void show_custom_gif(const char *name)
       rsprintf("Pragma: no-cache\r\n");
       rsprintf("Expires: Fri, 01-Jan-1983 00:00:00 GMT\r\n\r\n");
 
-      if (size > (int) (return_size - strlen(return_buffer))) {
-         printf("return buffer too small\n");
-         return;
-      }
+      rread(filename, fh, size);
 
-      return_length = strlen(return_buffer) + size;
-      read(fh, return_buffer + strlen(return_buffer), size);
       close(fh);
       return;
    }
@@ -6004,13 +6019,7 @@ void show_custom_gif(const char *name)
    rsprintf("Pragma: no-cache\r\n");
    rsprintf("Expires: Fri, 01-Jan-1983 00:00:00 GMT\r\n\r\n");
 
-   if (length > (int) (return_size - strlen(return_buffer))) {
-      printf("return buffer too small\n");
-      return;
-   }
-
-   return_length = strlen(return_buffer) + length;
-   memcpy(return_buffer + strlen(return_buffer), gb.data, length);
+   rmemcpy(gb.data, length);
 }
 
 /*------------------------------------------------------------------*/
@@ -6051,14 +6060,9 @@ void show_custom_audio(const char *name)
    else
       rsprintf("Content-Type: audio/ogg\r\n");
    rsprintf("Content-Length: %d\r\n\r\n", size);
-   
-   if (size > (int) (return_size - strlen(return_buffer))) {
-      printf("return buffer too small\n");
-      return;
-   }
-   
-   return_length = strlen(return_buffer) + size;
-   read(fh, return_buffer + strlen(return_buffer), size);
+
+   rread(filename, fh, size);
+
    close(fh);
    return;
 }
@@ -12013,13 +12017,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
       rsprintf("Pragma: no-cache\r\n");
       rsprintf("Expires: Fri, 01-Jan-1983 00:00:00 GMT\r\n\r\n");
 
-      if (length > (int) (return_size - strlen(return_buffer))) {
-         printf("return buffer too small\n");
-         return;
-      }
-
-      return_length = strlen(return_buffer) + length;
-      memcpy(return_buffer + strlen(return_buffer), gb.data, length);
+      rmemcpy(gb.data, length);
    } else {
       if (length > *buffer_size) {
          printf("return buffer too small\n");
@@ -14360,10 +14358,7 @@ void send_icon(const char *icon)
 
    rsprintf("Content-Length: %d\r\n\r\n", length);
 
-   return_grow(length);
-
-   return_length = strlen(return_buffer) + length;
-   memcpy(return_buffer + strlen(return_buffer), picon, length);
+   rmemcpy(picon, length);
 }
 
 /*------------------------------------------------------------------*/
@@ -14475,7 +14470,8 @@ void send_css()
 
    /* look for external CSS file */
 
-   FILE *fp = open_resource_file("mhttpd.css", NULL);
+   std::string filename;
+   FILE *fp = open_resource_file("mhttpd.css", &filename);
 
    if (fp) {
       struct stat stat_buf;
@@ -14483,11 +14479,8 @@ void send_css()
       int length = stat_buf.st_size;
       rsprintf("Content-Length: %d\r\n\r\n", length);
 
-      return_grow(length);
-      
-      return_length = strlen(return_buffer) + length;
-      int rd = fread(return_buffer + strlen(return_buffer), 1, length, fp);
-      assert(rd == length);
+      rread(filename.c_str(), fileno(fp), length);
+
       fclose(fp);
       return;
    }
@@ -14840,28 +14833,23 @@ void send_js()
    rsprintf("Content-Type: text/javascript\r\n");
 
    /* look for external JS file */
-   FILE *fp = open_resource_file("mhttpd.js", NULL);
+   std::string filename;
+   FILE *fp = open_resource_file("mhttpd.js", &filename);
 
    if (fp) {
       struct stat stat_buf;
       fstat(fileno(fp), &stat_buf);
       length = stat_buf.st_size;
       rsprintf("Content-Length: %d\r\n\r\n", length);
-
-      return_grow(length);
-      
-      return_length = strlen(return_buffer) + length;
-      int rd = read(fileno(fp), return_buffer + strlen(return_buffer), length);
-      assert(rd == length);
+      rread(filename.c_str(), fileno(fp), length);
       fclose(fp);
       return;
    }
    
    length = strlen(mhttpd_js);
    rsprintf("Content-Length: %d\r\n\r\n", length);
-   
-   return_length = strlen(return_buffer) + length;
-   memcpy(return_buffer + strlen(return_buffer), mhttpd_js, length);
+
+   rmemcpy(mhttpd_js, length);
 }
 
 /*------------------------------------------------------------------*/
@@ -14888,8 +14876,7 @@ void send_alarm_sound()
    rsprintf("Content-Type: audio/midi\r\n");
    rsprintf("Content-Length: %d\r\n\r\n", sizeof(alarm_sound));
 
-   memcpy(return_buffer + strlen_retbuf, alarm_sound, sizeof(alarm_sound));
-   return_length = strlen_retbuf + sizeof(alarm_sound);
+   rmemcpy(alarm_sound, sizeof(alarm_sound));
 }
 
 /*------------------------------------------------------------------*/
