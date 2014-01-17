@@ -34,6 +34,9 @@ int copyHstFile(const char* filename, FILE*f, MidasHistoryInterface *mh)
 {
    assert(f!=NULL);
 
+   char *buf = NULL;
+   int bufSize = 0;
+
    while (1)
       {
          HIST_RECORD rec;
@@ -55,6 +58,8 @@ int copyHstFile(const char* filename, FILE*f, MidasHistoryInterface *mh)
             {
             default:
                fprintf(stderr, "Error: %s: Unexpected record type: 0x%x\n", filename, rec.record_type);
+               if (buf)
+                  free(buf);
                return -1;
                break;
 
@@ -62,20 +67,41 @@ int copyHstFile(const char* filename, FILE*f, MidasHistoryInterface *mh)
                {
                   char event_name[NAME_LENGTH];
                   rd = fread(event_name, 1, NAME_LENGTH, f);
-                  assert(rd == NAME_LENGTH);
+
+                  if (rd != NAME_LENGTH) {
+                     fprintf(stderr, "Error: %s: Error reading RT_DEF record, fread(%d) returned %d, errno %d (%s)\n", filename, NAME_LENGTH, rd, errno, strerror(errno));
+                     if (buf)
+                        free(buf);
+                     return -1;
+                     break;
+                  }
 	    
                   int size = rec.data_size;
                   int ntags = size/sizeof(TAG);
 
                   //  printf("Event %d, \"%s\", size %d, %d tags.\n", rec.event_id, event_name, size, ntags);
 
-                  assert(size > 0);
-                  assert(size < 1*1024*1024);
-                  assert(size == ntags*(int)sizeof(TAG));
+                  if (!((size > 0) &&
+                        (size < 1*1024*1024) &&
+                        (size == ntags*(int)sizeof(TAG)))) {
+
+                     fprintf(stderr, "Error: %s: Invalid length of RT_DEF record: %d (0x%x)\n", filename, size, size);
+                     if (buf)
+                        free(buf);
+                     return -1;
+                     break;
+                  }
 	    
                   TAG *tags = new TAG[ntags];
                   rd = fread(tags, 1, size, f);
-                  assert(rd == size);
+
+                  if (rd != size) {
+                     fprintf(stderr, "Error: %s: Error reading RT_DEF record, fread(%d) returned %d, errno %d (%s)\n", filename, size, rd, errno, strerror(errno));
+                     if (buf)
+                        free(buf);
+                     return -1;
+                     break;
+                  }
 
                   // need to sanitize the tag names
                   
@@ -122,21 +148,41 @@ int copyHstFile(const char* filename, FILE*f, MidasHistoryInterface *mh)
                   if (0)
                      printf("Data record, size %d.\n", size);
 
-                  assert(size > 0);
-                  assert(size < 1*1024*1024);
-	    
-                  static char *buf = NULL;
-                  static int bufSize = 0;
+                  if (!((size > 0) &&
+                        (size < 1*1024*1024))) {
 
+                     fprintf(stderr, "Error: %s: Invalid length of RT_DATA record: %d (0x%x)\n", filename, size, size);
+                     if (buf)
+                        free(buf);
+                     return -1;
+                     break;
+                  }
+	    
                   if (size > bufSize)
                      {
                         bufSize = 1024*((size+1023)/1024);
-                        buf = (char*)realloc(buf, bufSize);
-                        assert(buf != NULL);
+                        char *newbuf = (char*)realloc(buf, bufSize);
+
+                        if (newbuf == NULL) {
+                           fprintf(stderr, "Error: %s: Cannot realloc(%d), errno %d (%s)\n", filename, bufSize, errno, strerror(errno));
+                           if (buf)
+                              free(buf);
+                           return -1;
+                           break;
+                        }
+
+                        buf = newbuf;
                      }
 
                   rd = fread(buf, 1, size, f);
-                  assert(rd == size);
+
+                  if (rd != size) {
+                     fprintf(stderr, "Error: %s: Error reading RT_DATA record, fread(%d) returned %d, errno %d (%s)\n", filename, size, rd, errno, strerror(errno));
+                     if (buf)
+                        free(buf);
+                     return -1;
+                     break;
+                  }
 
                   time_t t = (time_t)rec.time;
 
@@ -145,7 +191,12 @@ int copyHstFile(const char* filename, FILE*f, MidasHistoryInterface *mh)
                   break;
                }
             }
+
+         cm_msg_flush_buffer();
       }
+
+   if (buf)
+      free(buf);
 
    return 0;
 }
