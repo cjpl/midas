@@ -333,22 +333,36 @@ struct HsSchemaEntry {
 
 struct HsSchema
 {
-   bool active;
+   // event schema definitions
    std::string event_name;
    time_t time_from;
    time_t time_to;
    std::vector<HsSchemaEntry> variables;
    std::vector<int> offsets;
+   int  n_bytes;
+
+   // run time data used by hs_write_event()
+   bool active;
+   int count_write_undersize;
+   int count_write_oversize;
+   int write_max_size;
+   int write_min_size;
 
    HsSchema() // ctor
    {
-      active = false;
       time_from = 0;
       time_to = 0;
+      n_bytes = 0;
+
+      active = false;
+      count_write_undersize = 0;
+      count_write_oversize = 0;
+      write_max_size = 0;
+      write_min_size = 0;
    }
 
    virtual void print(bool print_tags = true) const;
-   virtual ~HsSchema() { }; // dtor
+   virtual ~HsSchema(); // dtor
    virtual int flush_buffers() = 0;
    virtual int close() = 0;
    virtual int write_event(const time_t t, const char* data, const int data_size) = 0;
@@ -400,6 +414,19 @@ public:
 ////////////////////////////////////////////
 //        Base class functions            //
 ////////////////////////////////////////////
+
+HsSchema::~HsSchema() // dtor
+{
+   // only report if undersize/oversize happens more than once -
+   // the first occurence is already reported by hs_write_event()
+   if (count_write_undersize > 1) {
+      cm_msg(MERROR, "hs_write_event", "Event \'%s\' data size mismatch count: %d, expected %d bytes, hs_write_event() called with is a few as %d bytes", event_name.c_str(), count_write_undersize, n_bytes, write_min_size);
+   }
+
+   if (count_write_oversize > 1) {
+      cm_msg(MERROR, "hs_write_event", "Event \'%s\' data size mismatch count: %d, expected %d bytes, hs_write_event() called with is as much as %d bytes", event_name.c_str(), count_write_oversize, n_bytes, write_max_size);
+   }
+};
 
 void HsSchemaVector::add(HsSchema* s)
 {
@@ -606,7 +633,7 @@ struct HsFileSchema : public HsSchema {
 void HsSchema::print(bool print_tags) const
 {
    unsigned nv = this->variables.size();
-   printf("event [%s], time %s..%s, variables [%d]\n", this->event_name.c_str(), TimeToString(this->time_from).c_str(), TimeToString(this->time_to).c_str(), nv);
+   printf("event [%s], time %s..%s, %d variables, %d bytes\n", this->event_name.c_str(), TimeToString(this->time_from).c_str(), TimeToString(this->time_to).c_str(), nv, n_bytes);
    if (print_tags)
       for (unsigned j=0; j<nv; j++)
          printf("  %d: name [%s], type [%s] tid %d, n_data %d, n_bytes %d, offset %d\n", j, this->variables[j].name.c_str(), rpc_tid_name(this->variables[j].type), this->variables[j].type, this->variables[j].n_data, this->variables[j].n_bytes, this->offsets[j]);
@@ -615,23 +642,23 @@ void HsSchema::print(bool print_tags) const
 void HsSqlSchema::print(bool print_tags) const
 {
    unsigned nv = this->variables.size();
-   printf("event [%s], sql_table [%s], time %s..%s, variables [%d]\n", this->event_name.c_str(), this->table_name.c_str(), TimeToString(this->time_from).c_str(), TimeToString(this->time_to).c_str(), nv);
-   if (print_tags)
+   printf("event [%s], sql_table [%s], time %s..%s, %d variables, %d bytes\n", this->event_name.c_str(), this->table_name.c_str(), TimeToString(this->time_from).c_str(), TimeToString(this->time_to).c_str(), nv, n_bytes);
+   if (print_tags) {
       for (unsigned j=0; j<nv; j++) {
          printf("  %d: name [%s], type [%s] tid %d, n_data %d, n_bytes %d", j, this->variables[j].name.c_str(), rpc_tid_name(this->variables[j].type), this->variables[j].type, this->variables[j].n_data, this->variables[j].n_bytes);
          printf(", sql_column [%s], sql_type [%s], offset %d", this->column_names[j].c_str(), this->column_types[j].c_str(), this->offsets[j]);
          printf("\n");
       }
+   }
 }
 
 void HsFileSchema::print(bool print_tags) const
 {
    unsigned nv = this->variables.size();
-   printf("event [%s], file_name [%s], time %s..%s, variables [%d]\n", this->event_name.c_str(), this->file_name.c_str(), TimeToString(this->time_from).c_str(), TimeToString(this->time_to).c_str(), nv);
+   printf("event [%s], file_name [%s], time %s..%s, %d variables, %d bytes, dat_offset %d, record_size %d\n", this->event_name.c_str(), this->file_name.c_str(), TimeToString(this->time_from).c_str(), TimeToString(this->time_to).c_str(), nv, n_bytes, data_offset, record_size);
    if (print_tags) {
       for (unsigned j=0; j<nv; j++)
          printf("  %d: name [%s], type [%s] tid %d, n_data %d, n_bytes %d, offset %d\n", j, this->variables[j].name.c_str(), rpc_tid_name(this->variables[j].type), this->variables[j].type, this->variables[j].n_data, this->variables[j].n_bytes, this->offsets[j]);
-      printf("  record_size: %d, data_offset: %d\n", this->record_size, this->data_offset);
    }
 }
 
@@ -1581,6 +1608,9 @@ int HsFileSchema::write_event(const time_t t, const char* data, const int data_s
 
    int expected_size = s->record_size - 4;
 
+   // sanity check: record_size and n_bytes are computed from the byte counts in he file header
+   assert(expected_size == s->n_bytes);
+
    if (s->last_size == 0)
       s->last_size = expected_size;
 
@@ -2335,7 +2365,7 @@ int SchemaHistoryBase::hs_write_event(const char* event_name, time_t timestamp, 
 
    // find this event
    for (size_t i=0; i<fEvents.size(); i++)
-      if (fEvents[i] && fEvents[i]->event_name == event_name) {
+   if (fEvents[i] && fEvents[i]->event_name == event_name) {
          s = fEvents[i];
          break;
       }
@@ -2348,16 +2378,49 @@ int SchemaHistoryBase::hs_write_event(const char* event_name, time_t timestamp, 
    if (!s->active)
       return HS_FILE_ERROR;
 
-   int status = s->write_event(timestamp, buffer, buffer_size);
+   if (s->n_bytes == 0) { // compute expected data size
+      // NB: history data does not have any padding!
+      for (unsigned i=0; i<s->variables.size(); i++)
+         s->n_bytes += s->variables[i].n_bytes;
+   }
 
-   // if could not write to SQL?
+   int status;
+
+   if (buffer_size > s->n_bytes) { // too many bytes!
+      if (s->count_write_oversize == 0) {
+         // only report first occurence
+         // count of all occurences is reported by HsSchema destructor
+         cm_msg(MERROR, "hs_write_event", "Event \'%s\' data size mismatch: expected %d bytes, got %d bytes", s->event_name.c_str(), s->n_bytes, buffer_size);
+      }
+      s->count_write_oversize++;
+      if (buffer_size > s->write_max_size)
+         s->write_max_size = buffer_size;
+      status = s->write_event(timestamp, buffer, s->n_bytes);
+   } else if (buffer_size < s->n_bytes) { // too few bytes
+      if (s->count_write_undersize == 0) {
+         // only report first occurence
+         // count of all occurences is reported by HsSchema destructor
+         cm_msg(MERROR, "hs_write_event", "Event \'%s\' data size mismatch: expected %d bytes, got %d bytes", s->event_name.c_str(), s->n_bytes, buffer_size);
+      }
+      s->count_write_undersize++;
+      if (s->write_min_size == 0)
+         s->write_min_size = buffer_size;
+      else if (buffer_size < s->write_min_size)
+         s->write_min_size = buffer_size;
+      char* tmp = (char*)malloc(s->n_bytes);
+      memcpy(tmp, buffer, buffer_size);
+      memset(tmp + buffer_size, 0, s->n_bytes - buffer_size);
+      status = s->write_event(timestamp, tmp, s->n_bytes);
+      free(tmp);
+   } else {
+      assert(buffer_size == s->n_bytes); // obviously
+      status = s->write_event(timestamp, buffer, buffer_size);
+   }
+
+   // if could not write event, deactivate it
    if (status != HS_SUCCESS) {
-      // otherwise, deactivate this event
-
       s->active = false;
-
       cm_msg(MERROR, "hs_write_event", "Event \'%s\' disabled after write error %d", event_name, status);
-
       return HS_FILE_ERROR;
    }
 
