@@ -4531,10 +4531,21 @@ int FileHistory::create_file(const char* event_name, time_t timestamp, int ntags
    if (fDebug)
       printf("FileHistory::create_file: event [%s]\n", event_name);
 
+   // NB: file names are constructed in such a way
+   // that when sorted lexicographically ("ls -1 | sort")
+   // they *also* become sorted by time
+
+   char buf[256];
+   struct tm tm;
+   localtime_r(&timestamp, &tm);
+   strftime(buf, sizeof(buf), "%Y%m%d", &tm);
+
    std::string filename;
    filename += fPath;
    filename += "mhf_";
    filename += TimeToString(timestamp);
+   filename += "_";
+   filename += buf;
    filename += "_";
    filename += MidasNameToFileName(event_name);
 
