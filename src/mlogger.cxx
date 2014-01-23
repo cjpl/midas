@@ -2838,14 +2838,13 @@ INT open_history()
    INT size, index, i_tag, status, i, j, li, max_event_id;
    int ieq;
    INT n_var, n_tags, n_names = 0;
-   HNDLE hKeyRoot, hKeyVar, hKeyNames, hLinkKey, hVarKey, hKeyEq, hHistKey, hKey;
+   HNDLE hKeyRoot, hKeyVar, hLinkKey, hVarKey, hKeyEq, hHistKey, hKey;
    HNDLE hKeyHist;
    DWORD history;
    TAG *tag = NULL;
    KEY key, varkey, linkkey, histkey;
    WORD eq_id;
    char str[256], eq_name[NAME_LENGTH], hist_name[NAME_LENGTH];
-   BOOL single_names;
    int count_events = 0;
    int global_per_variable_history = 0;
 
@@ -3147,26 +3146,33 @@ INT open_history()
             /* get variable key */
             db_get_key(hDB, hKey, &varkey);
 
-            /* look for names */
-            db_find_key(hDB, hKeyEq, "Settings/Names", &hKeyNames);
-            single_names = (hKeyNames > 0);
-            if (hKeyNames) {
-               if (verbose)
-                  printf("Using \"/Equipment/%s/Settings/Names\" for variable \"%s\"\n",
-                         eq_name, varkey.name);
 
-               /* define tags from names list */
-               db_get_key(hDB, hKeyNames, &key);
-               n_names = key.num_values;
-            } else {
+            HNDLE hKeyNames = 0;
+            BOOL single_names = false;
+
+            /* look for names */
+
+            if (!hKeyNames) {
                sprintf(str, "Settings/Names %s", varkey.name);
                db_find_key(hDB, hKeyEq, str, &hKeyNames);
                if (hKeyNames) {
                   if (verbose)
-                     printf
-                         ("Using \"/Equipment/%s/Settings/Names %s\" for variable \"%s\"\n",
-                          eq_name, varkey.name, varkey.name);
+                     printf("Using \"/Equipment/%s/Settings/Names %s\" for variable \"%s\"\n", eq_name, varkey.name, varkey.name);
 
+                  /* define tags from names list */
+                  db_get_key(hDB, hKeyNames, &key);
+                  n_names = key.num_values;
+               }
+            }
+
+            if (!hKeyNames) {
+               db_find_key(hDB, hKeyEq, "Settings/Names", &hKeyNames);
+               single_names = (hKeyNames > 0);
+
+               if (hKeyNames) {
+                  if (verbose)
+                     printf("Using \"/Equipment/%s/Settings/Names\" for variable \"%s\"\n", eq_name, varkey.name);
+                  
                   /* define tags from names list */
                   db_get_key(hDB, hKeyNames, &key);
                   n_names = key.num_values;
