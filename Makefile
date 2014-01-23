@@ -383,7 +383,7 @@ crosscompile:
 
 linuxarm:
 	echo OSTYPE=$(OSTYPE)
-	$(MAKE) ROOTSYS= OS_DIR=$(OSTYPE)-arm OSTYPE=crosslinuxarm
+	$(MAKE) ROOTSYS= HAVE_MYSQL= HAVE_ODBC= HAVE_SQLITE= OS_DIR=$(OSTYPE)-arm OSTYPE=crosslinuxarm
 
 cleanarm:
 	$(MAKE) ROOTSYS= OS_DIR=linux-arm clean
