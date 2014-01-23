@@ -1669,7 +1669,7 @@ public:
    //             Functions used by mhttpd               //
    ////////////////////////////////////////////////////////
 
-   int hs_get_events(std::vector<std::string> *pevents)
+   int hs_get_events(time_t t, std::vector<std::string> *pevents)
    {
       if (fDebug)
          printf("hs_get_events!\n");
@@ -1709,7 +1709,7 @@ public:
       return HS_SUCCESS;
    }
       
-   int hs_get_tags(const char* event_name, std::vector<TAG> *ptags)
+   int hs_get_tags(const char* event_name, time_t t, std::vector<TAG> *ptags)
    {
       if (fDebug)
          printf("hs_get_tags for [%s]\n", event_name);

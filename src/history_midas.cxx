@@ -637,7 +637,7 @@ public:
       return HS_SUCCESS;
    }
 
-   int hs_get_events(std::vector<std::string> *pevents)
+   int hs_get_events(time_t t, std::vector<std::string> *pevents)
    {
       assert(pevents);
       pevents->clear();
@@ -1010,7 +1010,7 @@ public:
 
    /*------------------------------------------------------------------*/
 
-   int hs_get_tags(const char* event_name, std::vector<TAG> *ptags)
+   int hs_get_tags(const char* event_name, time_t t, std::vector<TAG> *ptags)
    {
       std::vector<TAG>& ttt = fTagsCache[event_name];
 

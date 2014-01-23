@@ -286,7 +286,7 @@ div.wrapper{
     margin: 0 auto -3em;
 }
 
-.dialogTable, .messageBox, .genericTable, .sequencerTable{
+.historyConfigTable, .dialogTable, .messageBox, .genericTable, .sequencerTable{
 	border-radius: 12px;
 	border: 2px solid #00B26B;
 	background-color: #EEEEEE;
@@ -307,6 +307,22 @@ table.sequencerTable td table{
 
 table.dialogTable td{
 	border:none;
+}
+
+.historyConfigTable {
+	border: none;
+}
+
+table.historyConfigTable td{
+    border-bottom: 1px solid;
+    text-align: left;
+}
+
+table.historyConfigTable th{
+    border-top: 2px solid;
+    border-bottom: 2px solid;
+    text-align: center;
+    font-weight: bold;
 }
 
 .historyTable td{

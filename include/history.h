@@ -85,9 +85,9 @@ class MidasHistoryInterface
 
   // functions for reading from the history, used by mhttpd, mhist
 
-  virtual int hs_get_events(std::vector<std::string> *pevents) = 0; ///< get list of all events, returns HS_SUCCESS
+  virtual int hs_get_events(time_t time_from, std::vector<std::string> *pevents) = 0; ///< get list of events that exist(ed) at given time and later (value 0 means "return all events from beginning of time"), returns HS_SUCCESS
 
-  virtual int hs_get_tags(const char* event_name, std::vector<TAG> *ptags) = 0; ///< use event names returned by hs_get_events_odbc(), see hs_get_tags(), returns HS_SUCCESS
+  virtual int hs_get_tags(const char* event_name, time_t time_from, std::vector<TAG> *ptags) = 0; ///< get list of history variables for given event (use event names returned by hs_get_events()) that exist(ed) at given time and later (value 0 means "all variables for this event that ever existed"), also see hs_get_tags(), returns HS_SUCCESS
 
   virtual int hs_get_last_written(time_t start_time,
                                   int num_var, const char* const event_name[], const char* const tag_name[], const int var_index[],

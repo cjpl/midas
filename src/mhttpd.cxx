@@ -11067,6 +11067,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
    float maxvalue = (float) +HUGE_VAL;
    int show_values = 0;
    int sort_vars = 0;
+   int old_vars = 0;
    char var_status[MAX_VARS][256];
    double tstart, tend;
    time_t starttime, endtime;
@@ -11281,7 +11282,12 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
       /* get sort_vars type */
       size = sizeof(sort_vars);
       sort_vars = 0;
-      db_get_value(hDB, hkeypanel, "Show values", &sort_vars, &size, TID_BOOL, TRUE);
+      db_get_value(hDB, hkeypanel, "Sort vars", &sort_vars, &size, TID_BOOL, TRUE);
+
+      /* get old_vars type */
+      size = sizeof(old_vars);
+      old_vars = 0;
+      db_get_value(hDB, hkeypanel, "Show old vars", &old_vars, &size, TID_BOOL, TRUE);
 
       /* get min value */
       size = sizeof(minvalue);
@@ -12578,7 +12584,7 @@ static void add_vars(struct hist_var_t vars[], const char* event_name, const cha
 
 void show_hist_config_page(const char *path, const char *hgroup, const char *panel)
 {
-   int status, size, index, sort_vars;
+   int status, size, index, sort_vars, old_vars;
    BOOL flag;
    HNDLE hDB, hKeyVar;
    int max_display_events = 20;
@@ -12726,6 +12732,10 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
       flag = *getparam("sort_vars");
       db_set_value(hDB, 0, ref, &flag, sizeof(flag), 1, TID_BOOL);
 
+      sprintf(ref, "/History/Display/%s/Show old vars", path);
+      flag = *getparam("old_vars");
+      db_set_value(hDB, 0, ref, &flag, sizeof(flag), 1, TID_BOOL);
+
       strlcpy(str, path, sizeof(str));
       if (strrchr(str, '/'))
          strlcpy(str, strrchr(str, '/')+1, sizeof(str));
@@ -12749,7 +12759,9 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
    show_header("History Config", "GET", str, 0);
    rsprintf("</table>");  //close header table
 
-   rsprintf("<table class=\"dialogTable\">"); //open main table
+   rsprintf("<table class=\"historyConfigTable\">"); //open main table
+
+   rsprintf("<tr><th colspan=8 class=\"subStatusTitle\">History Panel \"%s / %s\"</th></tr>\n", hgroup, panel);
 
    /* menu buttons */
    rsprintf("<tr><td colspan=8>\n");
@@ -12759,9 +12771,6 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
    rsprintf("<input type=submit name=cmd value=\"Clear history cache\">\n");
    rsprintf("<input type=submit name=cmd value=\"Delete Panel\">\n");
    rsprintf("</td></tr>\n");
-
-   rsprintf("<tr><td colspan=8 align=center><b>Panel \"%s / %s\"</b>\n",
-            hgroup, panel);
 
    /* hidden command for refresh */
    rsprintf("<input type=hidden name=cmd value=Refresh>\n");
@@ -12851,13 +12860,9 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
       db_get_value(hDB, 0, ref, &flag, &size, TID_BOOL, TRUE);
    }
    if (flag)
-      rsprintf
-          ("<tr><td colspan=8><input type=checkbox checked name=run_markers value=1>",
-           str);
+      rsprintf("<tr><td colspan=8><input type=checkbox checked name=run_markers value=1>", str);
    else
-      rsprintf
-          ("<tr><td colspan=8><input type=checkbox name=run_markers value=1>",
-           str);
+      rsprintf("<tr><td colspan=8><input type=checkbox name=run_markers value=1>", str);
    rsprintf("&nbsp;&nbsp;Show run markers</td></tr>\n");
 
    /* show_values */
@@ -12889,14 +12894,25 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
       db_get_value(hDB, 0, ref, &sort_vars, &size, TID_BOOL, FALSE);
    }
    if (sort_vars)
-      rsprintf
-          ("<tr><td colspan=8><input type=checkbox checked name=sort_vars value=1>",
-           str);
+      rsprintf("<tr><td colspan=8><input type=checkbox checked name=sort_vars value=1>", str);
    else
-      rsprintf
-          ("<tr><td colspan=8><input type=checkbox name=sort_vars value=1>",
-           str);
+      rsprintf("<tr><td colspan=8><input type=checkbox name=sort_vars value=1>", str);
    rsprintf("&nbsp;&nbsp;Sort variable names (\"Save\" or \"Refresh\" to update the list)</td></tr>\n");
+
+   /* old_vars */
+   if (equal_ustring(cmd, "refresh"))
+      old_vars = *getparam("old_vars");
+   else {
+      sprintf(ref, "/History/Display/%s/Show old vars", path);
+      size = sizeof(old_vars);
+      old_vars = 0;
+      db_get_value(hDB, 0, ref, &old_vars, &size, TID_BOOL, FALSE);
+   }
+   if (old_vars)
+      rsprintf("<tr><td colspan=8><input type=checkbox checked name=old_vars value=1>", str);
+   else
+      rsprintf("<tr><td colspan=8><input type=checkbox name=old_vars value=1>", str);
+   rsprintf("&nbsp;&nbsp;Show deleted and renamed variables (\"Save\" or \"Refresh\" to update the list)</td></tr>\n");
 
    /*---- events and variables ----*/
 
@@ -12908,14 +12924,20 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
       return;
    }
 
+   time_t t = time(NULL);
+
+   if (old_vars)
+      t = 0;
+
    std::vector<std::string> events;
-   mh->hs_get_events(&events);
+   mh->hs_get_events(t, &events);
 
    // has to be sorted or equipment name code below would not work
    //std::sort(events.begin(), events.end(), cmp_events);
    std::sort(events.begin(), events.end(), cmp_events1);
 
    if (strlen(getparam("cmdx")) > 0) {
+      rsprintf("<tr><th colspan=8 class=\"subStatusTitle\">List of available history variables</th></tr>\n");
       rsprintf("<tr><th colspan=1>Sel<th colspan=1>Equipment<th colspan=1>Event<th colspan=1>Variable</tr>\n");
 
       std::string cmdx = getparam("cmdx");
@@ -12990,7 +13012,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
 
          std::vector<TAG> tags;
 
-         status = mh->hs_get_tags(events[e].c_str(), &tags);
+         status = mh->hs_get_tags(events[e].c_str(), t, &tags);
 
          if (tags.size() > 0) {
 
@@ -13096,7 +13118,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
 
          std::vector<TAG> tags;
 
-         status = mh->hs_get_tags(vars[index].event_name, &tags);
+         status = mh->hs_get_tags(vars[index].event_name, t, &tags);
 
          if (tags.size() > 0) {
 

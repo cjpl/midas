@@ -102,8 +102,10 @@ INT query_params(MidasHistoryInterface* mh, std::string* event_name, DWORD * sta
    DWORD status, hour;
    int var_index;
 
+   time_t t = 0;
+
    std::vector<std::string> events;
-   status = mh->hs_get_events(&events);
+   status = mh->hs_get_events(t, &events);
 
    if (status != HS_SUCCESS) {
       printf("hs_get_events() error %d\n", status);
@@ -127,7 +129,7 @@ INT query_params(MidasHistoryInterface* mh, std::string* event_name, DWORD * sta
    }
 
    std::vector<TAG> tags;
-   status = mh->hs_get_tags(event_name->c_str(), &tags);
+   status = mh->hs_get_tags(event_name->c_str(), t, &tags);
 
    if (status != HS_SUCCESS) {
       printf("hs_get_tags() error %d\n", status);
@@ -233,10 +235,10 @@ INT file_display_vars(const char *file_name)
    return HS_SUCCESS;
 }
 
-INT display_vars(MidasHistoryInterface* mh)
+INT display_vars(MidasHistoryInterface* mh, time_t t)
 {
    std::vector<std::string> events;
-   int status = mh->hs_get_events(&events);
+   int status = mh->hs_get_events(t, &events);
 
    if (status != HS_SUCCESS) {
       printf("hs_get_events() error %d\n", status);
@@ -247,7 +249,7 @@ INT display_vars(MidasHistoryInterface* mh)
       printf("\nEvent \'%s\'\n", events[i].c_str());
 
       std::vector<TAG> tags;
-      status = mh->hs_get_tags(events[i].c_str(), &tags);
+      status = mh->hs_get_tags(events[i].c_str(), t, &tags);
 
       if (status != HS_SUCCESS) {
          printf("hs_get_tags() error %d\n", status);
@@ -404,7 +406,7 @@ void display_all_hist(MidasHistoryInterface* mh, const char* event_name, time_t 
    int n[kMaxVars];
 
    std::vector<TAG> tags;
-   status = mh->hs_get_tags(event_name, &tags);
+   status = mh->hs_get_tags(event_name, start_time, &tags);
    
    if (status != HS_SUCCESS) {
       printf("Cannot get list of variables for event \'%s\', hs_get_tags() error %d\n", event_name, status);
@@ -734,7 +736,7 @@ int main(int argc, char *argv[])
 
    /* -l listing only */
    if (list_query) {
-      display_vars(mh);
+     display_vars(mh, 0);
    }
    /* -v given takes -e -s -p -t -b */
    else if (var_name[0] == 0) {

@@ -2049,8 +2049,8 @@ public:
    ////////////////////////////////////////////////////////
 
    int hs_clear_cache();
-   int hs_get_events(std::vector<std::string> *pevents);
-   int hs_get_tags(const char* event_name, std::vector<TAG> *ptags);
+   int hs_get_events(time_t t, std::vector<std::string> *pevents);
+   int hs_get_tags(const char* event_name, time_t t, std::vector<TAG> *ptags);
    int hs_get_last_written(time_t timestamp, int num_var, const char* const event_name[], const char* const var_name[], const int var_index[], time_t last_written[]);
    int hs_read_buffer(time_t start_time, time_t end_time,
                       int num_var, const char* const event_name[], const char* const var_name[], const int var_index[],
@@ -2459,82 +2459,99 @@ int SchemaHistoryBase::hs_clear_cache()
    return HS_SUCCESS;
 }
 
-int SchemaHistoryBase::hs_get_events(std::vector<std::string> *pevents)
+int SchemaHistoryBase::hs_get_events(time_t t, std::vector<std::string> *pevents)
 {
    if (fDebug)
-      printf("hs_get_events!\n");
+      printf("hs_get_events, time %s\n", TimeToString(t).c_str());
 
-   int status = read_schema(&fSchema, NULL, time(NULL));
+   int status = read_schema(&fSchema, NULL, t);
    if (status != HS_SUCCESS)
       return status;
 
-   fSchema.print(false);
+   if (fDebug) {
+      printf("hs_get_events: available schema:\n");
+      fSchema.print(false);
+   }
 
    assert(pevents);
 
    for (unsigned i=0; i<fSchema.size(); i++) {
-      // FIXME: this will return raw table names for time 0
+      HsSchema* s = fSchema[i];
+      if (t && s->time_to && s->time_to < t)
+         continue;
       bool dupe = false;
       for (unsigned j=0; j<pevents->size(); j++)
-         if ((*pevents)[j] == fSchema[i]->event_name) {
+         if ((*pevents)[j] == s->event_name) {
             dupe = true;
             break;
          }
 
       if (!dupe)
-         pevents->push_back(fSchema[i]->event_name);
+         pevents->push_back(s->event_name);
    }
       
    std::sort(pevents->begin(), pevents->end());
 
-   return HS_SUCCESS;
-}
-      
-int SchemaHistoryBase::hs_get_tags(const char* event_name, std::vector<TAG> *ptags)
-{
-   time_t timestamp = time(NULL);
-
-   if (fDebug)
-      printf("hs_get_tags: event [%s], time %s\n", event_name, TimeToString(timestamp).c_str());
-
-   assert(ptags);
-
-   int status = read_schema(&fSchema, event_name, timestamp);
-   if (status != HS_SUCCESS)
-      return status;
-
-   const HsSchema* s = fSchema.find_event(event_name, timestamp);
-            
-   if (!s)
-      return HS_UNDEFINED_EVENT;
-
-   if (fDebug)
-      s->print();
-      
-   for (unsigned i=0; i<s->variables.size(); i++) {
-      const char* tagname = s->variables[i].name.c_str();
-      //printf("event_name [%s], table_name [%s], column name [%s], tag name [%s]\n", event_name, tn.c_str(), cn.c_str(), tagname);
-
-      bool dupe = false;
-            
-      for (unsigned k=0; k<ptags->size(); k++)
-         if (strcmp((*ptags)[k].name, tagname) == 0) {
-            dupe = true;
-            break;
-         }
-
-      if (!dupe) {
-         TAG t;
-         STRLCPY(t.name, tagname);
-         t.type = s->variables[i].type;
-         t.n_data = s->variables[i].n_data;
-            
-         ptags->push_back(t);
+   if (fDebug) {
+      printf("hs_get_events: returning %d events\n", (int)pevents->size());
+      for (unsigned i=0; i<pevents->size(); i++) {
+         printf("  %d: [%s]\n", i, (*pevents)[i].c_str());
       }
    }
 
+   return HS_SUCCESS;
+}
+      
+int SchemaHistoryBase::hs_get_tags(const char* event_name, time_t t, std::vector<TAG> *ptags)
+{
+   if (fDebug)
+      printf("hs_get_tags: event [%s], time %s\n", event_name, TimeToString(t).c_str());
+
+   assert(ptags);
+
+   int status = read_schema(&fSchema, event_name, t);
+   if (status != HS_SUCCESS)
+      return status;
+
+   bool found_event = false;
+   for (unsigned i=0; i<fSchema.size(); i++) {
+      HsSchema* s = fSchema[i];
+      if (t && s->time_to && s->time_to < t)
+         continue;
+
+      if (s->event_name != event_name)
+         continue;
+
+      found_event = true;
+
+      for (unsigned i=0; i<s->variables.size(); i++) {
+         const char* tagname = s->variables[i].name.c_str();
+         //printf("event_name [%s], table_name [%s], column name [%s], tag name [%s]\n", event_name, tn.c_str(), cn.c_str(), tagname);
+
+         bool dupe = false;
+         
+         for (unsigned k=0; k<ptags->size(); k++)
+            if (strcmp((*ptags)[k].name, tagname) == 0) {
+               dupe = true;
+               break;
+            }
+         
+         if (!dupe) {
+            TAG t;
+            STRLCPY(t.name, tagname);
+            t.type = s->variables[i].type;
+            t.n_data = s->variables[i].n_data;
+            
+            ptags->push_back(t);
+         }
+      }
+   }
+
+   if (!found_event)
+      return HS_UNDEFINED_EVENT;
+
    if (fDebug) {
-      printf("hs_get_tags: %d tags\n", (int)ptags->size());
+      printf("hs_get_tags: event [%s], returning %d tags\n", event_name, (int)ptags->size());
       for (unsigned i=0; i<ptags->size(); i++) {
          printf("  tag[%d]: %s[%d] type %d\n", i, (*ptags)[i].name, (*ptags)[i].n_data, (*ptags)[i].type);
       }
