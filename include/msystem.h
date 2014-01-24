@@ -609,11 +609,11 @@ extern "C" {
    INT ss_shm_delete(const char *name);
    INT ss_shm_protect(HNDLE handle, void *adr);
    INT ss_shm_unprotect(HNDLE handle, void **adr);
-   INT ss_spawnv(INT mode, char *cmdname, char *argv[]);
+   INT ss_spawnv(INT mode, const char *cmdname, char *argv[]);
    INT ss_shell(int sock);
    INT EXPRT ss_daemon_init(BOOL keep_stdout);
-   INT EXPRT ss_system(char *command);
-   INT EXPRT ss_exec(char *cmd, INT * child_pid);
+   INT EXPRT ss_system(const char *command);
+   INT EXPRT ss_exec(const char *cmd, INT * child_pid);
    BOOL EXPRT ss_existpid(INT pid);
    INT EXPRT ss_getpid(void);
    INT EXPRT ss_gettid(void);

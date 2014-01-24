@@ -1433,7 +1433,7 @@ void catch_sigchld(int signo)
 }
 #endif
 
-INT ss_spawnv(INT mode, char *cmdname, char *argv[])
+INT ss_spawnv(INT mode, const char *cmdname, char *argv[])
 /********************************************************************\
 
   Routine: ss_spawnv
@@ -1898,7 +1898,7 @@ invoke ss_exec() and ignore pid.
 @param command Command to execute.
 @return SS_SUCCESS or ss_exec() return code
 */
-INT ss_system(char *command)
+INT ss_system(const char *command)
 {
 #ifdef OS_UNIX
    INT childpid;
@@ -1917,7 +1917,7 @@ INT ss_system(char *command)
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /*------------------------------------------------------------------*/
-INT ss_exec(char *command, INT * pid)
+INT ss_exec(const char *command, INT * pid)
 /********************************************************************\
 
   Routine: ss_exec
