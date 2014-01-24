@@ -2730,6 +2730,7 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info);
 #include "history.h"
 
 static std::vector<MidasHistoryInterface*> mh;
+static std::vector<std::string> history_events;
 
 static int add_event(int* indexp, time_t timestamp, int event_id, const char* event_name, HNDLE hKey, int ntags, const TAG* tags, int period, int hotlink)
 {
@@ -2824,6 +2825,8 @@ static int add_event(int* indexp, time_t timestamp, int event_id, const char* ev
          return status;
       }
    }
+
+   history_events.push_back(event_name);
    
    if (verbose)
       printf("Created event %d for equipment \"%s\", %d tags, size %d\n", event_id, event_name, ntags, size);
@@ -2855,6 +2858,8 @@ INT open_history()
    for (unsigned i=0; i<mh.size(); i++)
       delete mh[i];
    mh.clear();
+
+   history_events.clear();
 
    // create and initialize the history channels tree
 
@@ -3432,12 +3437,18 @@ INT open_history()
       }
    }
 
+   history_events.push_back(event_name);
+
    free(tag);
    tag = NULL;
 
    /* outcommented not to produce a log entry on every run
    cm_msg(MINFO, "open_history", "Configured history with %d events", count_events);
    */
+
+   status = hs_save_event_list(&history_events);
+   if (status != HS_SUCCESS)
+      return status;
 
    return CM_SUCCESS;
 }
