@@ -39,6 +39,15 @@ MidasHistoryInterface* MakeMidasHistoryFile();
 // construct history interface class from logger history channel definition in /Logger/History/0/...
 int hs_get_history(HNDLE hDB, HNDLE hKey, int flags, int debug_flag, MidasHistoryInterface **mh);
 
+// find history reader channel, returns ODB handle to the history channel definition in /Logger/History/...
+int hs_find_reader_channel(HNDLE hDB, HNDLE* hKey, int debug_flag);
+
+// save list of active events
+int hs_save_event_list(const std::vector<std::string> *pevents);
+
+// get list of active events
+int hs_read_event_list(std::vector<std::string> *pevents);
+
 // MIDAS history data buffer interface class
 
 class MidasHistoryBufferInterface

@@ -338,6 +338,7 @@ OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
 	$(LIB_DIR)/mjson.o \
 	$(LIB_DIR)/json_paste.o \
 	$(LIB_DIR)/dm_eb.o \
+	$(LIB_DIR)/history_common.o \
 	$(LIB_DIR)/history_midas.o \
 	$(LIB_DIR)/history_odbc.o \
 	$(LIB_DIR)/history_schema.o \
