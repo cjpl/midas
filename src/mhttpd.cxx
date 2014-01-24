@@ -10674,6 +10674,7 @@ static MidasHistoryInterface* get_history(bool reset = false)
    int status;
    HNDLE hDB;
    static MidasHistoryInterface* mh = NULL;
+   static HNDLE mhkey = 0;
 
    if (reset && mh) {
       mh->hs_disconnect();
@@ -10681,18 +10682,27 @@ static MidasHistoryInterface* get_history(bool reset = false)
       mh = NULL;
    }
 
-   if (mh)
-      return mh;
-
    status = cm_get_experiment_database(&hDB, NULL);
    assert(status == CM_SUCCESS);
 
-   status = hs_get_history(hDB, 0, HS_GET_READER|HS_GET_INACTIVE|HS_GET_DEFAULT, verbose, &mh);
+   // findout if ODB settings have changed and we need to connect to a different history channel
+
+   HNDLE hKey;
+   status = hs_find_reader_channel(hDB, &hKey, verbose);
+   if (status != HS_SUCCESS)
+      return mh;
+
+   if (hKey == mhkey) // same channel as before
+      return mh;
+
+   status = hs_get_history(hDB, hKey, HS_GET_READER|HS_GET_INACTIVE, verbose, &mh);
    if (status != HS_SUCCESS || mh==NULL) {
       cm_msg(MERROR, "get_history", "Cannot configure history, hs_get_history() status %d", status);
       mh = NULL;
       return NULL;
    }
+
+   mhkey = hKey;
 
    cm_msg(MINFO, "get_history", "Reading history from channel \'%s\' type \'%s\'", mh->name, mh->type);
 
@@ -12930,7 +12940,12 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
       t = 0;
 
    std::vector<std::string> events;
-   mh->hs_get_events(t, &events);
+
+   if (!old_vars)
+      hs_read_event_list(&events);
+
+   if (events.size() == 0)
+      mh->hs_get_events(t, &events);
 
    // has to be sorted or equipment name code below would not work
    //std::sort(events.begin(), events.end(), cmp_events);
