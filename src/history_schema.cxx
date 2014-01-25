@@ -399,7 +399,10 @@ public:
 
    void clear() {
       for (unsigned i=0; i<data.size(); i++)
-         delete data[i];
+         if (data[i]) {
+            delete data[i];
+            data[i] = NULL;
+         }
       data.clear();
    }
 
@@ -1644,9 +1647,10 @@ int HsFileSchema::write_event(const time_t t, const char* data, const int data_s
 
 int HsFileSchema::close()
 {
-   if (writer_fd >= 0)
+   if (writer_fd >= 0) {
       ::close(writer_fd);
-   writer_fd = -1;
+      writer_fd = -1;
+   }
    return HS_SUCCESS;
 }
 
@@ -2011,7 +2015,12 @@ public:
 
    virtual ~SchemaHistoryBase()
    {
-      // empty
+      for (unsigned i=0; i<fEvents.size(); i++)
+         if (fEvents[i]) {
+            delete fEvents[i];
+            fEvents[i] = NULL;
+         }
+      fEvents.clear();
    }
 
    virtual int hs_set_debug(int debug)
@@ -2365,7 +2374,7 @@ int SchemaHistoryBase::hs_write_event(const char* event_name, time_t timestamp, 
 
    // find this event
    for (size_t i=0; i<fEvents.size(); i++)
-   if (fEvents[i] && fEvents[i]->event_name == event_name) {
+      if (fEvents[i] && fEvents[i]->event_name == event_name) {
          s = fEvents[i];
          break;
       }
