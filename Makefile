@@ -364,7 +364,7 @@ all: check-mxml \
 	$(LIB_DIR)/fal.o $(PROGS)
 
 dox:
-	cd doc; make
+	doxygen
 
 linux32:
 	$(MAKE) ROOTSYS= HAVE_MYSQL= HAVE_ODBC= HAVE_SQLITE= OS_DIR=linux-m32 USERFLAGS=-m32
@@ -388,6 +388,9 @@ linuxarm:
 
 cleanarm:
 	$(MAKE) ROOTSYS= OS_DIR=linux-arm clean
+
+cleandox:
+	-rm -rf html
 
 
 examples: $(EXAMPLES)

@@ -23,6 +23,19 @@
 The main core C-code for Midas.
 */
 
+/**
+\mainpage MIDAS code documentation
+
+Welcome to the doxygen-generated documentation for the MIDAS source code.
+
+This documentation is intended to be used as reference by MIDAS developers
+and advanced users.
+
+Documentation for new users, general information on MIDAS, examples,
+user discussion, mailing lists and forums,
+can be found through the MIDAS Wiki at http://midas.triumf.ca
+*/
+
 /** @defgroup cmfunctionc Midas Common Functions (cm_xxx)
  */
 /** @defgroup bmfunctionc Midas Buffer Manager Functions (bm_xxx)
@@ -2709,52 +2722,7 @@ INT cm_get_experiment_semaphore(INT * semaphore_alarm, INT * semaphore_elog, INT
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
-static int bm_validate_client_index(const BUFFER * buf, BOOL abort_if_invalid)
-{
-   static int prevent_recursion = 1;
-   int badindex = 0;
-   BUFFER_CLIENT *bcl = buf->buffer_header->client;
-
-   if (buf->client_index < 0)
-      badindex = 1;
-   else if (buf->client_index > buf->buffer_header->max_client_index)
-      badindex = 1;
-   else {
-      bcl = &(buf->buffer_header->client[buf->client_index]);
-      if (bcl->name[0] == 0)
-         badindex = 1;
-      else if (bcl->pid != ss_getpid())
-         badindex = 1;
-   }
-
-#if 0
-   printf
-       ("bm_validate_client_index: badindex=%d, buf=%p, client_index=%d, max_client_index=%d, client_name=\'%s\', client_pid=%d, pid=%d\n",
-        badindex, buf, buf->client_index, buf->buffer_header->max_client_index,
-        buf->buffer_header->client[buf->client_index].name, buf->buffer_header->client[buf->client_index].pid,
-        ss_getpid());
-#endif
-
-   if (badindex) {
-
-      if (!abort_if_invalid)
-         return -1;
-
-      if (prevent_recursion) {
-         prevent_recursion = 0;
-         cm_msg(MERROR, "bm_validate_client_index",
-                "My client index %d in buffer \'%s\' is invalid: client name \'%s\', pid %d should be my pid %d",
-                buf->client_index, buf->buffer_header->name, bcl->name, bcl->pid, ss_getpid());
-         cm_msg(MERROR, "bm_validate_client_index",
-                "Maybe this client was removed by a timeout. Cannot continue, aborting...");
-      }
-
-      abort();
-      exit(1);
-   }
-
-   return buf->client_index;
-}
+static int bm_validate_client_index(const BUFFER * buf, BOOL abort_if_invalid);
 
 /********************************************************************/
 /**
@@ -4672,6 +4640,53 @@ INT cm_register_function(INT id, INT(*func) (INT, void **))
 *                                                                    *
 \********************************************************************/
 
+static int bm_validate_client_index(const BUFFER * buf, BOOL abort_if_invalid)
+{
+   static int prevent_recursion = 1;
+   int badindex = 0;
+   BUFFER_CLIENT *bcl = buf->buffer_header->client;
+
+   if (buf->client_index < 0)
+      badindex = 1;
+   else if (buf->client_index > buf->buffer_header->max_client_index)
+      badindex = 1;
+   else {
+      bcl = &(buf->buffer_header->client[buf->client_index]);
+      if (bcl->name[0] == 0)
+         badindex = 1;
+      else if (bcl->pid != ss_getpid())
+         badindex = 1;
+   }
+
+#if 0
+   printf
+       ("bm_validate_client_index: badindex=%d, buf=%p, client_index=%d, max_client_index=%d, client_name=\'%s\', client_pid=%d, pid=%d\n",
+        badindex, buf, buf->client_index, buf->buffer_header->max_client_index,
+        buf->buffer_header->client[buf->client_index].name, buf->buffer_header->client[buf->client_index].pid,
+        ss_getpid());
+#endif
+
+   if (badindex) {
+
+      if (!abort_if_invalid)
+         return -1;
+
+      if (prevent_recursion) {
+         prevent_recursion = 0;
+         cm_msg(MERROR, "bm_validate_client_index",
+                "My client index %d in buffer \'%s\' is invalid: client name \'%s\', pid %d should be my pid %d",
+                buf->client_index, buf->buffer_header->name, bcl->name, bcl->pid, ss_getpid());
+         cm_msg(MERROR, "bm_validate_client_index",
+                "Maybe this client was removed by a timeout. Cannot continue, aborting...");
+      }
+
+      abort();
+      exit(1);
+   }
+
+   return buf->client_index;
+}
+
 /********************************************************************/
 /**
 Check if an event matches a given event request by the
@@ -5832,6 +5847,10 @@ INT cm_cleanup(const char *client_name, BOOL ignore_timeout)
 }
 
 /**dox***************************************************************/
+
+/** @} *//* end of cmfunctionc */
+
+/**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /********************************************************************/
@@ -6064,9 +6083,6 @@ INT bm_init_buffer_counters(INT buffer_handle)
 
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
-
-/**dox***************************************************************/
-                                                                                                                               /** @} *//* end of cmfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup bmfunctionc
