@@ -9652,6 +9652,7 @@ INT rpc_server_disconnect()
    /* remove semaphore */
    if (_mutex_rpc)
       ss_mutex_delete(_mutex_rpc);
+   _mutex_rpc = NULL;
 
    rpc_server_disconnect_recursion_level = 0;
    return RPC_SUCCESS;
