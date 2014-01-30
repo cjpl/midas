@@ -26,11 +26,8 @@ uint32_t V1740_NSAMPLES_MODE[11] = { (1<<20), (1<<19), (1<<18), (1<<17), (1<<16)
 /*****************************************************************/
 CAENComm_ErrorCode ov1740_GroupSet(int handle, uint32_t channel, uint32_t what, uint32_t that)
 {
-  uint32_t reg, mask;
+  uint32_t reg;
 
-  if (what == V1740_GROUP_THRESHOLD)   mask = 0x0FFF;
-//  if (what == V1740_GROUP_OUTHRESHOLD) mask = 0x0FFF;
-  if (what == V1740_GROUP_DAC)         mask = 0xFFFF;
   reg = what | (channel << 8);
   return CAENComm_Write32(handle, reg, (that & 0xFFF));
 }
@@ -235,7 +232,6 @@ your setting if you want to include it in the distribution.
 */
 CAENComm_ErrorCode  ov1740_Setup(int handle, int mode)
 {
-  CAENComm_ErrorCode sCAEN;
   switch (mode) {
   case 0x0:
     printf("--------------------------------------------\n");
@@ -245,18 +241,18 @@ CAENComm_ErrorCode  ov1740_Setup(int handle, int mode)
     printf("--------------------------------------------\n");
     printf("Trigger from FP, 8ch, 1Ks, postTrigger 800\n");
     printf("--------------------------------------------\n");
-    sCAEN = CAENComm_Write32(handle, V1740_BUFFER_ORGANIZATION,   0x0A);    // 1K buffer
-    sCAEN = CAENComm_Write32(handle, V1740_TRIG_SRCE_EN_MASK,     0x4000);  // External Trigger
-    sCAEN = CAENComm_Write32(handle, V1740_GROUP_EN_MASK,       0xFF);    // 8ch enable
-    sCAEN = CAENComm_Write32(handle, V1740_POST_TRIGGER_SETTING,  800);     // PreTrigger (1K-800)
-    sCAEN = CAENComm_Write32(handle, V1740_ACQUISITION_CONTROL,   0x00);    // Reset Acq Control
+    CAENComm_Write32(handle, V1740_BUFFER_ORGANIZATION,   0x0A);    // 1K buffer
+    CAENComm_Write32(handle, V1740_TRIG_SRCE_EN_MASK,     0x4000);  // External Trigger
+    CAENComm_Write32(handle, V1740_GROUP_EN_MASK,       0xFF);    // 8ch enable
+    CAENComm_Write32(handle, V1740_POST_TRIGGER_SETTING,  800);     // PreTrigger (1K-800)
+    CAENComm_Write32(handle, V1740_ACQUISITION_CONTROL,   0x00);    // Reset Acq Control
     printf("\n");
     break;
   case 0x2:
     printf("--------------------------------------------\n");
     printf("Trigger from LEMO\n");
     printf("--------------------------------------------\n");
-    sCAEN = CAENComm_Write32(handle, V1740_BUFFER_ORGANIZATION, 1);
+    CAENComm_Write32(handle, V1740_BUFFER_ORGANIZATION, 1);
     printf("\n");
     break;
   default:
