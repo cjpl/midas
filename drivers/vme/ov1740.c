@@ -38,11 +38,8 @@ CAENComm_ErrorCode ov1740_GroupSet(int handle, uint32_t channel, uint32_t what, 
 /*****************************************************************/
 CAENComm_ErrorCode ov1740_GroupGet(int handle, uint32_t channel, uint32_t what, uint32_t *data)
 {
-  uint32_t reg, mask;
+  uint32_t reg;
 
-  if (what == V1740_GROUP_THRESHOLD)   mask = 0x0FFF;
-//  if (what == V1740_GROUP_OUTHRESHOLD) mask = 0x0FFF;
-  if (what == V1740_GROUP_DAC)         mask = 0xFFFF;
   reg = what | (channel << 8);
   return CAENComm_Read32(handle, reg, data);
 }
@@ -55,15 +52,6 @@ CAENComm_ErrorCode ov1740_GroupThresholdSet(int handle, uint32_t channel, uint32
   reg = V1740_GROUP_THRESHOLD | (channel << 8);
   printf("reg:0x%x, threshold:%x\n", reg, threshold);
   return CAENComm_Write32(handle, reg,(threshold & 0xFFF));
-}
-
-/*****************************************************************/
-CAENComm_ErrorCode ov1740_GroupOUThresholdSet(int handle, uint32_t channel, uint32_t threshold)
-{
-  uint32_t reg;
-//  reg = V1740_GROUP_OUTHRESHOLD | (channel << 8);
-  printf("reg:0x%x, outhreshold:%x\n", reg, threshold);
-  return CAENComm_Write32(handle, reg, (threshold & 0xFFF));
 }
 
 /*****************************************************************/
