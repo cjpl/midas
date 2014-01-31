@@ -86,7 +86,7 @@ MXML_DIR=../mxml
 # Directory in which mscb.c/h resides. These files are necessary for
 # the optional MSCB support in mhttpd
 #
-MSCB_DIR=./mscb
+MSCB_DIR=/mscb
 
 #
 # Optional zlib support for data compression in the mlogger and in the analyzer
