@@ -89,14 +89,14 @@ MXML_DIR=../mxml
 MSCB_DIR=../mscb
 
 #
+# Indicator that MSCB is available
+#
+HAVE_MSCB := $(shell if [ -e $(MSCB_DIR) ]; then echo 1; fi)
+
+#
 # Optional zlib support for data compression in the mlogger and in the analyzer
 #
 NEED_ZLIB=
-
-#
-# Optional MSCB support for mhttpd
-#
-NEED_MSCB=1
 
 #####################################################################
 # Nothing needs to be modified after this line 
@@ -472,7 +472,7 @@ CFLAGS     += -DHAVE_ZLIB
 LIBS       += -lz
 endif
 
-ifdef NEED_MSCB
+ifdef HAVE_MSCB
 CFLAGS     += -DHAVE_MSCB
 endif
 
@@ -486,7 +486,7 @@ $(BIN_DIR)/odbedit: $(SRC_DIR)/odbedit.cxx $(SRC_DIR)/cmdedit.cxx
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $(SRC_DIR)/odbedit.cxx $(SRC_DIR)/cmdedit.cxx $(LIB) $(LIBS)
 
 
-ifdef NEED_MSCB
+ifdef HAVE_MSCB
 $(BIN_DIR)/mhttpd: $(LIB_DIR)/mhttpd.o $(LIB_DIR)/mongoose.o $(LIB_DIR)/mgd.o $(LIB_DIR)/mscb.o $(LIB_DIR)/sequencer.o
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(MYSQL_LIBS) $(ODBC_LIBS) $(SQLITE_LIBS) $(LIBS) -lm
 else
@@ -592,7 +592,7 @@ $(LIB_DIR)/mxml.o:$(MXML_DIR)/mxml.c
 $(LIB_DIR)/strlcpy.o:$(MXML_DIR)/strlcpy.c
 	$(CC) -c $(CFLAGS) $(OSFLAGS) -o $@ $(MXML_DIR)/strlcpy.c
 
-ifdef NEED_MSCB
+ifdef HAVE_MSCB
 $(LIB_DIR)/mscb.o:$(MSCB_DIR)/mscb.c $(MSCB_DIR)/mscb.h
 	$(CXX) -x c++ -c $(CFLAGS) $(OSFLAGS) -o $@ $(MSCB_DIR)/mscb.c
 endif
