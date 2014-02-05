@@ -497,8 +497,54 @@ function ODBInlineEditKeydown(event, p, path)
    return true;
 }
 
+
+function bin_to_ascii(c)
+{
+   if (c >= 38)
+      return String.fromCharCode(c-38+"a".charCodeAt(0));
+   else if (c >= 12)
+      return String.fromCharCode(c-12+"A".charCodeAt(0));
+   else
+      return String.fromCharCode(c+".".charCodeAt(0));
+}
+
+function ss_crypt(s)
+{
+   if (s == null)
+      return false;
+   
+   var str = "mi";
+   var seed = 123;
+   for (i=0 ; i<11 ; i++) {
+      if (i < s.length)
+        seed = 5 * seed + 27 + s.charCodeAt(i);
+      else
+         seed = 5 * seed + 27;
+      str += bin_to_ascii(seed & 0x3F);
+   }
+                              
+   return str;
+}
+
+function ODBCheckWebPassword()
+{
+   var pwd = ODBGet("/Experiment/Security/Web Password");
+   if (pwd != "") {
+      var p = prompt('Please enter password to obtain write access');
+      if (pwd != ss_crypt(p)) {
+         alert("Invalid password");
+         return false;
+      }
+   }
+   
+   return true;
+}
+
 function ODBInlineEdit(p, odb_path)
 {
+   if (!ODBCheckWebPassword())
+      return false;
+   
    var cur_val = ODBGet(encodeURIComponent(odb_path));
    var size = cur_val.length+10;
    var index;
