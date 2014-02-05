@@ -1739,9 +1739,6 @@ INT cm_set_client_info(HNDLE hDB, HNDLE * hKeyClient, char *host_name,
          if (!allow && strcmp(password, pwd) != 0) {
             if (password[0])
                cm_msg(MINFO, "cm_set_client_info", "Wrong password for host %s", host_name);
-            db_close_all_databases();
-            bm_close_all_buffers();
-            _msg_buffer = 0;
             return CM_WRONG_PASSWORD;
          }
       }
@@ -2199,13 +2196,6 @@ INT cm_connect_experiment1(const char *host_name, const char *exp_name,
       else
          func(str);
 
-      /* re-open database */
-      status = db_open_database("ODB", odb_size, &hDB, client_name);
-      if (status != DB_SUCCESS && status != DB_CREATED) {
-         cm_msg(MERROR, "cm_connect_experiment1", "cannot open database");
-         return status;
-      }
-
       strcpy(password, ss_crypt(str, "mi"));
       status = cm_set_client_info(hDB, &hKeyClient, local_host_name,
                                   client_name1, rpc_get_option(0, RPC_OHW_TYPE), password, watchdog_timeout);
@@ -2213,6 +2203,7 @@ INT cm_connect_experiment1(const char *host_name, const char *exp_name,
          /* disconnect */
          if (rpc_is_remote())
             rpc_server_disconnect();
+         cm_disconnect_experiment();
 
          return status;
       }

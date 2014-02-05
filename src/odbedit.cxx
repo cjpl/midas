@@ -2789,6 +2789,9 @@ int main(int argc, char *argv[])
    status = cm_connect_experiment1(host_name, exp_name, "ODBEdit", NULL,
                                    odb_size, DEFAULT_WATCHDOG_TIMEOUT);
 
+   if (status == CM_WRONG_PASSWORD)
+      return 1;
+
    cm_msg_flush_buffer();
 
    if (reload_from_file) {
@@ -2798,9 +2801,7 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   if (status == CM_WRONG_PASSWORD)
-      return 1;
-   else if ((status == DB_INVALID_HANDLE) && corrupted) {
+   if ((status == DB_INVALID_HANDLE) && corrupted) {
       cm_get_error(status, str);
       puts(str);
       printf("ODB is corrupted, connecting anyway...\n");
