@@ -4906,7 +4906,7 @@ void show_sc_page(const char *path, int refresh)
 
       /* title row */
       colspan = 15 - i;
-      rsprintf("<tr><th colspan=%d>Names", colspan);
+      rsprintf("<tr class=\"subStatusTitle\"><th colspan=%d>Names", colspan);
 
       /* display entries for this group */
       for (i = 0;; i++) {
@@ -5042,7 +5042,7 @@ void show_sc_page(const char *path, int refresh)
             continue;
 
          /* title row */
-         rsprintf("<tr><th colspan=9>Names<th>%s</tr>\n", varkey.name);
+         rsprintf("<tr class=\"subStatusTitle\"><th colspan=9>Names<th>%s</tr>\n", varkey.name);
 
          if (varkey.type == TID_KEY) {
             hkeyroot = hkey;
