@@ -487,10 +487,12 @@ td.meterCell{
 .ODBkey{
 	text-align: left;
 	padding-left: 2em;
+   border-top: 1px solid #CCCCCC;
 }
 
 .ODBvalue{
 	text-align: left;
+   border-top: 1px solid #CCCCCC;
 }
 
 .ODBtable{
@@ -512,7 +514,17 @@ td.meterCell{
 }
 
 /*table striping*/
-.ODBtable tr:nth-child(odd), #stripeList tr:nth-child(even), .alarmTable tr:nth-of-type(odd), .historyTable tr:nth-child(odd), .genericStripe tr:nth-child(odd), .messageBox p:nth-child(odd){
+.ODBtableEven {
+	background-color: #CCCCCC;
+   border-top: 1px solid #CCCCCC;
+   border-bottom: 1px solid #CCCCCC;
+}
+
+.ODBtableOdd {
+	background-color: #EEEEEE;
+}
+
+#stripeList tr:nth-child(even), .alarmTable tr:nth-of-type(odd), .historyTable tr:nth-child(odd), .genericStripe tr:nth-child(odd), .messageBox p:nth-child(odd){
 	background-color: #CCCCCC;
 }
 
@@ -544,10 +556,6 @@ td.meterCell{
 }
 
 #stripeList td{
-	border:none;
-}
-
-table.ODBtable td{
 	border:none;
 }
 

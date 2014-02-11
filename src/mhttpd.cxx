@@ -4700,9 +4700,9 @@ BOOL is_editable(char *eq_name, char *var_name)
 
 void show_sc_page(const char *path, int refresh)
 {
-   int i, j, k, colspan, size, n_var, i_edit, i_set;
+   int i, j, k, colspan, size, n_var, i_edit, i_set, line;
    char str[256], eq_name[32], group[32], name[32], ref[256];
-   char group_name[MAX_GROUPS][32], data[256], back_path[256];
+   char group_name[MAX_GROUPS][32], data[256], back_path[256], style[80];
    const char *p;
    HNDLE hDB, hkey, hkeyeq, hkeyset, hkeynames, hkeyvar, hkeyroot;
    KEY eqkey, key, varkey;
@@ -4946,7 +4946,10 @@ void show_sc_page(const char *path, int refresh)
          if (strlen(name) < 1)
             sprintf(name, "[%d]", i);
 
-         rsprintf("<tr><td colspan=%d>%s", colspan, name);
+         if (i % 2 == 0)
+            rsprintf("<tr class=\"ODBtableEven\"><td colspan=%d>%s", colspan, name);
+         else
+            rsprintf("<tr class=\"ODBtableOdd\"><td colspan=%d>%s", colspan, name);
 
          for (j = 0;; j++) {
             db_enum_link(hDB, hkeyvar, j, &hkey);
@@ -5029,9 +5032,14 @@ void show_sc_page(const char *path, int refresh)
       rsprintf("</tr>\n");
 
       /* enumerate variable arrays */
-
+      line = 0;
       for (i = 0;; i++) {
          db_enum_link(hDB, hkeyvar, i, &hkey);
+
+         if (line % 2 == 0)
+            strlcpy(style, "ODBtableEven", sizeof(style));
+         else
+            strlcpy(style, "ODBtableOdd", sizeof(style));
 
          if (!hkey)
             break;
@@ -5053,10 +5061,10 @@ void show_sc_page(const char *path, int refresh)
                if (!hkey)
                   break;
                db_get_key(hDB, hkey, &key);
-
+              
                if (key.type == TID_KEY) {
                   /* for keys, don't display data value */
-                  rsprintf("<tr><td colspan=9>%s<br></tr>\n", key.name);
+                  rsprintf("<tr class=\"%s\"><td colspan=9>%s<br></tr>\n", style, key.name);
                } else {
                   /* display single value */
                   if (key.num_values == 1) {
@@ -5072,14 +5080,15 @@ void show_sc_page(const char *path, int refresh)
 
                      if (strcmp(data_str, hex_str) != 0 && hex_str[0])
                         rsprintf
-                            ("<tr><td colspan=9>%s<td align=center>%s (%s)<br></tr>\n",
-                             key.name, data_str, hex_str);
+                            ("<tr class=\"%s\" ><tdcolspan=9>%s<td align=center>%s (%s)<br></tr>\n",
+                             style, key.name, data_str, hex_str);
                      else
-                        rsprintf("<tr><td colspan=9>%s<td align=center>%s<br></tr>\n",
-                                 key.name, data_str);
+                        rsprintf("<tr class=\"%s\"><td colspan=9>%s<td align=center>%s<br></tr>\n",
+                                 style, key.name, data_str);
+                     line++;
                   } else {
                      /* display first value */
-                     rsprintf("<tr><td colspan=9 rowspan=%d>%s\n", key.num_values,
+                     rsprintf("<tr class=\"%s\"><td colspan=9 rowspan=%d>%s\n", style, key.num_values,
                               key.name);
 
                      for (k = 0; k < key.num_values; k++) {
@@ -5100,6 +5109,7 @@ void show_sc_page(const char *path, int refresh)
                            rsprintf("<td>[%d] %s (%s)<br></tr>\n", k, data_str, hex_str);
                         else
                            rsprintf("<td>[%d] %s<br></tr>\n", k, data_str);
+                        line++;
                      }
                   }
                }
@@ -5112,10 +5122,16 @@ void show_sc_page(const char *path, int refresh)
                db_get_key(hDB, hkeyset, &key);
 
             if (varkey.num_values > 1000)
-               rsprintf("<tr><td colspan=9>%s<td align=center><i>... %d values ...</i>",
-                        varkey.name, varkey.num_values);
+               rsprintf("<tr class=\"%s\"><td colspan=9>%s<td align=center><i>... %d values ...</i>",
+                        style, varkey.name, varkey.num_values);
             else {
                for (j = 0; j < varkey.num_values; j++) {
+
+                  if (line % 2 == 0)
+                     strlcpy(style, "ODBtableEven", sizeof(style));
+                  else
+                     strlcpy(style, "ODBtableOdd", sizeof(style));
+                  
                   if (hkeyset && j<key.num_values) {
                      size = sizeof(name);
                      db_get_data_index(hDB, hkeyset, name, &size, j, TID_STRING);
@@ -5125,7 +5141,7 @@ void show_sc_page(const char *path, int refresh)
                   if (strlen(name) < 1)
                      sprintf(name, "%s[%d]", varkey.name, j);
 
-                  rsprintf("<tr><td colspan=9>%s", name);
+                  rsprintf("<tr class=\"%s\"><td colspan=9>%s", style, name);
 
                   size = sizeof(data);
                   db_get_data_index(hDB, hkey, data, &size, j, varkey.type);
@@ -5164,6 +5180,8 @@ void show_sc_page(const char *path, int refresh)
 
                   } else
                      rsprintf("<td align=center>%s\n", str);
+                  rsprintf("</tr>\n");
+                  line++;
                }
             }
 
@@ -8841,10 +8859,10 @@ void show_start_page(int script)
 
 void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_access)
 {
-   int i, j, keyPresent, scan, size, status;
+   int i, j, keyPresent, scan, size, status, line;
    char str[256], tmp_path[256], url_path[256], data_str[TEXT_SIZE], 
       hex_str[256], ref[256], keyname[32], link_name[256], link_ref[256],
-      full_path[256], root_path[256], odb_path[256], colspan;
+      full_path[256], root_path[256], odb_path[256], colspan, style[32];
    char *p;
    char *pd;
    char data[TEXT_SIZE];
@@ -9000,11 +9018,17 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
          rsprintf("<th class=\"ODBvalue\" name=\"ext\" style=\"display:none\">Mode</th>\n");
          rsprintf("</tr>\n");
       }
+      line = 0;
       for (i = 0;; i++) {
          db_enum_link(hDB, hkeyroot, i, &hkey);
          if (!hkey)
             break;
          db_get_link(hDB, hkey, &key);
+
+         if (line % 2 == 0)
+            strlcpy(style, "ODBtableEven", sizeof(style));
+         else
+            strlcpy(style, "ODBtableOdd", sizeof(style));
 
          if (strrchr(dec_path, '/'))
             strlcpy(str, strrchr(dec_path, '/')+1, sizeof(str));
@@ -9055,6 +9079,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
                rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td><b><font color=\"red\">&lt;cannot resolve link&gt;</font></b></tr>\n", keyname, link_ref, link_name[0]?link_name:"(empty)");
             }
          } else {
+
             if (key.type == TID_KEY && scan == 0) {
                /* for keys, don't display data value */
                rsprintf("<tr><td colspan=%d class=\"ODBdirectory\"><a href=\"%s\">&#x25B6 %s</a>\n", colspan, full_path, keyname);
@@ -9084,7 +9109,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
                         rsprintf("<td class=\"ODBkey\">\n");
                         rsprintf("%s <i>-> ", keyname);
                         rsprintf("<a href=\"%s\">%s</a></i>\n", link_ref, link_name);
-                        rsprintf("<td class=\"ODBvalue\">\n");
+                        rsprintf("<td class=\"%s\">\n", style);
                         if (!write_access)
                            rsprintf("<a href=\"%s\" ", ref, odb_path);
                         else {
@@ -9093,7 +9118,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
                         }
                      } else {
                         rsprintf("<td class=\"ODBkey\">\n");
-                        rsprintf("%s<td class=\"ODBvalue\">", keyname);
+                        rsprintf("%s<td class=\"%s\">", style, keyname);
                         if (!write_access)
                            rsprintf("<a href=\"%s\" ", ref, odb_path);
                         else {
@@ -9107,7 +9132,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
                            rsprintf("<td class=\"ODBkey\">");
                            rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\">", keyname, link_ref, link_name);
                         } else
-                           rsprintf("<td class=\"ODBkey\">%s<td class=\"ODBvalue\">", keyname);
+                           rsprintf("<td class=\"ODBkey\">%s<td class=\"%s\">", keyname, style);
                         rsprintf("\n<pre>");
                         strencode3(data_str);
                         rsprintf("</pre>");
@@ -9118,7 +9143,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
                      } else {
                         if (link_name[0]) {
                            rsprintf("<td class=\"ODBkey\">\n");
-                           rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\">", keyname, link_ref, link_name);
+                           rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"%s\">", keyname, link_ref, link_name, style);
                            if (!write_access)
                               rsprintf("<a href=\"%s\" ", ref, odb_path);
                            else {
@@ -9126,7 +9151,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
                               rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">", odb_path);
                            }
                         } else {
-                           rsprintf("<td class=\"ODBkey\">%s<td class=\"ODBvalue\">", keyname);
+                           rsprintf("<td class=\"ODBkey\">%s<td class=\"%s\">", keyname, style);
                            if (!write_access)
                               rsprintf("<a href=\"%s\" ", ref, odb_path);
                            else {
@@ -9140,19 +9165,19 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
                   }
                   
                   /* extended key information */
-                  rsprintf("<td class=\"ODBvalue\" name=\"ext\" style=\"display:none\">");
+                  rsprintf("<td class=\"ODBkey\" name=\"ext\" style=\"display:none\">");
                   rsprintf("%s", rpc_tid_name(key.type));
                   rsprintf("</td>\n");
 
-                  rsprintf("<td class=\"ODBvalue\" name=\"ext\" style=\"display:none\">");
+                  rsprintf("<td class=\"ODBkey\" name=\"ext\" style=\"display:none\">");
                   rsprintf("%d", key.num_values);
                   rsprintf("</td>\n");
 
-                  rsprintf("<td class=\"ODBvalue\" name=\"ext\" style=\"display:none\">");
+                  rsprintf("<td class=\"ODBkey\" name=\"ext\" style=\"display:none\">");
                   rsprintf("%d", key.item_size);
                   rsprintf("</td>\n");
 
-                  rsprintf("<td class=\"ODBvalue\" name=\"ext\" style=\"display:none\">");
+                  rsprintf("<td class=\"ODBkey\" name=\"ext\" style=\"display:none\">");
                   db_get_key_time(hDB, hkey, &delta);
                   if (delta < 60)
                      rsprintf("%ds", delta);
@@ -9166,7 +9191,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
                      rsprintf(">99d");
                   rsprintf("</td>\n");
                   
-                  rsprintf("<td class=\"ODBvalue\" name=\"ext\" style=\"display:none\">");
+                  rsprintf("<td class=\"ODBkey\" name=\"ext\" style=\"display:none\">");
                   if (key.access_mode & MODE_READ)
                      rsprintf("R");
                   if (key.access_mode & MODE_WRITE)
@@ -9177,22 +9202,28 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
                      rsprintf("E");
                   rsprintf("</td>\n");
 
+                  line++;
                   rsprintf("</tr>\n");
                } else {
                   /* check for exceeding length */
                   if (key.num_values > 1000)
-                     rsprintf("<tr><td class=\"ODBkey\">%s<td class=\"ODBvalue\"><i>... %d values ...</i>\n",
-                              keyname, key.num_values);
+                     rsprintf("<tr><td class=\"ODBkey\">%s<td class=\"%s\"><i>... %d values ...</i>\n",
+                              keyname, style, key.num_values);
                   else {
                      /* display first value */
                      if (link_name[0])
                         rsprintf("<tr><td class=\"ODBkey\" rowspan=%d>%s<br><i>-> %s</i>\n",
                                  key.num_values, keyname, link_name);
                      else
-                        rsprintf("<tr><td class=\"ODBkey\" rowspan=%d>%s\n", key.num_values,
-                                 keyname);
+                        rsprintf("<tr><td class=\"ODBkey\" rowspan=%d>%s\n",
+                                 key.num_values, keyname);
 
                      for (j = 0; j < key.num_values; j++) {
+                        if (line % 2 == 0)
+                           strlcpy(style, "ODBtableEven", sizeof(style));
+                        else
+                           strlcpy(style, "ODBtableOdd", sizeof(style));
+
                         size = sizeof(data);
                         db_get_data_index(hDB, hkey, data, &size, j, key.type);
                         db_sprintf(data_str, data, key.item_size, 0, key.type);
@@ -9209,7 +9240,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
                         if (j > 0)
                            rsprintf("<tr>");
 
-                        rsprintf("<td class=\"ODBvalue\">[%d]&nbsp;", j);
+                        rsprintf("<td class=\"%s\">[%d]&nbsp;", style, j);
                         if (!write_access)
                            rsprintf("<a href=\"%s\">", ref);
                         else {
@@ -9223,19 +9254,19 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
                         
                         if (j == 0) {
                            /* extended key information */
-                           rsprintf("<td class=\"ODBvalue\" name=\"ext\" style=\"display:none\" rowspan=%d>", key.num_values);
+                           rsprintf("<td class=\"ODBkey\" name=\"ext\" style=\"display:none\" rowspan=%d>", key.num_values);
                            rsprintf("%s", rpc_tid_name(key.type));
                            rsprintf("</td>\n");
                            
-                           rsprintf("<td class=\"ODBvalue\" name=\"ext\" style=\"display:none\" rowspan=%d>", key.num_values);
+                           rsprintf("<td class=\"ODBkey\" name=\"ext\" style=\"display:none\" rowspan=%d>", key.num_values);
                            rsprintf("%d", key.num_values);
                            rsprintf("</td>\n");
                            
-                           rsprintf("<td class=\"ODBvalue\" name=\"ext\" style=\"display:none\" rowspan=%d>", key.num_values);
+                           rsprintf("<td class=\"ODBkey\" name=\"ext\" style=\"display:none\" rowspan=%d>", key.num_values);
                            rsprintf("%d", key.item_size);
                            rsprintf("</td>\n");
                            
-                           rsprintf("<td class=\"ODBvalue\" name=\"ext\" style=\"display:none\" rowspan=%d>", key.num_values);
+                           rsprintf("<td class=\"ODBkey\" name=\"ext\" style=\"display:none\" rowspan=%d>", key.num_values);
                            db_get_key_time(hDB, hkey, &delta);
                            if (delta < 60)
                               rsprintf("%ds", delta);
@@ -9249,7 +9280,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
                               rsprintf(">99d");
                            rsprintf("</td>\n");
                            
-                           rsprintf("<td class=\"ODBvalue\" name=\"ext\" style=\"display:none\" rowspan=%d>", key.num_values);
+                           rsprintf("<td class=\"ODBkey\" name=\"ext\" style=\"display:none\" rowspan=%d>", key.num_values);
                            if (key.access_mode & MODE_READ)
                               rsprintf("R");
                            if (key.access_mode & MODE_WRITE)
@@ -9260,6 +9291,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
                               rsprintf("E");
                            rsprintf("</td>\n");
                         }
+                        line++;
                      }
                      
                      rsprintf("</tr>\n");
