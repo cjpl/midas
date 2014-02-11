@@ -435,7 +435,7 @@ function ODBEdit(path)
    }
 }
 
-function ODBFinishInlineEdit(p, path)
+function ODBFinishInlineEdit(p, path, bracket)
 {
    var value;
  
@@ -455,8 +455,8 @@ function ODBFinishInlineEdit(p, path)
       value = "(empty)";
    link.innerHTML = value;
    link.href = path+"?cmd=Set";
-   link.onclick = function(){ODBInlineEdit(p,path);return false;};
-   link.onfocus = function(){ODBInlineEdit(p,path);};
+   link.onclick = function(){ODBInlineEdit(p,path,bracket);return false;};
+   link.onfocus = function(){ODBInlineEdit(p,path,bracket);};
    
    if (p.childNodes.length == 2)
       setTimeout(function(){p.appendChild(link);p.removeChild(p.childNodes[1])}, 10);
@@ -464,7 +464,7 @@ function ODBFinishInlineEdit(p, path)
       setTimeout(function(){p.appendChild(link);p.removeChild(p.childNodes[0])}, 10);
 }
 
-function ODBInlineEditKeydown(event, p, path)
+function ODBInlineEditKeydown(event, p, path, bracket)
 {
    var keyCode = ('which' in event) ? event.which : event.keyCode;
    
@@ -478,8 +478,8 @@ function ODBInlineEditKeydown(event, p, path)
          value = "(empty)";
       link.innerHTML = value;
       link.href = path+"?cmd=Set";
-      link.onclick = function(){ODBInlineEdit(p,path);return false;};
-      link.onfocus = function(){ODBInlineEdit(p,path);};
+      link.onclick = function(){ODBInlineEdit(p,path,bracket);return false;};
+      link.onfocus = function(){ODBInlineEdit(p,path,bracket);};
       
       if (p.childNodes.length == 2)
          setTimeout(function(){p.appendChild(link);p.removeChild(p.childNodes[1])}, 10);
@@ -490,43 +490,14 @@ function ODBInlineEditKeydown(event, p, path)
    }
 
    if (keyCode == 13) {
-      ODBFinishInlineEdit(p, path);
+      ODBFinishInlineEdit(p, path, bracket);
       return false;
    }
 
    return true;
 }
 
-
-function bin_to_ascii(c)
-{
-   if (c >= 38)
-      return String.fromCharCode(c-38+"a".charCodeAt(0));
-   else if (c >= 12)
-      return String.fromCharCode(c-12+"A".charCodeAt(0));
-   else
-      return String.fromCharCode(c+".".charCodeAt(0));
-}
-
-function ss_crypt(s)
-{
-   if (s == null)
-      return false;
-   
-   var str = "mi";
-   var seed = 123;
-   for (i=0 ; i<11 ; i++) {
-      if (i < s.length)
-        seed = 5 * seed + 27 + s.charCodeAt(i);
-      else
-         seed = 5 * seed + 27;
-      str += bin_to_ascii(seed & 0x3F);
-   }
-                              
-   return str;
-}
-
-function ODBInlineEdit(p, odb_path)
+function ODBInlineEdit(p, odb_path, bracket)
 {
    var cur_val = ODBGet(encodeURIComponent(odb_path));
    var size = cur_val.length+10;
@@ -536,12 +507,16 @@ function ODBInlineEdit(p, odb_path)
    var str = cur_val.replace(/"/g, '&quot;');
    if (odb_path.indexOf('[') > 0) {
       index = odb_path.substr(odb_path.indexOf('['));
-   
-      p.innerHTML = index+"&nbsp;<input type=\"text\" size=\""+size+"\" value=\""+str+"\" onKeydown=\"return ODBInlineEditKeydown(event, this.parentNode,\'"+odb_path+"\');\" onBlur=\"ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\');\" >";
-      setTimeout(function(){p.childNodes[1].focus();p.childNodes[1].select();}, 10); // needed for Firefox
+      if (bracket == 0) {
+         p.innerHTML = "<input type=\"text\" size=\""+size+"\" value=\""+str+"\" onKeydown=\"return ODBInlineEditKeydown(event, this.parentNode,\'"+odb_path+"\',"+bracket+");\" onBlur=\"ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\',"+bracket+");\" >";
+         setTimeout(function(){p.childNodes[0].focus();p.childNodes[0].select();}, 10); // needed for Firefox
+      } else {
+         p.innerHTML = index+"&nbsp;<input type=\"text\" size=\""+size+"\" value=\""+str+"\" onKeydown=\"return ODBInlineEditKeydown(event, this.parentNode,\'"+odb_path+"\',"+breacket+");\" onBlur=\"ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\',"+breacket+");\" >";
+         setTimeout(function(){p.childNodes[1].focus();p.childNodes[1].select();}, 10); // needed for Firefox
+      }
    } else {
       
-      p.innerHTML = "<input type=\"text\" size=\""+size+"\" value=\""+str+"\" onKeydown=\"return ODBInlineEditKeydown(event, this.parentNode,\'"+odb_path+"\');\" onBlur=\"ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\');\" >";
+      p.innerHTML = "<input type=\"text\" size=\""+size+"\" value=\""+str+"\" onKeydown=\"return ODBInlineEditKeydown(event, this.parentNode,\'"+odb_path+"\',"+bracket+");\" onBlur=\"ODBFinishInlineEdit(this.parentNode,\'"+odb_path+"\',"+bracket+");\" >";
 
       setTimeout(function(){p.childNodes[0].focus();p.childNodes[0].select();}, 10); // needed for Firefox
    }

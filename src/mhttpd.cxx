@@ -4982,11 +4982,11 @@ void show_sc_page(const char *path, int refresh)
                   rsprintf("<input type=hidden name=index value=%d>\n", i_edit);
                   n_var++;
                } else {
-                  sprintf(ref, "%s/%s?cmd=Edit&index=%d", eq_name, group, n_var);
+                  sprintf(ref, "%s%s/%s?cmd=Edit&index=%d", back_path, eq_name, group, n_var);
                   sprintf(odb_path, "Equipment/%s/Variables/%s[%d]", eq_name, varkey.name, i);
 
                   rsprintf("<td align=center>");
-                  rsprintf("<a href=\"%s%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" >%s</a>", back_path, ref, odb_path, str);
+                  rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\', 0);return false;\" >%s</a>", ref, odb_path, str);
                   n_var++;
                }
             } else
@@ -5155,8 +5155,10 @@ void show_sc_page(const char *path, int refresh)
                      } else {
                         sprintf(ref, "%s%s/%s?cmd=Edit&index=%d", back_path, 
                                 eq_name, group, n_var);
+                        sprintf(odb_path, "Equipment/%s/Variables/%s[%d]", eq_name, varkey.name, j);
 
-                        rsprintf("<td align=center><a href=\"%s\">%s</a>\n", ref, str);
+                        rsprintf("<td align=cernter>");
+                        rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\', 0);return false;\" >%s</a>", ref, odb_path, str);
                         n_var++;
                      }
 
