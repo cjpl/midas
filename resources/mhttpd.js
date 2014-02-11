@@ -526,25 +526,8 @@ function ss_crypt(s)
    return str;
 }
 
-function ODBCheckWebPassword()
-{
-   var pwd = ODBGet("/Experiment/Security/Web Password");
-   if (pwd != "") {
-      var p = prompt('Please enter password to obtain write access');
-      if (pwd != ss_crypt(p)) {
-         alert("Invalid password");
-         return false;
-      }
-   }
-   
-   return true;
-}
-
 function ODBInlineEdit(p, odb_path)
 {
-   if (!ODBCheckWebPassword())
-      return false;
-   
    var cur_val = ODBGet(encodeURIComponent(odb_path));
    var size = cur_val.length+10;
    var index;

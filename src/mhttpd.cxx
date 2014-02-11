@@ -8837,7 +8837,7 @@ void show_start_page(int script)
 
 /*------------------------------------------------------------------*/
 
-void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
+void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_access)
 {
    int i, j, keyPresent, scan, size, status;
    char str[256], tmp_path[256], url_path[256], data_str[TEXT_SIZE], 
@@ -9083,13 +9083,21 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
                         rsprintf("%s <i>-> ", keyname);
                         rsprintf("<a href=\"%s\">%s</a></i>\n", link_ref, link_name);
                         rsprintf("<td class=\"ODBvalue\">\n");
-                        rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, odb_path);
-                        rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">%s (%s)</a>\n", odb_path, data_str, hex_str);
+                        if (!write_access)
+                           rsprintf("<a href=\"%s\" ", ref, odb_path);
+                        else {
+                           rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, odb_path);
+                           rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">%s (%s)</a>\n", odb_path, data_str, hex_str);
+                        }
                      } else {
                         rsprintf("<td class=\"ODBkey\">\n");
                         rsprintf("%s<td class=\"ODBvalue\">", keyname);
-                        rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, odb_path);
-                        rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">%s (%s)</a>\n", odb_path, data_str, hex_str);
+                        if (!write_access)
+                           rsprintf("<a href=\"%s\" ", ref, odb_path);
+                        else {
+                           rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, odb_path);
+                           rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">%s (%s)</a>\n", odb_path, data_str, hex_str);
+                        }
                      }
                   } else {
                      if (strchr(data_str, '\n')) {
@@ -9109,12 +9117,20 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
                         if (link_name[0]) {
                            rsprintf("<td class=\"ODBkey\">\n");
                            rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"ODBvalue\">", keyname, link_ref, link_name);
-                           rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, odb_path);
-                           rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">", odb_path);
+                           if (!write_access)
+                              rsprintf("<a href=\"%s\" ", ref, odb_path);
+                           else {
+                              rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, odb_path);
+                              rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">", odb_path);
+                           }
                         } else {
                            rsprintf("<td class=\"ODBkey\">%s<td class=\"ODBvalue\">", keyname);
-                           rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, odb_path);
-                           rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">", odb_path);
+                           if (!write_access)
+                              rsprintf("<a href=\"%s\" ", ref, odb_path);
+                           else {
+                              rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, odb_path);
+                              rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">", odb_path);
+                           }
                         }
                         strencode(data_str);
                         rsprintf("</a>\n");
@@ -9192,9 +9208,12 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path)
                            rsprintf("<tr>");
 
                         rsprintf("<td class=\"ODBvalue\">[%d]&nbsp;", j);
-                        rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, str);
-                        rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">", str);
-
+                        if (!write_access)
+                           rsprintf("<a href=\"%s\">", ref);
+                        else {
+                           rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, str);
+                           rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">", str);
+                        }
                         if (strcmp(data_str, hex_str) != 0 && hex_str[0])
                            rsprintf("%s (%s)</a>\n", data_str, hex_str);
                         else
@@ -14934,7 +14953,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
  
  \********************************************************************/
 {
-   int i, j, n, status, size, run_state, index;
+   int i, j, n, status, size, run_state, index, write_access;
    WORD event_id;
    HNDLE hkey, hsubkey, hDB, hconn;
    KEY key;
@@ -15711,8 +15730,19 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
    /*---- show ODB --------------------------------------------------*/
    
    if (dec_path[0]) {
+      write_access = TRUE;
+      db_find_key(hDB, 0, "/Experiment/Security/Web Password", &hkey);
+      if (hkey) {
+         size = sizeof(str);
+         db_get_data(hDB, hkey, str, &size, TID_STRING);
+         if (strcmp(cookie_wpwd, str) == 0)
+            write_access = TRUE;
+         else
+            write_access = FALSE;
+      }
+
       strlcpy(str, dec_path, sizeof(str));
-      show_odb_page(enc_path, sizeof(enc_path), str);
+      show_odb_page(enc_path, sizeof(enc_path), str, write_access);
       return;
    }
 }
