@@ -6044,7 +6044,7 @@ void show_custom_gif(const char *name)
 
 /*------------------------------------------------------------------*/
 
-void show_custom_audio(const char *name)
+void show_custom_file(const char *name)
 {
    char str[256], filename[256], custom_path[256];
    int fh, size;
@@ -6077,8 +6077,13 @@ void show_custom_audio(const char *name)
    
    if (strstr(name, ".mp3"))
       rsprintf("Content-Type: audio/mp3\r\n");
-   else
+   else if (strstr(name, ".css"))
+      rsprintf("Content-Type: text/css\r\n");
+   else if (strstr(name, ".ogg"))
       rsprintf("Content-Type: audio/ogg\r\n");
+   else
+      rsprintf("Content-Type: text/plain\r\n");
+   
    rsprintf("Content-Length: %d\r\n\r\n", size);
 
    rread(filename, fh, size);
@@ -7407,10 +7412,11 @@ void show_custom_page(const char *path, const char *cookie_cpwd)
       return;
    }
 
-   if (strstr(path, ".mp3") || strstr(path, ".ogg")) {
-      show_custom_audio(path);
+   if (strstr(path, ".mp3") || strstr(path, ".ogg") || strstr(path, ".css")) {
+      show_custom_file(path);
       return;
    }
+
    cm_get_experiment_database(&hDB, NULL);
 
    if (path[0] == 0) {
@@ -7550,7 +7556,7 @@ void show_custom_page(const char *path, const char *cookie_cpwd)
          free(ctext);
          return;
       }
-
+      
       /* HTTP header */
       rsprintf("HTTP/1.0 200 Document follows\r\n");
       rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
