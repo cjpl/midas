@@ -6047,7 +6047,7 @@ void show_custom_gif(const char *name)
 void show_custom_file(const char *name)
 {
    char str[256], filename[256], custom_path[256];
-   int fh, size;
+   int i, fh, size;
    HNDLE hDB;
 
    cm_get_experiment_database(&hDB, NULL);
@@ -6075,14 +6075,21 @@ void show_custom_file(const char *name)
    rsprintf("HTTP/1.0 200 Document follows\r\n");
    rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
    
-   if (strstr(name, ".mp3"))
-      rsprintf("Content-Type: audio/mp3\r\n");
-   else if (strstr(name, ".css"))
-      rsprintf("Content-Type: text/css\r\n");
-   else if (strstr(name, ".ogg"))
-      rsprintf("Content-Type: audio/ogg\r\n");
-   else
+   /* return proper header for file type */
+   for (i = 0; i < (int) strlen(name); i++)
+      str[i] = toupper(name[i]);
+   str[i] = 0;
+   
+   for (i = 0; filetype[i].ext[0]; i++)
+      if (strstr(str, filetype[i].ext))
+         break;
+   
+   if (filetype[i].ext[0])
+      rsprintf("Content-Type: %s\r\n", filetype[i].type);
+   else if (strchr(str, '.') == NULL)
       rsprintf("Content-Type: text/plain\r\n");
+   else
+      rsprintf("Content-Type: application/octet-stream\r\n");
    
    rsprintf("Content-Length: %d\r\n\r\n", size);
 
@@ -7412,7 +7419,7 @@ void show_custom_page(const char *path, const char *cookie_cpwd)
       return;
    }
 
-   if (strstr(path, ".mp3") || strstr(path, ".ogg") || strstr(path, ".css")) {
+   if (strchr(path, '.')) {
       show_custom_file(path);
       return;
    }
