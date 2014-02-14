@@ -135,9 +135,9 @@ const Filetype filetype[] = {
    ".PDF", "application/pdf",}, {
    ".TXT", "text/plain",}, {
    ".ASC", "text/plain",}, {
-   ".ZIP", "application/x-zip-compressed",}, {
+   ".ZIP", "application/zip",}, {
    ".CSS", "text/css",}, {
-   ".JS",  "application/x-javascript"}, {
+   ".JS",  "application/javascript"}, {
 ""},};
 
 /*------------------------------------------------------------------*/
