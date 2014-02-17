@@ -1670,7 +1670,7 @@ extern "C" {
                            INT strsize, INT async_flag, INT debug_flag);
    INT EXPRT cm_register_server(void);
    INT EXPRT cm_register_function(INT id, INT(*func) (INT, void **));
-   INT EXPRT cm_connect_client(char *client_name, HNDLE * hConn);
+   INT EXPRT cm_connect_client(const char *client_name, HNDLE * hConn);
    INT EXPRT cm_disconnect_client(HNDLE hConn, BOOL bShutdown);
    INT EXPRT cm_set_experiment_database(HNDLE hDB, HNDLE hKeyClient);
    INT EXPRT cm_get_experiment_database(HNDLE * hDB, HNDLE * hKeyClient);
