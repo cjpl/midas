@@ -390,6 +390,18 @@ function ODBRpc_rev1(name, rpc, max_reply_length, args)
    return request.responseText;
 }
 
+function ODBRpc(program_name, command_name, arguments_string, callback, max_reply_length)
+{
+   var url = ODBUrlBase + '?cmd=jrpc';
+   url += '&name=' + encodeURIComponent(program_name);
+   url += '&cmd=' + encodeURIComponent(command_name);
+   url += '&args=' + encodeURIComponent(arguments_string);
+   if (max_reply_length) {
+      url += '&max_reply_length=' + encodeURIComponent(max_reply_length);
+   }
+   return ODBCall(url, callback);
+}
+
 function ODBGetMsg(n)
 {
    var request = XMLHttpRequestGeneric();

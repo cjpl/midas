@@ -191,7 +191,8 @@ ODBMReorder(paths, indices, callback);
 ODBMKey(paths, callback);
 ODBMDelete(paths, callback);
 ODBRpc_rev0(name, rpc, args);
-ODBRpc_rev1(name, rpc, max_reply_length, args);
+ODBRpc_rev1(name, rpc, max_reply_length, args); 
+ODBRpc(name, command, args[, callback[, max_reply_length]]); 
 ODBGetMsg(n);
 ODBGenerateMsg(m);
 ODBGetAlarms();
@@ -546,6 +547,22 @@ ODBEdit(path);
         </p>
 
       <li>
+        <h2>ODBRpc()</h2>
+        
+        <p>
+          Call the rpc_callback function in fejrpc.cxx: 
+          <input type=button value='Push me'
+          onClick='clearTimeout(updateTimerId); var ret = ODBRpc("fejrpc", "some command", "some args"); document.getElementById("rpc_target").innerHTML = htmlize(ret); update();'></input>
+        </p>
+        
+        <p>
+          Data returned by the RPC call: <pre id="rpc_target"></pre>
+       </p>
+        <p>
+          <i>Observe the output of the example rpc handler in midas messages or in the ODBGetMsg() section below</i>
+        </p>
+
+      <li>
         <h2>ODBGetMsg()</h2>
       
         <p>
@@ -587,6 +604,6 @@ ODBEdit(path);
     <hr>
     <address><a href="mailto:xxx@xxx">MIDAS Example</a></address>
 <!-- Created: Tue Sep 21 15:44:39 PDT 2010 -->
-<!-- hhmts start -->Last modified: Wed Sep 25 12:08:34 PDT 2013 <!-- hhmts end -->
+<!-- hhmts start -->Last modified: Mon Feb 17 11:45:00 PST 2014 <!-- hhmts end -->
   </body>
 </html>
