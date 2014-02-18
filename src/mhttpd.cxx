@@ -6382,8 +6382,8 @@ void do_jrpc()
    int status;
 
    const char *name   = getparam("name");
-   const char *cmd    = getparam("cmd");
-   const char *args   = getparam("args");
+   const char *cmd    = getparam("rcmd");
+   const char *args   = getparam("rarg");
 
    if (!name || !cmd || !args) {
       show_text_header();

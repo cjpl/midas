@@ -394,8 +394,8 @@ function ODBRpc(program_name, command_name, arguments_string, callback, max_repl
 {
    var url = ODBUrlBase + '?cmd=jrpc';
    url += '&name=' + encodeURIComponent(program_name);
-   url += '&cmd=' + encodeURIComponent(command_name);
-   url += '&args=' + encodeURIComponent(arguments_string);
+   url += '&rcmd=' + encodeURIComponent(command_name);
+   url += '&rarg=' + encodeURIComponent(arguments_string);
    if (max_reply_length) {
       url += '&max_reply_length=' + encodeURIComponent(max_reply_length);
    }
