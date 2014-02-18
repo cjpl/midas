@@ -9131,9 +9131,9 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
                         }
                      } else {
                         rsprintf("<td class=\"ODBkey\">\n");
-                        rsprintf("%s<td class=\"%s\">", style, keyname);
+                        rsprintf("%s<td class=\"%s\">", keyname, style);
                         if (!write_access)
-                           rsprintf("<a href=\"%s\" ", ref, odb_path);
+                           rsprintf("<a href=\"%s\">%s (%s)</a> ", ref, data_str, hex_str);
                         else {
                            rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, odb_path);
                            rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">%s (%s)</a>\n", odb_path, data_str, hex_str);
@@ -9158,7 +9158,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
                            rsprintf("<td class=\"ODBkey\">\n");
                            rsprintf("%s <i>-> <a href=\"%s\">%s</a></i><td class=\"%s\">", keyname, link_ref, link_name, style);
                            if (!write_access)
-                              rsprintf("<a href=\"%s\" ", ref, odb_path);
+                              rsprintf("<a href=\"%s\">", ref);
                            else {
                               rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, odb_path);
                               rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">", odb_path);
@@ -9166,7 +9166,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
                         } else {
                            rsprintf("<td class=\"ODBkey\">%s<td class=\"%s\">", keyname, style);
                            if (!write_access)
-                              rsprintf("<a href=\"%s\" ", ref, odb_path);
+                              rsprintf("<a href=\"%s\">", ref);
                            else {
                               rsprintf("<a href=\"%s\" onClick=\"ODBInlineEdit(this.parentNode,\'%s\');return false;\" ", ref, odb_path);
                               rsprintf("onFocus=\"ODBInlineEdit(this.parentNode,\'%s\');\">", odb_path);
