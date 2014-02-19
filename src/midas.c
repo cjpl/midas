@@ -2413,7 +2413,7 @@ Connect to a MIDAS client of the current experiment
 @param  hConn            Connection handle
 @return CM_SUCCESS, CM_NO_CLIENT
 */
-INT cm_connect_client(char *client_name, HNDLE * hConn)
+INT cm_connect_client(const char *client_name, HNDLE * hConn)
 {
    HNDLE hDB, hKeyRoot, hSubkey, hKey;
    INT status, i, length, port;

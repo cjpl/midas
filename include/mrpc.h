@@ -139,6 +139,8 @@ routine IDs for RPC calls
 
 #define RPC_MANUAL_TRIG                 17000 /**< - */
 
+#define RPC_JRPC                        18000 /**< - */
+
 #define RPC_ID_WATCHDOG                 99997 /**< - */
 #define RPC_ID_SHUTDOWN                 99998 /**< - */
 #define RPC_ID_EXIT                     99999 /**< - */

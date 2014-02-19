@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include "midas.h"
+#include "mrpc.h"
 
 #define FE_NAME "fejrpc"
 #define EQ_NAME "RpcExample"
@@ -208,6 +209,28 @@ INT rpc102_callback(INT index, void *prpc_param[])
    return RPC_SUCCESS;
 }
 
+INT rpc_callback(INT index, void *prpc_param[])
+{
+   const char* cmd  = CSTRING(0);
+   const char* args = CSTRING(1);
+   char* return_buf = CSTRING(2);
+   int   return_max_length = CINT(3);
+
+   cm_msg(MINFO, "rpc_callback", "--------> rpc_callback: index %d, max_length %d, cmd [%s], args [%s]", index, return_max_length, cmd, args);
+
+   int example_int = strtol(args, NULL, 0);
+   int size = sizeof(int);
+   int status = db_set_value(hDB, 0, "/Equipment/" EQ_NAME "/Settings/example_int", &example_int, size, 1, TID_INT);
+
+   char tmp[256];
+   time_t now = time(NULL);
+   sprintf(tmp, "current time is %d %s", (int)now, ctime(&now));
+
+   strlcpy(return_buf, tmp, return_max_length);
+
+   return RPC_SUCCESS;
+}
+
 /*-- Frontend Init -------------------------------------------------*/
 
 INT frontend_init()
@@ -225,6 +248,9 @@ INT frontend_init()
    assert(status == SUCCESS);
 
    status = cm_register_function(102, rpc102_callback);
+   assert(status == SUCCESS);
+
+   status = cm_register_function(RPC_JRPC, rpc_callback);
    assert(status == SUCCESS);
 
    configure();

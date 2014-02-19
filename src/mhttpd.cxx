@@ -6409,6 +6409,56 @@ void do_jrpc_rev1()
 
 /*------------------------------------------------------------------*/
 
+void do_jrpc()
+{
+   int status;
+
+   const char *name   = getparam("name");
+   const char *cmd    = getparam("rcmd");
+   const char *args   = getparam("rarg");
+
+   if (!name || !cmd || !args) {
+      show_text_header();
+      rsprintf("<INVALID_ARGUMENTS>");
+      return;
+   }
+
+   show_text_header();
+
+   int buf_length = 1024;
+
+   int max_reply_length = atoi(getparam("max_reply_length"));
+   if (max_reply_length > buf_length)
+      buf_length = max_reply_length;
+
+   char* buf = (char*)malloc(buf_length);
+   buf[0] = 0;
+
+   HNDLE hconn;
+
+   status = cm_connect_client(name, &hconn);
+
+   if (status != RPC_SUCCESS) {
+      rsprintf("<RPC_CONNECT_ERROR>%d</RPC_CONNECT_ERROR>", status);
+      return;
+   }
+
+   status = rpc_client_call(hconn, RPC_JRPC, cmd, args, buf, buf_length);
+
+   if (status != RPC_SUCCESS) {
+      rsprintf("<RPC_CALL_ERROR>%d</RPC_CALL_ERROR>", status);
+      return;
+   }
+
+   rsprintf("%s", buf);
+
+   status = cm_disconnect_client(hconn, FALSE);
+
+   free(buf);
+}
+
+/*------------------------------------------------------------------*/
+
 void output_key(HNDLE hkey, int index, const char *format)
 {
    int size, i;
@@ -7399,6 +7449,12 @@ void javascript_commands(const char *cookie_cpwd)
    /* process "jrpc" command */
    if (equal_ustring(getparam("cmd"), "jrpc_rev1")) {
       do_jrpc_rev1();
+      return;
+   }
+
+   /* process "jrpc" command */
+   if (equal_ustring(getparam("cmd"), "jrpc")) {
+      do_jrpc();
       return;
    }
 }
@@ -15152,7 +15208,8 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
        equal_ustring(command, "jalm") ||
        equal_ustring(command, "jgenmsg") ||
        equal_ustring(command, "jrpc_rev0") ||
-       equal_ustring(command, "jrpc_rev1")) {
+       equal_ustring(command, "jrpc_rev1") ||
+       equal_ustring(command, "jrpc")) {
       javascript_commands(cookie_cpwd);
       return;
    }
