@@ -175,12 +175,12 @@
     <p>List of functions used in this example:</p>
     <pre>
 ODBSet(path, value, pwdname);
-ODBGet(path, format, defval, len, type);
-ODBMGet(paths, callback, formats);
-ODBGetRecord(path);
-ODBExtractRecord(record, key);
-new ODBKey(path);
-ODBCopy(path, format);
+ODBGet(path, format, defval, len, type); ---- use ODBMCopy() instead
+ODBMGet(paths, callback, formats); ---- use ODBMCopy() instead
+ODBGetRecord(path); ---- use ODBMCopy() instead
+ODBExtractRecord(record, key); ---- use ODBMCopy() instead
+new ODBKey(path); ---- use ODBMKey() instead
+ODBCopy(path, format); ---- use ODBMCopy() instead
 ODBMCopy(paths, callback, format);
 ODBMCreate(paths, types);
 ODBMCreate(paths, types, arraylengths, stringlengths, callback);  
@@ -190,8 +190,6 @@ ODBMLink(paths, links, callback);
 ODBMReorder(paths, indices, callback);
 ODBMKey(paths, callback);
 ODBMDelete(paths, callback);
-ODBRpc_rev0(name, rpc, args);
-ODBRpc_rev1(name, rpc, max_reply_length, args); 
 ODBRpc(name, command, args[, callback[, max_reply_length]]); 
 ODBGetMsg(n);
 ODBGenerateMsg(m);
@@ -225,7 +223,7 @@ ODBEdit(path);
         <input type=button value='Update every 10 sec' onClick='updatePeriod=10000; update();'></input>
 
       <li>
-        <h2>ODBGet()</h2>
+        <h2>ODBGet() ---- use ODBMCopy() instead</h2>
 
         <p>
           <i>This data is updated by the javascript update() function - press the "update now" button above</i>
@@ -238,7 +236,7 @@ ODBEdit(path);
         </p>
 
       <li>
-        <h2>ODBMGet()</h2>
+        <h2>ODBMGet() ---- use ODBMCopy() instead</h2>
 
         <p>
           <i>This data is updated by the javascript update() function - press the "update now" button above</i>
@@ -251,7 +249,7 @@ ODBEdit(path);
         </p>
 
       <li>
-        <h2>ODBGetRecord() and ODBExtractRecord()</h2>
+        <h2>ODBGetRecord() and ODBExtractRecord() ---- use ODBMCopy() instead</h2>
 
         <p>
           <input type=button value='Get /Equipment/RpcExample/Variables and Settings' onClick='clearTimeout(updateTimerId); getrecord_example(); update();'></input>
@@ -267,7 +265,7 @@ ODBEdit(path);
         </pre>
 
       <li>
-        <h2>ODBKey()</h2>
+        <h2>ODBKey() ---- use ODBMKey() instead</h2>
 
         <p>
           <input type=button value='Get ODB key /Equipment/RpcExample/Variables/SLOW' onClick='clearTimeout(updateTimerId); getkey_example(); update();'></input>
@@ -280,7 +278,7 @@ ODBEdit(path);
         </pre>
 
       <li>
-        <h2>ODBCopy()</h2>
+        <h2>ODBCopy() --- use ODBMCopy() instead</h2>
 
         <p>
           <input type=button value='ODBCopy(/Equipment/RpcExample)' onClick='clearTimeout(updateTimerId); copy_example(); update();'></input>
@@ -299,7 +297,7 @@ ODBEdit(path);
         </pre>
 
       <li>
-        <h2>Using JSON data from ODBCopy()</h2>
+        <h2>Using JSON data from ODBCopy() ---- use ODBMCopy() instead</h2>
 
         <p>
           <input type=button value='Push me' onClick='clearTimeout(updateTimerId); copy_json_example(); update();'></input>
@@ -313,7 +311,7 @@ ODBEdit(path);
         </ul>
 
       <li>
-        <h2>ODBCopy() through JSON-P</h2>
+        <h2>ODBCopy() through JSON-P ---- use ODBMCopy() instead</h2>
 
         <ul>
           <li>JSON data: <tt id='jsonp_data'></tt>
@@ -518,32 +516,6 @@ ODBEdit(path);
         </p>
         <p>
           <input type=button value='Edit /Equipment/RpcExample/Settings/Example_int' onClick='clearTimeout(updateTimerId); ODBEdit("/Equipment/RpcExample/Settings/Example_int"); update();'></input>
-        </p>
-
-      <li>
-        <h2>ODBRpc_rev0()</h2>
-      
-        <p>
-          Call the rpc_callback function in fejrpc.cxx: 
-          <input type=button value='Push me' onClick='clearTimeout(updateTimerId); ODBRpc_rev0("fejrpc*", 101, "123", "arg2", "arg3"); update();'></input>
-        </p>
-        <p>
-          <i>Observe the output of our rpc handler in midas messages or in the ODBGetMsg() section below</i>
-        </p>
-
-      <li>
-        <h2>ODBRpc_rev1()</h2>
-        
-        <p>
-          Call the rpc_callback function in fejrpc.cxx: 
-          <input type=button value='Push me' onClick='clearTimeout(updateTimerId); var ret = ODBRpc_rev1("fejrpc*", 102, 0, "123", "arg2", "arg3"); process(ret); update();'></input>
-        </p>
-        
-        <p>
-          Data returned by the RPC call: <pre id="rpc_result"></pre>
-      </p>
-        <p>
-          <i>Observe the output of our rpc handler in midas messages or in the ODBGetMsg() section below</i>
         </p>
 
       <li>

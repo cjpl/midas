@@ -140,75 +140,6 @@ static int configure()
 
 // RPC handlers
 
-RPC_LIST rpc_list[] =
-{
-   { 101, "rpc_101", {
-         {TID_STRING, RPC_IN}, // arg0
-         {TID_STRING, RPC_IN}, // arg1
-         {TID_STRING, RPC_IN}, // arg2
-         {TID_STRING, RPC_IN}, // arg3
-         {TID_STRING, RPC_IN}, // arg4
-         {TID_STRING, RPC_IN}, // arg5
-         {TID_STRING, RPC_IN}, // arg6
-         {TID_STRING, RPC_IN}, // arg7
-         {TID_STRING, RPC_IN}, // arg8
-         {TID_STRING, RPC_IN}, // arg9
-         {0}} },
-   { 102, "rpc_102", {
-         {TID_STRING, RPC_OUT}, // return string
-         {TID_INT,    RPC_IN},  // return string max length
-         {TID_STRING, RPC_IN}, // arg0
-         {TID_STRING, RPC_IN}, // arg1
-         {TID_STRING, RPC_IN}, // arg2
-         {TID_STRING, RPC_IN}, // arg3
-         {TID_STRING, RPC_IN}, // arg4
-         {TID_STRING, RPC_IN}, // arg5
-         {TID_STRING, RPC_IN}, // arg6
-         {TID_STRING, RPC_IN}, // arg7
-         {TID_STRING, RPC_IN}, // arg8
-         {TID_STRING, RPC_IN}, // arg9
-         {0}} },
-   { 0 }
-};
-
-INT rpc101_callback(INT index, void *prpc_param[])
-{
-   const char* arg0 = CSTRING(0);
-   const char* arg1 = CSTRING(1);
-   const char* arg2 = CSTRING(2);
-
-   cm_msg(MINFO, "rpc_callback", "--------> rpc101_callback: index %d, args [%s] [%s] [%s]", index, arg0, arg1, arg2);
-
-   int example_int = strtol(arg0, NULL, 0);
-   int size = sizeof(int);
-   int status = db_set_value(hDB, 0, "/Equipment/" EQ_NAME "/Settings/example_int", &example_int, size, 1, TID_INT);
-
-   return RPC_SUCCESS;
-}
-
-INT rpc102_callback(INT index, void *prpc_param[])
-{
-   char* return_buf = CSTRING(0);
-   int   return_max_length = CINT(1);
-   const char* arg0 = CSTRING(2);
-   const char* arg1 = CSTRING(3);
-   const char* arg2 = CSTRING(4);
-
-   cm_msg(MINFO, "rpc_callback", "--------> rpc102_callback: index %d, max_length %d, args [%s] [%s] [%s]", index, return_max_length, arg0, arg1, arg2);
-
-   int example_int = strtol(arg0, NULL, 0);
-   int size = sizeof(int);
-   int status = db_set_value(hDB, 0, "/Equipment/" EQ_NAME "/Settings/example_int", &example_int, size, 1, TID_INT);
-
-   char tmp[256];
-   time_t now = time(NULL);
-   sprintf(tmp, "current time is %d %s", (int)now, ctime(&now));
-
-   strlcpy(return_buf, tmp, return_max_length);
-
-   return RPC_SUCCESS;
-}
-
 INT rpc_callback(INT index, void *prpc_param[])
 {
    const char* cmd  = CSTRING(0);
@@ -240,15 +171,6 @@ INT frontend_init()
    cm_msg(MINFO, "frontend_init", "Frontend init");
 
    //cm_set_watchdog_params (FALSE, 0);
-
-   status = rpc_register_functions(rpc_list, NULL);
-   assert(status == SUCCESS);
-
-   status = cm_register_function(101, rpc101_callback);
-   assert(status == SUCCESS);
-
-   status = cm_register_function(102, rpc102_callback);
-   assert(status == SUCCESS);
 
    status = cm_register_function(RPC_JRPC, rpc_callback);
    assert(status == SUCCESS);
