@@ -487,12 +487,12 @@ td.meterCell{
 .ODBkey{
 	text-align: left;
 	padding-left: 2em;
-   border-top: 1px solid #CCCCCC;
+   border-top: 1px solid #DDDDDD;
 }
 
 .ODBvalue{
 	text-align: left;
-   border-top: 1px solid #CCCCCC;
+   border-top: 1px solid #DDDDDD;
 }
 
 .ODBtable{
@@ -515,21 +515,23 @@ td.meterCell{
 
 /*table striping*/
 .ODBtableEven {
-	background-color: #CCCCCC;
-   border-top: 1px solid #CCCCCC;
-   border-bottom: 1px solid #CCCCCC;
+   background-color: #DDDDDD;
+   border-top: 1px solid #DDDDDD;
+   border-bottom: 1px solid #DDDDDD;
+   text-align:left;
 }
 
 .ODBtableOdd {
-	background-color: #EEEEEE;
+   background-color: #EEEEEE;
+   text-align:left;
 }
 
 #stripeList tr:nth-child(even), .alarmTable tr:nth-of-type(odd), .historyTable tr:nth-child(odd), .genericStripe tr:nth-child(odd), .messageBox p:nth-child(odd){
-	background-color: #CCCCCC;
+	background-color: #DDDDDD;
 }
 
 #elogContent tr:nth-child(4n+3), #elogContent tr:nth-child(4n+4){
-	background-color: #CCCCCC;
+	background-color: #DDDDDD;
 }
 
 #elogContent{
@@ -545,10 +547,10 @@ td.meterCell{
 
 /*client table checkers*/
 #clientsTable tr:nth-child(odd) td:nth-child(odd){
-	background-color: #CCCCCC;
+	background-color: #DDDDDD;
 }
 #clientsTable tr:nth-child(even) td:nth-child(even){
-	background-color: #CCCCCC;
+	background-color: #DDDDDD;
 }
 
 #stripeList{
