@@ -6788,7 +6788,11 @@ void javascript_commands(const char *cookie_cpwd)
 
          show_text_header();
 
-         if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS) {
+         if (fmt_json)
+            status = db_find_link(hDB, 0, str, &hkey);
+         else
+            status = db_find_key(hDB, 0, str, &hkey);
+         if (status == DB_SUCCESS) {
             
             if (fmt_jsonp) {
                rsputs(jsonp_callback);
@@ -6846,7 +6850,10 @@ void javascript_commands(const char *cookie_cpwd)
                   rsputs("$#----#$\n");
             }
 
-            status = db_find_key(hDB, 0, str, &hkey);
+            if (fmt_json)
+               status = db_find_link(hDB, 0, str, &hkey);
+            else
+               status = db_find_key(hDB, 0, str, &hkey);
             if (status != DB_SUCCESS) {
                if (fmt_xml)
                   rsputs("<DB_NO_KEY/>\n");
