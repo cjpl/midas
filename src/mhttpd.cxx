@@ -9824,7 +9824,7 @@ void show_delete_page(const char *enc_path, const char *dec_path, const char *va
             break;
          db_get_link(hDB, hkey, &key);
 
-         rsprintf("<tr><td align=left><input align=left type=checkbox name=\"name%d\" value=\"%s\">%s</input></td></tr>\n", i, key.name, key.name);
+         rsprintf("<tr><td style=\"text-align:left;\" align=left><input align=left type=checkbox name=\"name%d\" value=\"%s\">%s</input></td></tr>\n", i, key.name, key.name);
          count ++;
       }
 
