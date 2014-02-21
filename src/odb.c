@@ -7343,6 +7343,18 @@ INT db_save_json_key(HNDLE hDB, HNDLE hKey, INT level, char **buffer, int* buffe
             json_write(buffer, buffer_size, buffer_end, 0, str, 0);
          }
 
+         if (key.notify_count > 0) {
+            json_write(buffer, buffer_size, buffer_end, 0, ", ", 0);
+
+            sprintf(str, "\"notify_count\" : %d", key.notify_count);
+            json_write(buffer, buffer_size, buffer_end, 0, str, 0);
+         }
+
+         json_write(buffer, buffer_size, buffer_end, 0, ", ", 0);
+
+         sprintf(str, "\"access_mode\" : %d", key.access_mode);
+         json_write(buffer, buffer_size, buffer_end, 0, str, 0);
+
          json_write(buffer, buffer_size, buffer_end, 0, ", ", 0);
 
          sprintf(str, "\"last_written\" : %d", key.last_written);

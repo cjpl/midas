@@ -182,6 +182,7 @@ ODBExtractRecord(record, key); ---- use ODBMCopy() instead
 new ODBKey(path); ---- use ODBMKey() instead
 ODBCopy(path, format); ---- use ODBMCopy() instead
 ODBMCopy(paths, callback, format);
+ODBMLs(paths, callback);
 ODBMCreate(paths, types);
 ODBMCreate(paths, types, arraylengths, stringlengths, callback);  
 ODBMResize(paths, arraylengths, stringlengths, callback);  
@@ -371,6 +372,20 @@ ODBEdit(path);
           <li>data age: <tt id='mcopy_jsonp_data_age'></tt>
         </ul>
         <script src='?cmd=jcopy&odb0=/Runinfo&odb1=/Runinfo/Run number&odb2=/does-not-exist&odb3=/Equipment/RpcExample/Settings&odb4=/Equipment/RpcExample/Variables&format=json-p&callback=mcopy_jsonp_callback'></script>
+
+      <li>
+        <h2>ODBMLs()</h2>
+
+        <p>
+          <input type=button value='Push me' onClick='
+            clearTimeout(updateTimerId);
+            var paths = [ "/", "/Test/noexistant", "/Experiment" ]; 
+            var data = ODBMLs(paths);
+            document.getElementById("mls_reply").innerHTML = htmlize(data);
+            update();
+            '></input>
+          Reply: <tt id='mls_reply'></tt>
+        </p> 
 
       <li>
         <h2>ODBMCreate()</h2>
@@ -576,6 +591,6 @@ ODBEdit(path);
     <hr>
     <address><a href="mailto:xxx@xxx">MIDAS Example</a></address>
 <!-- Created: Tue Sep 21 15:44:39 PDT 2010 -->
-<!-- hhmts start -->Last modified: Mon Feb 17 11:45:00 PST 2014 <!-- hhmts end -->
+<!-- hhmts start -->Last modified: Fri Feb 21 09:53:50 PST 2014 <!-- hhmts end -->
   </body>
 </html>

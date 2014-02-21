@@ -258,6 +258,16 @@ function ODBMCopy(paths, callback, encoding)
    return ODBCall(url, callback);
 }
 
+function ODBMLs(paths, callback)
+{
+   var url = ODBUrlBase + '?cmd=jcopy&encoding=json-norecurse';
+   for (var i=0 ; i<paths.length ; i++) {
+      url += '&odb'+i+'='+encodeURIComponent(paths[i]);
+   }
+
+   return ODBCall(url, callback);
+}
+
 function ODBMCreate(paths, types, arraylengths, stringlengths, callback)
 {
    var url = ODBUrlBase + '?cmd=jcreate';
