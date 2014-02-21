@@ -2444,7 +2444,7 @@ INT db_find_key(HNDLE hDB, HNDLE hKey, const char *key_name, HNDLE * subhKey)
             } else {
                /* if last key in chain is a link, return its destination */
                db_unlock_database(hDB);
-               status = db_find_link(hDB, 0, str, subhKey);
+               status = db_find_key(hDB, 0, str, subhKey);
                if (status == DB_NO_KEY)
                   return DB_INVALID_LINK;
                return status;
