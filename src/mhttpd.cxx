@@ -2232,7 +2232,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
 void show_messages_page(int refresh, int n_message)
 {
    int size, more;
-   char str[256], *buffer, line[256], *pline;
+   char str[256], *buffer, line[1000000], *pline;
    time_t now;
    HNDLE hDB;
    BOOL eob;
