@@ -4117,7 +4117,7 @@ INT ss_suspend(INT millisec, INT msg)
 }
 
 /*------------------------------------------------------------------*/
-INT ss_resume(INT port, char *message)
+INT ss_resume(INT port, const char *message)
 /********************************************************************\
 
   Routine: ss_resume
@@ -4141,23 +4141,16 @@ INT ss_resume(INT port, char *message)
 
 \********************************************************************/
 {
-   INT status, idx;
+   INT status;
+   INT idx = 0;
+   struct sockaddr_in bind_addr;
 
-   if (ss_in_async_routine_flag) {
-      /* if called from watchdog, tid is different under NT! */
-      idx = 0;
-   } else {
-      status = ss_suspend_get_index(&idx);
-
-      if (status != SS_SUCCESS)
-         return status;
-   }
-
-   _suspend_struct[idx].bind_addr.sin_port = htons((short) port);
+   memcpy(&bind_addr, &_suspend_struct[idx].bind_addr, sizeof(struct sockaddr_in));
+   bind_addr.sin_port = htons((short) port);
 
    status = sendto(_suspend_struct[idx].ipc_send_socket, message,
                    strlen(message) + 1, 0,
-                   (struct sockaddr *) &_suspend_struct[idx].bind_addr, sizeof(struct sockaddr_in));
+                   (struct sockaddr *) &bind_addr, sizeof(struct sockaddr_in));
 
    if (status != (INT) strlen(message) + 1)
       return SS_SOCKET_ERROR;

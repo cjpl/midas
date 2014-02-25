@@ -629,7 +629,7 @@ extern "C" {
    INT ss_alarm(INT millitime, void (*func) (int));
    INT ss_suspend_get_port(INT * port);
    INT ss_suspend_set_dispatch(INT channel, void *connection, INT(*dispatch) ());
-   INT ss_resume(INT port, char *message);
+   INT ss_resume(INT port, const char *message);
    INT ss_suspend_exit(void);
    INT ss_exception_handler(void (*func) ());
    void EXPRT ss_force_single_thread();
