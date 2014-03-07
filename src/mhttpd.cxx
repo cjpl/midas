@@ -2232,7 +2232,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
 void show_messages_page(int refresh, int n_message)
 {
    int size, more;
-   char str[256], *buffer, line[1000000], *pline;
+   char str[256], *buffer, *line, *pline;
    time_t now;
    HNDLE hDB;
    BOOL eob;
@@ -2257,13 +2257,14 @@ void show_messages_page(int refresh, int n_message)
    //rsprintf("<input type=submit style=\"margin-top:1em;\" name=cmd value=\"More%d\"><div class=\"messageBox\">\n", more);
    rsprintf("<button type=submit name=cmd value=\"More%d\">%d More</button><div class=\"messageBox\" id=\"messageFrame\">\n", more, more);
    buffer = (char *)malloc(1000000);
+   line = (char *)malloc(1000000);
    cm_msg_retrieve(n_message, buffer, 1000000);
 
    pline = buffer;
    eob = FALSE;
 
    do {
-      strlcpy(line, pline, sizeof(line));
+      strlcpy(line, pline, 1000000);
 
       /* extract single line */
       if (strchr(line, '\n'))
@@ -2298,7 +2299,7 @@ void show_messages_page(int refresh, int n_message)
    rsprintf("</div>\n");
    page_footer(TRUE);
    free(buffer);
-
+   free(line);
 }
 
 /*------------------------------------------------------------------*/
