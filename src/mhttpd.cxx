@@ -14643,7 +14643,7 @@ char *get_js_filename()
    char filename[1024];
    int size = sizeof(filename);
    strcpy(filename, "mhttpd.js");
-   db_get_value(hDB, 0, "/Experiment/CSS File", filename, &size, TID_STRING, TRUE);
+   db_get_value(hDB, 0, "/Experiment/JS File", filename, &size, TID_STRING, TRUE);
    strlcpy(_js_file, filename, sizeof(_js_file));
    return _js_file;
 }
