@@ -260,6 +260,8 @@ void haxis(gdImagePtr im, gdFont * font, int col, int gcol, int x1, int y1, int 
 void get_elog_url(char *url, int len);
 void show_header(const char *title, const char *method, const char *path, int refresh);
 void show_navigation_bar(const char *cur_page);
+char *get_js_filename();
+char *get_css_filename();
 
 /* functions from sequencer.cxx */
 extern void show_seq_page();
@@ -1062,9 +1064,9 @@ void show_help_page()
    rsprintf("        </tr>\n");
 
    rsprintf("        <tr>\n");
-   rsprintf("          <td style=\"text-align:right;\">mhttpd.css:</td>\n");
+   rsprintf("          <td style=\"text-align:right;\">%s:</td>\n", get_css_filename());
    std::string f;
-   FILE *fp = open_resource_file("mhttpd.css", &f);
+   FILE *fp = open_resource_file(get_css_filename(), &f);
    if (fp) {
       fclose(fp);
       rsprintf("          <td style=\"text-align:left;\">%s</td>\n", f.c_str());
@@ -1073,8 +1075,8 @@ void show_help_page()
    rsprintf("        </tr>\n");
 
    rsprintf("        <tr>\n");
-   rsprintf("          <td style=\"text-align:right;\">mhttpd.js:</td>\n");
-   fp = open_resource_file("mhttpd.js", &f);
+   rsprintf("          <td style=\"text-align:right;\">%s:</td>\n", get_js_filename());
+   fp = open_resource_file(get_js_filename(), &f);
    if (fp) {
       fclose(fp);
       rsprintf("          <td style=\"text-align:left;\">%s</td>\n", f.c_str());
@@ -1133,7 +1135,7 @@ void show_header(const char *title, const char *method, const char *path, int re
 
    /* style sheet */
    rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
-   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"%s\" type=\"text/css\" />\n", get_css_filename());
 
    /* auto refresh */
    if (refresh > 0)
@@ -1187,7 +1189,7 @@ void show_error(const char *error)
    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
    rsprintf("<html><head>\n");
-   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"%s\" type=\"text/css\" />\n", get_css_filename());
    rsprintf("<title>MIDAS error</title></head>\n");
    rsprintf("<body><H1>%s</H1></body></html>\n", error);
 }
@@ -1451,7 +1453,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
       rsprintf("<head><meta http-equiv=\"Refresh\" content=\"%02d\">\n", refresh);
 
    rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
-   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"%s\" type=\"text/css\" />\n", get_css_filename());
 
    size = sizeof(str);
    str[0] = 0;
@@ -2254,7 +2256,6 @@ void show_messages_page(int refresh, int n_message)
    else
       more = n_message + 100;
 
-   //rsprintf("<input type=submit style=\"margin-top:1em;\" name=cmd value=\"More%d\"><div class=\"messageBox\">\n", more);
    rsprintf("<button type=submit name=cmd value=\"More%d\">%d More</button><div class=\"messageBox\" id=\"messageFrame\">\n", more, more);
    buffer = (char *)malloc(1000000);
    line = (char *)malloc(1000000);
@@ -2469,7 +2470,7 @@ void show_elog_new(const char *path, BOOL bedit, const char *odb_att, const char
 
    rsprintf("<html><head>\n");
    rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
-   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"%s\" type=\"text/css\" />\n", get_css_filename());
    rsprintf("<title>MIDAS ELog</title></head>\n");
    rsprintf
        ("<body><form method=\"POST\" action=\"%s\" enctype=\"multipart/form-data\">\n", action_path);
@@ -2722,7 +2723,7 @@ void show_elog_query()
 
    rsprintf("<html><head>\n");
    rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
-   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"%s\" type=\"text/css\" />\n", get_css_filename());
    rsprintf("<title>MIDAS ELog</title></head>\n");
    rsprintf("<body><form method=\"GET\" action=\"./\">\n");
 
@@ -2967,7 +2968,7 @@ void show_elog_submit_query(INT last_n)
 
    rsprintf("<html><head>\n");
    rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
-   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"%s\" type=\"text/css\" />\n", get_css_filename());
    rsprintf("<title>MIDAS ELog</title></head>\n");
    rsprintf("<body><form method=\"GET\" action=\"./\">\n");
 #endif
@@ -3414,7 +3415,7 @@ void show_rawfile(const char *path)
 
    rsprintf("<html><head>\n");
    rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
-   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"%s\" type=\"text/css\" />\n", get_css_filename());
    rsprintf("<title>MIDAS File Display %s</title></head>\n", path);
    rsprintf("<body><form method=\"GET\" action=\"./%s\">\n", path);
 
@@ -3431,22 +3432,17 @@ void show_rawfile(const char *path)
    str[0] = 0;
    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
 
-/*
-   rsprintf("<tr><th>MIDAS File Display <code>\"%s\"</code>", path);
-   if (elog_mode)
-      rsprintf("<th>Logbook \"%s\"</tr>\n", str);
-   else
-      rsprintf("<th>Experiment \"%s\"</tr>\n", str);
-*/
    if (!elog_mode)
       rsprintf("<tr><td colspan=2><input type=submit name=cmd value=\"Status\"></td></tr>");
    else
       rsprintf("<tr><td></td></tr>\n");
+
    //end header
    rsprintf("</table>");
 
    //main table:
-   rsprintf("<table class=\"dialogTable\">");
+   rsprintf("<table class=\"runlogTable\">");
+   
    /*---- menu buttons ----*/
    rsprintf("<tr><td colspan=2>\n");
    rsprintf("<input type=submit name=cmd value=\"ELog\">\n");
@@ -3554,7 +3550,7 @@ void show_form_query()
 
    rsprintf("<html><head>\n");
    rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
-   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"%s\" type=\"text/css\" />\n", get_css_filename());
    rsprintf("<title>MIDAS ELog</title></head>\n");
    rsprintf("<body><form method=\"GET\" action=\"./\">\n");
 
@@ -3785,7 +3781,7 @@ void submit_elog()
 
       rsprintf("<html><head>\n");
       rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
-      rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+      rsprintf("<link rel=\"stylesheet\" href=\"%s\" type=\"text/css\" />\n", get_css_filename());
       rsprintf("<title>ELog Error</title></head>\n");
       rsprintf("<i>Error: No author supplied.</i><p>\n");
       rsprintf("Please go back and enter your name in the <i>author</i> field.\n");
@@ -3860,7 +3856,7 @@ void submit_elog()
 
             rsprintf("<html><head>\n");
             rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
-            rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+            rsprintf("<link rel=\"stylesheet\" href=\"%s\" type=\"text/css\" />\n", get_css_filename());
             rsprintf("<title>ELog Error</title></head>\n");
             rsprintf("<i>Error: Attachment file <i>%s</i> not valid.</i><p>\n",
                      getparam(str));
@@ -4009,7 +4005,7 @@ void submit_form()
 
       rsprintf("<html><head>\n");
       rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
-      rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+      rsprintf("<link rel=\"stylesheet\" href=\"%s\" type=\"text/css\" />\n", get_css_filename());
       rsprintf("<title>ELog Error</title></head>\n");
       rsprintf("<i>Error: No author supplied.</i><p>\n");
       rsprintf("Please go back and enter your name in the <i>author</i> field.\n");
@@ -4765,7 +4761,7 @@ void show_sc_page(const char *path, int refresh)
    sprintf(str, "%s", group);
    show_header("MIDAS slow control", "", str, i_edit == -1 ? refresh : 0);
    show_navigation_bar("SC");
-   rsprintf("<script type=\"text/javascript\" src=\"mhttpd.js\"></script>\n");
+   rsprintf("<script type=\"text/javascript\" src=\"%s\"></script>\n", get_js_filename());
    
    /*---- menu buttons ----*/
 
@@ -7715,7 +7711,7 @@ void show_cnaf_page()
 
    rsprintf("<html><head>\n");
    rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
-   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"%s\" type=\"text/css\" />\n", get_css_filename());
    rsprintf("<title>MIDAS CAMAC interface</title></head>\n");
    rsprintf("<body><form method=\"GET\" action=\"CNAF\">\n\n");
 
@@ -8098,86 +8094,87 @@ void create_mscb_tree()
 
    /*---- go through equipment list ----*/
    db_find_key(hDB, 0, "Equipment", &hKeyEq);
-   assert(hKeyEq);
-   for (i=0 ; ; i++) {
-      db_enum_key(hDB, hKeyEq, i, &hKey);
-      if (!hKey)
-         break;
-      db_get_key(hDB, hKey, &key);
-      strcpy(eq_name, key.name);
-      db_find_key(hDB, hKey, "Settings/Devices", &hKeyDev);
-      if (hKeyDev) {
-         for (j=0 ;; j++) {
-            db_enum_key(hDB, hKeyDev, j, &hKey);
-            if (!hKey)
-               break;
-
-            if (db_find_key(hDB, hKey, "MSCB Address", &hKeyAdr) == DB_SUCCESS) {
-               /* mscbdev type of device */
-               size = sizeof(mscb_dev);
-               if (db_get_value(hDB, hKey, "Device", mscb_dev, &size, TID_STRING, FALSE) != DB_SUCCESS)
-                   continue;
-               size = sizeof(mscb_pwd);
-               if (db_get_value(hDB, hKey, "Pwd", mscb_pwd, &size, TID_STRING, FALSE) != DB_SUCCESS)
-                   continue;
-
-               size = sizeof(dev_adr);
-               db_get_data(hDB, hKeyAdr, dev_adr, &size, TID_INT);
-               n_dev_adr = size / sizeof(int);
-            } else if (db_find_key(hDB, hKey, "Block Address", &hKeyAdr) == DB_SUCCESS) {
-               /* mscbhvr type of device */
-               size = sizeof(mscb_dev);
-               if (db_get_value(hDB, hKey, "MSCB Device", mscb_dev, &size, TID_STRING, FALSE) != DB_SUCCESS)
-                  continue;
-               size = sizeof(mscb_pwd);
-               if (db_get_value(hDB, hKey, "MSCB Pwd", mscb_pwd, &size, TID_STRING, FALSE) != DB_SUCCESS)
-                  continue;
-
-               n_dev_adr = 0;
-               size = sizeof(dev_badr);
-               db_get_data(hDB, hKeyAdr, dev_badr, &size, TID_INT);
-               size = sizeof(dev_chn);
-               if (db_get_value(hDB, hKey, "Block Channels", dev_chn, &size, TID_INT, FALSE) == DB_SUCCESS) {
-                  for (k=0 ; k<size/(int)sizeof(int) && n_dev_adr < (int)(sizeof(dev_adr)/sizeof(int)) ; k++) {
-                     for (l=0 ; l<dev_chn[k] ; l++)
-                        dev_adr[n_dev_adr++] = dev_badr[k]+l;
+   if (hKeyEq) {
+      for (i=0 ; ; i++) {
+         db_enum_key(hDB, hKeyEq, i, &hKey);
+         if (!hKey)
+            break;
+         db_get_key(hDB, hKey, &key);
+         strcpy(eq_name, key.name);
+         db_find_key(hDB, hKey, "Settings/Devices", &hKeyDev);
+         if (hKeyDev) {
+            for (j=0 ;; j++) {
+               db_enum_key(hDB, hKeyDev, j, &hKey);
+               if (!hKey)
+                  break;
+               
+               if (db_find_key(hDB, hKey, "MSCB Address", &hKeyAdr) == DB_SUCCESS) {
+                  /* mscbdev type of device */
+                  size = sizeof(mscb_dev);
+                  if (db_get_value(hDB, hKey, "Device", mscb_dev, &size, TID_STRING, FALSE) != DB_SUCCESS)
+                     continue;
+                  size = sizeof(mscb_pwd);
+                  if (db_get_value(hDB, hKey, "Pwd", mscb_pwd, &size, TID_STRING, FALSE) != DB_SUCCESS)
+                     continue;
+                  
+                  size = sizeof(dev_adr);
+                  db_get_data(hDB, hKeyAdr, dev_adr, &size, TID_INT);
+                  n_dev_adr = size / sizeof(int);
+               } else if (db_find_key(hDB, hKey, "Block Address", &hKeyAdr) == DB_SUCCESS) {
+                  /* mscbhvr type of device */
+                  size = sizeof(mscb_dev);
+                  if (db_get_value(hDB, hKey, "MSCB Device", mscb_dev, &size, TID_STRING, FALSE) != DB_SUCCESS)
+                     continue;
+                  size = sizeof(mscb_pwd);
+                  if (db_get_value(hDB, hKey, "MSCB Pwd", mscb_pwd, &size, TID_STRING, FALSE) != DB_SUCCESS)
+                     continue;
+                  
+                  n_dev_adr = 0;
+                  size = sizeof(dev_badr);
+                  db_get_data(hDB, hKeyAdr, dev_badr, &size, TID_INT);
+                  size = sizeof(dev_chn);
+                  if (db_get_value(hDB, hKey, "Block Channels", dev_chn, &size, TID_INT, FALSE) == DB_SUCCESS) {
+                     for (k=0 ; k<size/(int)sizeof(int) && n_dev_adr < (int)(sizeof(dev_adr)/sizeof(int)) ; k++) {
+                        for (l=0 ; l<dev_chn[k] ; l++)
+                           dev_adr[n_dev_adr++] = dev_badr[k]+l;
+                     }
                   }
-               }
-            } else
-	       continue;
-
-            /* create or open submaster entry */
-            db_find_key(hDB, hKeySubm, mscb_dev, &hKey);
-            if (!hKey) {
-               db_create_key(hDB, hKeySubm, mscb_dev, TID_KEY);
+               } else
+                  continue;
+               
+               /* create or open submaster entry */
                db_find_key(hDB, hKeySubm, mscb_dev, &hKey);
-               assert(hKey);
+               if (!hKey) {
+                  db_create_key(hDB, hKeySubm, mscb_dev, TID_KEY);
+                  db_find_key(hDB, hKeySubm, mscb_dev, &hKey);
+                  assert(hKey);
+               }
+               
+               /* get old address list */
+               size = sizeof(address);
+               if (db_get_value(hDB, hKey, "Address", address, &size, TID_INT, FALSE) == DB_SUCCESS)
+                  n_address = size / sizeof(int);
+               else
+                  n_address = 0;
+               
+               /* merge with new address list */
+               for (k=0 ; k<n_dev_adr ; k++) {
+                  for (l=0 ; l<n_address ; l++)
+                     if (address[l] == dev_adr[k])
+                        break;
+                  
+                  if (l == n_address)
+                     address[n_address++] = dev_adr[k];
+               }
+               
+               /* sort address list */
+               qsort(address, n_address, sizeof(int), cmp_int);
+               
+               /* store new address list */
+               db_set_value(hDB, hKey, "Pwd", mscb_pwd, 32, 1, TID_STRING);
+               db_set_value(hDB, hKey, "Comment", eq_name, 32, 1, TID_STRING);
+               db_set_value(hDB, hKey, "Address", address, n_address*sizeof(int), n_address, TID_INT);
             }
-
-            /* get old address list */
-            size = sizeof(address);
-            if (db_get_value(hDB, hKey, "Address", address, &size, TID_INT, FALSE) == DB_SUCCESS)
-               n_address = size / sizeof(int);
-            else
-               n_address = 0;
-
-            /* merge with new address list */
-            for (k=0 ; k<n_dev_adr ; k++) {
-               for (l=0 ; l<n_address ; l++)
-                  if (address[l] == dev_adr[k])
-                     break;
-
-               if (l == n_address)
-                  address[n_address++] = dev_adr[k];
-            }
-
-            /* sort address list */
-            qsort(address, n_address, sizeof(int), cmp_int);
-
-            /* store new address list */
-            db_set_value(hDB, hKey, "Pwd", mscb_pwd, 32, 1, TID_STRING);
-            db_set_value(hDB, hKey, "Comment", eq_name, 32, 1, TID_STRING);
-            db_set_value(hDB, hKey, "Address", address, n_address*sizeof(int), n_address, TID_INT);
          }
       }
    }
@@ -8725,7 +8722,7 @@ void show_password_page(const char *password, const char *experiment)
 
    rsprintf("<html><head>\n");
    rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
-   rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+   rsprintf("<link rel=\"stylesheet\" href=\"%s\" type=\"text/css\" />\n", get_css_filename());
    rsprintf("<title>Enter password</title></head><body>\n\n");
 
    rsprintf("<form method=\"GET\" action=\".\">\n\n");
@@ -8777,7 +8774,7 @@ BOOL check_web_password(const char *password, const char *redir, const char *exp
 
       rsprintf("<html><head>\n");
       rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
-      rsprintf("<link rel=\"stylesheet\" href=\"mhttpd.css\" type=\"text/css\" />\n");
+      rsprintf("<link rel=\"stylesheet\" href=\"%s\" type=\"text/css\" />\n", get_css_filename());
       rsprintf("<title>Enter password</title></head><body>\n\n");
 
       rsprintf("<form method=\"GET\" action=\".\">\n\n");
@@ -8968,9 +8965,10 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
    for (p = dec_path ; *p ; p++)
       if (*p == '/')
          strlcat(tmp_path, "../", sizeof(tmp_path));
-   strlcat(tmp_path, "../mhttpd.js", sizeof(tmp_path));
+   strlcat(tmp_path, "../", sizeof(tmp_path));
+   strlcat(tmp_path, get_js_filename(), sizeof(tmp_path));
 
-   /* use mhttpd.js file */
+   /* use javascript file */
    rsprintf("<script type=\"text/javascript\" src=\"%s\"></script>\n", tmp_path);
    
    /* find key via path */
@@ -9632,7 +9630,7 @@ void show_create_page(const char *enc_path, const char *dec_path, const char *va
       //close header:
       rsprintf("</table>");
 
-      rsprintf("<script src=\'mhttpd.js\'></script>\n");
+      rsprintf("<script src=\'%s\'></script>\n", get_js_filename());
 
       rsprintf("<table class=\"dialogTable\">");
       rsprintf("<tr><th colspan=2>Create ODB entry</tr>\n");
@@ -9793,7 +9791,7 @@ void show_delete_page(const char *enc_path, const char *dec_path, const char *va
       //close header
       rsprintf("</table>");      
 
-      rsprintf("<script src=\'mhttpd.js\'></script>\n");
+      rsprintf("<script src=\'%s\'></script>\n", get_js_filename());
 
       rsprintf("<table class=\"dialogTable\">");
       rsprintf("<tr><th colspan=2>Delete ODB entries:</tr>\n");
@@ -14616,6 +14614,42 @@ FILE *open_resource_file(const char *filename, std::string* pfilename)
    return NULL;
 }
 
+/*------------------------------------------------------------------*/
+
+static char _css_file[1024];
+
+char *get_css_filename()
+{
+   HNDLE hDB;
+   
+   cm_get_experiment_database(&hDB, NULL);
+   char filename[1024];
+   int size = sizeof(filename);
+   strcpy(filename, "mhttpd.css");
+   db_get_value(hDB, 0, "/Experiment/CSS File", filename, &size, TID_STRING, TRUE);
+   strlcpy(_css_file, filename, sizeof(_css_file));
+   return _css_file;
+}
+
+/*------------------------------------------------------------------*/
+
+static char _js_file[1024];
+
+char *get_js_filename()
+{
+   HNDLE hDB;
+   
+   cm_get_experiment_database(&hDB, NULL);
+   char filename[1024];
+   int size = sizeof(filename);
+   strcpy(filename, "mhttpd.js");
+   db_get_value(hDB, 0, "/Experiment/CSS File", filename, &size, TID_STRING, TRUE);
+   strlcpy(_js_file, filename, sizeof(_js_file));
+   return _js_file;
+}
+
+/*------------------------------------------------------------------*/
+
 void send_css()
 {
    char str[256], format[256];
@@ -14638,7 +14672,7 @@ void send_css()
    /* look for external CSS file */
 
    std::string filename;
-   FILE *fp = open_resource_file("mhttpd.css", &filename);
+   FILE *fp = open_resource_file(get_css_filename(), &filename);
 
    if (fp) {
       struct stat stat_buf;
@@ -15001,7 +15035,7 @@ void send_js()
 
    /* look for external JS file */
    std::string filename;
-   FILE *fp = open_resource_file("mhttpd.js", &filename);
+   FILE *fp = open_resource_file(get_js_filename(), &filename);
 
    if (fp) {
       struct stat stat_buf;
@@ -15083,12 +15117,12 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       return;
    }
    
-   if (strstr(dec_path, "mhttpd.css")) {
+   if (strstr(dec_path, get_css_filename())) {
       send_css();
       return;
    }
    
-   if (strstr(dec_path, "mhttpd.js")) {
+   if (strstr(dec_path, get_js_filename())) {
       send_js();
       return;
    }

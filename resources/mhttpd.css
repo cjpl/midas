@@ -286,7 +286,7 @@ div.wrapper{
     margin: 0 auto -3em;
 }
 
-.historyConfigTable, .dialogTable, .messageBox, .genericTable, .sequencerTable{
+.historyConfigTable, .dialogTable, .runlogTable, .messageBox, .genericTable, .sequencerTable{
 	border-radius: 12px;
 	border: 2px solid #00B26B;
 	background-color: #EEEEEE;
@@ -296,6 +296,16 @@ div.wrapper{
 	margin-bottom:1em;
 }
 
+.runlogTable td {
+	border: none;
+   text-align: left;
+   font-family: monospace;
+}
+
+.runlogTable pre {
+   line-height: 125%;
+}
+
 table.sequencerTable td{
 	text-align: left;
 }
@@ -303,7 +313,6 @@ table.sequencerTable td{
 table.sequencerTable td table{
 	margin: 0px;
 }
-
 
 table.dialogTable td{
 	border:none;
