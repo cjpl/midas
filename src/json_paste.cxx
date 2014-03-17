@@ -7,15 +7,8 @@
 
 \********************************************************************/
 
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
-#include <errno.h>
-#include <math.h>
-#include <unistd.h>
-#include <stdlib.h>
-
 #include "midas.h"
+#include "msystem.h"
 #include "mjson.h"
 
 #ifndef HAVE_STRLCPY
@@ -57,7 +50,7 @@ INT EXPRT db_load_json(HNDLE hDB, HNDLE hKey, const char *filename)
    //printf("file contents: [%s]\n", data.c_str());
 
    const char* jptr = strchr(data.c_str(), '{');
-   
+
    if (!jptr) {
       cm_msg(MERROR, "db_load_json", "file \"%s\" does not look like JSON data", filename);
       fclose(fp);

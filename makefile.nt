@@ -29,8 +29,10 @@ MXML_DIR = \mxml
 OS_DIR = nt
 CC = cl
 OSFLAGS = /D WIN32
-CFLAGS = /I$(INC_DIR) /I$(DRV_DIR) /I$(MXML_DIR) /nologo /D _CRT_SECURE_NO_DEPRECATE /D _CRT_NONSTDC_NO_DEPRECATE
+CFLAGS = /EHsc /I$(INC_DIR) /I$(DRV_DIR) /I$(MXML_DIR) /nologo /D _CRT_SECURE_NO_DEPRECATE /D _CRT_NONSTDC_NO_DEPRECATE
 LIBS = 
+
+GIT_REVISION = $(INC_DIR)/git-revision.h
 
 #
 # Midas operating system dependent directories
@@ -70,7 +72,8 @@ all:    $(LIB_DIR) $(BIN_DIR) \
   $(BIN_DIR)/mdump.exe \
   $(BIN_DIR)/odbhist.exe \
   $(BIN_DIR)/lazylogger.exe \
-  $(BIN_DIR)/odbedit.exe
+  $(BIN_DIR)/odbedit.exe \
+  $(GIT_REVISION)
 
 examples: $(EXAMPLES)
 
@@ -83,19 +86,23 @@ $(BIN_DIR):
 	if not exist $(OS_DIR) mkdir $(OS_DIR)
 	if not exist $(BIN_DIR) mkdir $(BIN_DIR)
 
+# git revision file
+$(GIT_REVISION): $(SRC_DIR)/midas.c $(SRC_DIR)/odb.c $(SRC_DIR)/system.c
+	/cygwin/bin/sh -c /cygdrive/c/midas/makegit > include/git-revision.h 
+
 # main binaries
 $(BIN_DIR)/mserver.exe:  $(LIBRARY) $(SRC_DIR)/mserver.c
 	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/mserver.exe $(SRC_DIR)/mserver.c $(LIBRARY) $(LIBS) wsock32.lib
 $(BIN_DIR)/mhttpd.exe:  $(LIBRARY) $(SRC_DIR)/mhttpd.cxx $(SRC_DIR)/mgd.c
-	$(CC) $(CFLAGS) /EHs /Fe$(BIN_DIR)/mhttpd.exe /Tp$(SRC_DIR)/mhttpd.cxx /Tp$(SRC_DIR)/sequencer.cxx /Tp$(SRC_DIR)/history_midas.cxx $(SRC_DIR)/mgd.c $(LIB_DIR)/alarm.obj $(LIB_DIR)/mxml.obj $(LIBRARY) $(LIBS) wsock32.lib
+	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/mhttpd.exe /Tp$(SRC_DIR)/mhttpd.cxx /Tp$(SRC_DIR)/sequencer.cxx /Tp$(SRC_DIR)/history_midas.cxx $(SRC_DIR)/history_common.cxx $(SRC_DIR)/history_schema.cxx $(SRC_DIR)/history_odbc.cxx $(SRC_DIR)/mongoose.c $(SRC_DIR)/mgd.c $(LIB_DIR)/alarm.obj $(LIB_DIR)/mxml.obj $(LIBRARY) $(LIBS) wsock32.lib
 $(BIN_DIR)/mlogger.exe:  $(LIBRARY) $(SRC_DIR)/mlogger.cxx
-	$(CC) $(CFLAGS) /EHs /Fe$(BIN_DIR)/mlogger.exe /Tp$(SRC_DIR)/mlogger.cxx /Tp$(SRC_DIR)/history_midas.cxx $(LIBRARY) $(LIBS)
+	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/mlogger.exe /Tp$(SRC_DIR)/mlogger.cxx /Tp$(SRC_DIR)/history_midas.cxx $(SRC_DIR)/history_common.cxx $(SRC_DIR)/history_schema.cxx $(SRC_DIR)/history_odbc.cxx $(LIBRARY) $(LIBS)
 $(BIN_DIR)/mtransition.exe: $(LIBRARY) $(SRC_DIR)/mtransition.cxx
 	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/mtransition.exe $(SRC_DIR)/mtransition.cxx $(LIBRARY) $(LIBS)
 $(BIN_DIR)/lazylogger.exe: $(LIBRARY) $(SRC_DIR)/lazylogger.cxx
-	$(CC) $(CFLAGS) /EHs /Fe$(BIN_DIR)/lazylogger.exe /Tp$(SRC_DIR)/lazylogger.cxx $(SRC_DIR)/mdsupport.c $(LIBRARY) $(LIBS)
-$(BIN_DIR)/odbedit.exe: $(LIBRARY) $(SRC_DIR)/odbedit.c $(SRC_DIR)/cmdedit.c
-	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/odbedit.exe $(SRC_DIR)/odbedit.c $(SRC_DIR)/cmdedit.c $(LIBRARY) $(LIBS)
+	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/lazylogger.exe /Tp$(SRC_DIR)/lazylogger.cxx $(SRC_DIR)/mdsupport.cxx $(LIBRARY) $(LIBS)
+$(BIN_DIR)/odbedit.exe: $(LIBRARY) $(SRC_DIR)/odbedit.cxx $(SRC_DIR)/cmdedit.cxx
+	$(CC) $(CFLAGS) /Fe$(BIN_DIR)/odbedit.exe $(SRC_DIR)/odbedit.cxx $(SRC_DIR)/cmdedit.cxx $(SRC_DIR)/mjson.cxx $(SRC_DIR)/json_paste.cxx $(LIBRARY) $(LIBS)
 
 # examples
 $(BIN_DIR)/consume.exe: $(LIBRARY) $(EXAM_DIR)/lowlevel/consume.c
@@ -115,10 +122,7 @@ $(BIN_DIR)/odb_test.exe:  $(LIBRARY) $(EXAM_DIR)/basic/odb_test.c
 
 # midas library
 $(LIBRARY): $(OBJS)
-	start net stop midas
-	start net stop mhttpd
 	link $(OBJS) wsock32.lib winmm.lib /subsystem:windows /dll /machine:I386 /out:$(LIB_DIR)/midas.dll /implib:$(LIBRARY)
-	copy $(LIB_DIR)\midas.dll $(SYSBIN_DIR)\midas.dll
 
 # library objects
 $(LIB_DIR)/midas.obj: $(SRC_DIR)/midas.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h $(INC_DIR)/mrpc.h
@@ -145,18 +149,18 @@ $(LIB_DIR)/strlcpy.obj: $(MXML_DIR)/strlcpy.c $(MXML_DIR)/strlcpy.h
 # frontend + backend
 $(LIB_DIR)/mfe.obj: $(SRC_DIR)/mfe.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h $(INC_DIR)/mrpc.h
 	$(CC) /c $(CFLAGS) /Fo$(LIB_DIR)/mfe.obj $(SRC_DIR)/mfe.c
-$(LIB_DIR)/mana.obj: $(SRC_DIR)/mana.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h $(INC_DIR)/mrpc.h
-	$(CC) /c $(CFLAGS) /Fo$(LIB_DIR)/mana.obj $(SRC_DIR)/mana.c
+$(LIB_DIR)/mana.obj: $(SRC_DIR)/mana.cxx $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h $(INC_DIR)/mrpc.h $(GIT_REVISION)
+	$(CC) /c $(CFLAGS) /Fo$(LIB_DIR)/mana.obj $(SRC_DIR)/mana.cxx
 
 # utilities
-$(BIN_DIR)/mdump.exe:	$(LIBRARY) $(UTL_DIR)/mdump.c
-	$(CC) $(CFLAGS) $(OSFLAGS) /Fe$(BIN_DIR)/mdump.exe $(UTL_DIR)/mdump.c $(SRC_DIR)/mdsupport.c $(LIBRARY) $(LIBS)
+$(BIN_DIR)/mdump.exe:	$(LIBRARY) $(UTL_DIR)/mdump.cxx
+	$(CC) $(CFLAGS) $(OSFLAGS) /Fe$(BIN_DIR)/mdump.exe $(UTL_DIR)/mdump.cxx $(SRC_DIR)/mdsupport.cxx $(LIBRARY) $(LIBS)
 $(BIN_DIR)/odbhist.exe:	$(LIBRARY) $(UTL_DIR)/odbhist.c
 	$(CC) $(CFLAGS) $(OSFLAGS) /Fe$(BIN_DIR)/odbhist.exe $(UTL_DIR)/odbhist.c $(LIBRARY) $(LIBS)
 $(BIN_DIR)/mtape.exe:  $(LIBRARY) $(UTL_DIR)/mtape.c
 	$(CC) $(CFLAGS) $(OSFLAGS) /Fe$(BIN_DIR)/mtape.exe $(UTL_DIR)/mtape.c $(LIBRARY) $(LIBS)
-$(BIN_DIR)/mhist.exe:  $(LIBRARY) $(UTL_DIR)/mhist.c
-	$(CC) $(CFLAGS) $(OSFLAGS) /Fe$(BIN_DIR)/mhist.exe $(UTL_DIR)/mhist.c $(LIBRARY) $(LIBS)
+$(BIN_DIR)/mhist.exe:  $(LIBRARY) $(UTL_DIR)/mhist.cxx
+	$(CC) $(CFLAGS) $(OSFLAGS) /Fe$(BIN_DIR)/mhist.exe $(UTL_DIR)/mhist.cxx $(SRC_DIR)/history_midas.cxx $(SRC_DIR)/history_common.cxx $(SRC_DIR)/history_schema.cxx $(SRC_DIR)/history_odbc.cxx $(LIBRARY) $(LIBS)
 $(BIN_DIR)/mstat.exe:  $(LIBRARY) $(UTL_DIR)/mstat.c 
 	$(CC) $(CFLAGS) $(OSFLAGS) /Fe$(BIN_DIR)/mstat.exe $(UTL_DIR)/mstat.c $(LIBRARY) $(LIBS) wsock32.lib
 $(BIN_DIR)/mcnaf.exe:$(LIBRARY) $(UTL_DIR)/mcnaf.c $(DRV_DIR)/camac/camacrpc.c

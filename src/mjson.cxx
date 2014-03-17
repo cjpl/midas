@@ -185,7 +185,7 @@ static MJsonNode* parse_array(const char* sin, const char* s, const char** sout)
 
    while (1) {
       s = skip_spaces(s);
-      
+
       if (*s == 0) {
          *sout = s;
          return MJsonNode::MakeError(n, "unexpected end of string while parsing array", sin, s);
@@ -204,7 +204,7 @@ static MJsonNode* parse_array(const char* sin, const char* s, const char** sout)
       n->AddToArray(p);
 
       s = skip_spaces(*sout);
-      
+
       if (*s == ']') {
          // end of array
          *sout = s+1;
@@ -241,7 +241,7 @@ static MJsonNode* parse_object(const char* sin, const char* s, const char** sout
       s = skip_spaces(s);
 
       //printf("xobject-->%s\n", s);
-      
+
       if (*s == 0) {
          *sout = s;
          return MJsonNode::MakeError(n, "unexpected end of string while parsing object", sin, s);
@@ -282,7 +282,7 @@ static MJsonNode* parse_object(const char* sin, const char* s, const char** sout
       s = skip_spaces(*sout);
 
       //printf("xobject-->%s\n", s);
-      
+
       if (*s == '}') {
          // end of object
          *sout = s+1;
@@ -328,7 +328,7 @@ static std::string parse_digits(const char* s, const char** sout)
       v += *s;
       s++;
    }
-   
+
    *sout = s;
    return v;
 }
@@ -521,7 +521,7 @@ static MJsonNode* parse_number(const char* sin, const char* s, const char** sout
 
       double ee = 1.0;
       if (e != 0)
-         ee = pow(10, expsign*e);
+         ee = pow(10, (double)(expsign*e));
       double v = sign*(v1+v2)*ee;
       //printf("v1: %f, v2: %f, e: %d, ee: %g, v: %g\n", v1, v2, e, ee, v);
 
@@ -613,7 +613,7 @@ static MJsonNode* parse_false(const char* sin, const char* s, const char** sout)
 static MJsonNode* parse_something(const char* sin, const char* s, const char** sout)
 {
    s = skip_spaces(s);
-   
+
    if (*s == '[') {
       return parse_array(sin, s+1, sout);
    } else if (*s == '{') {
@@ -693,7 +693,7 @@ static std::string quote(const char* s)
    }
    return v;
 }
-   
+
 std::string MJsonNode::Stringify(int flags) const
 {
    switch (type) {

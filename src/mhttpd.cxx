@@ -312,7 +312,7 @@ int return_grow(size_t len)
    for (int i=0; i<1000; i++) { // infinite loop with protection against infinite looping
       if (strlen_retbuf + len < return_size-40)
          return SUCCESS;
-   
+
       return_size *= 2;
       return_buffer = (char*)realloc(return_buffer, return_size);
 
@@ -517,7 +517,7 @@ const char *getparam(const char *param)
 
    if (_value[i] == NULL)
       return "";
-      
+
    return _value[i];
 }
 
@@ -662,17 +662,17 @@ INT print_message(const char *message)
 {
    time_t tm;
    char str[80], line[256];
-   
+
    /* prepare time */
    time(&tm);
    strcpy(str, ctime(&tm));
    str[19] = 0;
-   
+
    /* print message text which comes after event header */
    strlcpy(line, str + 11, sizeof(line));
    strlcat(line, " ", sizeof(line));
    strlcat(line, (char *) message, sizeof(line));
-   
+
    strlcpy(message_buffer, line, sizeof(message_buffer));
    return SUCCESS;
 }
@@ -975,7 +975,7 @@ void page_footer(BOOL bForm)  //wraps up body wrapper and inserts page footer
    /*---- top level form ----*/
    if (bForm)
       rsprintf("</form>\n");
-   rsprintf("</body></html>\r\n");   
+   rsprintf("</body></html>\r\n");
 }
 
 FILE *open_resource_file(const char *filename, std::string* pfilename);
@@ -1020,13 +1020,13 @@ void show_help_page()
       strlcat(str, strrchr(cm_get_revision(), '-')+2, sizeof(str));
    rsprintf("          <td style=\"text-align:left;\"><a href=\"%s\">%s</a></td>\n", str, cm_get_revision());
    rsprintf("        </tr>\n");
-   
+
    rsprintf("        <tr>\n");
    rsprintf("          <td style=\"text-align:right;\">Experiment:</td>\n");
    cm_get_experiment_name(str, sizeof(str));
    rsprintf("          <td style=\"text-align:left;\">%s</td>\n", str);
    rsprintf("        </tr>\n");
-   
+
    rsprintf("        <tr>\n");
    rsprintf("          <td style=\"text-align:right;\">MIDAS_EXPTAB:</td>\n");
    s = getenv("MIDAS_EXPTAB");
@@ -1088,14 +1088,14 @@ void show_help_page()
    rsprintf("    </td>\n");
    rsprintf("  </tr>\n");
    rsprintf("</table>\n");
-   
+
    rsprintf("<div id=\"helpPush\" class=\"push\" style=\"height:50px;\"></div>\n");
    rsprintf("</div>\n");
    rsprintf("<div id=\"helpFooter\" class=\"footerDiv\" style=\"font-size:10pt;height:50px;\">\n");
    rsprintf("<div id=\"contribList\" style=\"display:inline;\">\n");
    rsprintf("Contributions: Pierre-Andre Amaudruz - Sergio Ballestrero - Suzannah Daviel - Peter Green - Qing Gu - Greg Hackman - Gertjan Hofman - Paul Knowles - Exaos Lee - Rudi Meier - Bill Mills - Glenn Moloney - Dave Morris - John M O'Donnell - Konstantin Olchanski - Chris Pearson - Renee Poutissou - Stefan Ritt - Ryu Sawada - Tamsen Schurman - Andreas Suter - Jan M.Wouters - Piotr Adam Zolnierczuk\n");
    rsprintf("</div></div>\n");
-   
+
    rsprintf("</form>\n");
 
    rsprintf("<script type=\"text/javascript\">\n");
@@ -1122,7 +1122,7 @@ void show_header(const char *title, const char *method, const char *path, int re
    int size;
 
    cm_get_experiment_database(&hDB, NULL);
-   
+
    /* header */
    rsprintf("HTTP/1.0 200 Document follows\r\n");
    rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
@@ -1272,9 +1272,9 @@ void show_navigation_bar(const char *cur_page)
    HNDLE hDB;
    char str[1000], dec_path[256], path[256], filename[256], *p;
    int fh, size;
-   
+
    cm_get_experiment_database(&hDB, NULL);
-   
+
    /*---- display optional custom header ----*/
    size = sizeof(str);
    if (db_get_value(hDB, 0, "/Custom/Header", str, &size, TID_STRING, FALSE) == DB_SUCCESS) {
@@ -1302,12 +1302,12 @@ void show_navigation_bar(const char *cur_page)
          rsputs(filename);
       }
    }
-   
+
    rsprintf("<table class=\"navigationTable\">\n");
    rsprintf("<tr><td>\n");
-   
+
    /*---- menu buttons ----*/
-   
+
 #ifdef HAVE_MSCB
    strlcpy(str, "Status, ODB, Messages, ELog, Alarms, Programs, History, MSCB, Sequencer, Config, Help", sizeof(str));
 #else
@@ -1315,7 +1315,7 @@ void show_navigation_bar(const char *cur_page)
 #endif
    size = sizeof(str);
    db_get_value(hDB, 0, "/Experiment/Menu Buttons", str, &size, TID_STRING, TRUE);
-   
+
    /* add one "../" for each level */
    strlcpy(dec_path, get_dec_path(), sizeof(dec_path));
    path[0] = 0;
@@ -1324,26 +1324,26 @@ void show_navigation_bar(const char *cur_page)
          strlcat(path, "../", sizeof(path));
    if (path[strlen(path)-1] == '/')
       path[strlen(path)-1] = 0;
-   
+
    p = strtok(str, ",");
    while (p) {
-      
+
       while (*p == ' ')
          p++;
       strlcpy(str, p, sizeof(str));
       while (str[strlen(str)-1] == ' ')
          str[strlen(str)-1] = 0;
-      
+
       if (equal_ustring(str, cur_page))
          rsprintf("<input type=button name=cmd value=\"%s\" class=\"navButtonSel\" onclick=\"window.location.href=\'./%s?cmd=%s\';return false;\">\n",
                   str, path, str);
       else
          rsprintf("<input type=button name=cmd value=\"%s\" class=\"navButton\" onclick=\"window.location.href=\'./%s?cmd=%s\';return false;\">\n",
                   str, path, str);
-      
+
       p = strtok(NULL, ",");
    }
-   
+
    rsprintf("</td></tr></table>\n\n");
 }
 
@@ -1382,12 +1382,12 @@ void show_status_page(int refresh, const char *cookie_wpwd)
       expand = (BOOL)atoi(getparam("expand"));
       rsprintf("HTTP/1.0 302 Found\r\n");
       rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
-      
+
       time(&now);
       now += 3600 * 24;
       gmt = gmtime(&now);
       strftime(str, sizeof(str), "%A, %d-%b-%Y %H:00:00 GMT", gmt);
-      
+
       if (expand)
          rsprintf("Set-Cookie: expeq=1; path=/; expires=%s\r\n");
       else
@@ -1395,7 +1395,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
       rsprintf("Location: ./\n\n<html>redir</html>\r\n");
       return;
    }
-   
+
    db_find_key(hDB, 0, "/Runinfo", &hkey);
    assert(hkey);
 
@@ -1461,7 +1461,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    time(&now);
 
    rsprintf("<title>%s status</title>\n", str);
-   
+
    if (n_alarm) {
       rsprintf("<bgsound src=\"alarm.mid\" loop=\"false\">\n");
    }
@@ -1479,7 +1479,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    /*---- navigation bar ----*/
 
    show_navigation_bar("Status");
-   
+
    /*---- script buttons ----*/
 
    rsprintf("<table class=\"headerTable\">\n");
@@ -1617,11 +1617,11 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             rsprintf("<button type=\"button\" onclick=\"document.location.href='%s';\">%s</button>\n", ref, name);
        }
    }
-   rsprintf("</table>\n");   
+   rsprintf("</table>\n");
 
    /*---- begin main status reporting ----*/
    rsprintf("<table id=\"statusTable\">\n");
-   
+
    /*---- alarms ----*/
 
    /* go through all triggered alarms */
@@ -1689,9 +1689,9 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    rsprintf("<tr><th colspan=6 class=\"subStatusTitle\">Run Status</th></tr>\n");
 
    /*---- Run number & buttons ----*/
-   
+
    rsprintf("<tr align=center><td rowspan=3 id=\"runNumberCell\" ");
-   
+
    if (runinfo.state == STATE_STOPPED)
       rsprintf("class=\"redLight\">Run<br>%d<br>", runinfo.run_number);
    else if (runinfo.state == STATE_PAUSED)
@@ -1703,7 +1703,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
       requested_transition = 0;
    if (runinfo.state != requested_old_state)
       requested_transition = 0;
-   
+
    if (requested_transition == TR_STOP)
       rsprintf("<p id=\"transitionMessage\">Run stop requested</p>");
    else if (requested_transition == TR_START)
@@ -1712,7 +1712,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
       rsprintf("<p id=\"transitionMessage\">Run pause requested</p>");
    else if (requested_transition == TR_RESUME)
       rsprintf("<p id=\"transitionMessage\">Run resume requested</p>");
-   
+
    else if (runinfo.transition_in_progress == TR_STOP)
       rsprintf("<p id=\"transitionMessage\">Stopping run</p>");
    else if (runinfo.transition_in_progress == TR_START)
@@ -1721,7 +1721,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
       rsprintf("<p id=\"transitionMessage\">Pausing run</p>");
    else if (runinfo.transition_in_progress == TR_RESUME)
       rsprintf("<p id=\"transitionMessage\">Resuming run</p>");
-   
+
    else if (runinfo.requested_transition) {
       for (i = 0; i < 4; i++)
          if (runinfo.requested_transition & (1 << i))
@@ -1781,7 +1781,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
          rsprintf("</script>\n");
       }
    }
-   
+
    /*---- time ----*/
 
    rsprintf("<td colspan=2>Start: %s", runinfo.start_time);
@@ -1840,10 +1840,10 @@ void show_status_page(int refresh, const char *cookie_wpwd)
    }
 
    /*---- if no status items present, create one to run comment ----*/
- 
+
    if (db_find_key(hDB, 0, "/Experiment/Status items", &hkey) != DB_SUCCESS)
       db_create_link(hDB, 0, "/Experiment/Status items/Experiment Name", "/Experiment/Name");
-   
+
    /*---- Status items ----*/
 
    n_items = 0;
@@ -1858,7 +1858,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
 
          db_get_key(hDB, hsubkey, &key);
          rsprintf("<tr><td style=\"text-align:left;\" width=30%% class=\"titleCell\">%s:</td>", key.name);
-         
+
          db_enum_key(hDB, hkey, i, &hsubkey);
          db_get_key(hDB, hsubkey, &key);
          size = sizeof(status_data);
@@ -1897,7 +1897,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
          db_enum_key(hDB, hkey, i, &hsubkey);
          if (!hsubkey)
             break;
-         
+
          db_get_key(hDB, hsubkey, &key);
          db_find_key(hDB, hsubkey, "Common", &hkeytmp);
          if (hkeytmp) {
@@ -1909,7 +1909,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
       }
    }
 #endif
-   
+
    rsprintf("<tr><td colspan=6><table class=\"subStatusTable\" id=\"stripeList\" width=100%%>\n");
    rsprintf("<tr><th colspan=6 class=\"subStatusTitle\">Equipment</th><tr>\n");
 
@@ -1941,7 +1941,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             /* discard wrong equipments (caused by analyzer) */
             if (size <= (int)sizeof(equipment))
                db_get_record(hDB, hkeytmp, &equipment, &size, 0);
-            
+
             /* skip hidden equipments */
 #ifdef USE_HIDDEN_EQ
             if (equipment.hidden && !expand_equipment)
@@ -2087,7 +2087,7 @@ void show_status_page(int refresh, const char *cookie_wpwd)
             strcpy(col, "#f1c40f");
          else
             strcpy(col, "#00E600");
-         
+
          rsprintf("<td class=\"meterCell\">\n");
          rsprintf("<div style=\"display:block; width:90%%; height:100%%; position:relative; border:1px solid black;\">");  //wrapper to fill table cell
          rsprintf("<div style=\"background-color:%s;width:%d%%;height:100%%; position:relative; display:inline-block; padding-top:2px;\">&nbsp;%1.1lf&nbsp;%%</div>\n", col, (int)(chn_stats.disk_level*100), chn_stats.disk_level*100);
@@ -2393,7 +2393,7 @@ void strencode3(char *text)
 void strencode4(char *text)
 {
    int i;
-   
+
    for (i = 0; i < (int) strlen(text); i++) {
       switch (text[i]) {
          case '\n':
@@ -3307,7 +3307,7 @@ void show_elog_submit_query(INT last_n)
 
                   strlcpy(ref1, attachment[index], sizeof(ref1));
                   urlEncode(ref1, sizeof(ref1));
-		  
+
                   sprintf(ref, "/EL/%s", ref1);
 
                   if (!show_attachments) {
@@ -3442,7 +3442,7 @@ void show_rawfile(const char *path)
 
    //main table:
    rsprintf("<table class=\"runlogTable\">");
-   
+
    /*---- menu buttons ----*/
    rsprintf("<tr><td colspan=2>\n");
    rsprintf("<input type=submit name=cmd value=\"ELog\">\n");
@@ -4165,7 +4165,7 @@ void show_elog_page(char *path, int path_size)
 
          M_FREE(fbuffer);
          return;
-      
+
       } else {
 
          char action_path[256];
@@ -4584,7 +4584,7 @@ void show_elog_page(char *path, int path_size)
 
             strlcpy(ref1, attachment[index], sizeof(ref1));
             urlEncode(ref1, sizeof(ref1));
-		  
+
             sprintf(ref, "/EL/%s", ref1);
 
             if (strstr(att, ".GIF") || strstr(att, ".PNG") || strstr(att, ".JPG")) {
@@ -4762,7 +4762,7 @@ void show_sc_page(const char *path, int refresh)
    show_header("MIDAS slow control", "", str, i_edit == -1 ? refresh : 0);
    show_navigation_bar("SC");
    rsprintf("<script type=\"text/javascript\" src=\"%s\"></script>\n", get_js_filename());
-   
+
    /*---- menu buttons ----*/
 
    rsprintf("<tr><td colspan=15>\n");
@@ -4803,7 +4803,7 @@ void show_sc_page(const char *path, int refresh)
                   if (equal_ustring(eq_name, eqkey.name))
                      rsprintf("<b>%s</b> &nbsp;&nbsp;", eqkey.name);
                   else {
-                     rsprintf("<a href=\"%s%s\">%s</a> &nbsp;&nbsp;", 
+                     rsprintf("<a href=\"%s%s\">%s</a> &nbsp;&nbsp;",
                                  back_path, eqkey.name, eqkey.name);
                   }
                   break;
@@ -4845,7 +4845,7 @@ void show_sc_page(const char *path, int refresh)
          for (i = 0; i < key.num_values; i++) {
             size = sizeof(str);
             db_get_data_index(hDB, hkey, str, &size, i, TID_STRING);
-            
+
             char *s = strchr(str, '%');
             for (int k=0; s && k<level; k++)
                s = strchr(s+1, '%');
@@ -5022,7 +5022,7 @@ void show_sc_page(const char *path, int refresh)
          if (equal_ustring(key.name, group))
             rsprintf("<b>%s</b> &nbsp;&nbsp;", key.name);
          else
-            rsprintf("<a href=\"%s%s/%s\">%s</a> &nbsp;&nbsp;\n", back_path, 
+            rsprintf("<a href=\"%s%s/%s\">%s</a> &nbsp;&nbsp;\n", back_path,
                         eq_name, key.name, key.name);
       }
 
@@ -5058,7 +5058,7 @@ void show_sc_page(const char *path, int refresh)
                if (!hkey)
                   break;
                db_get_key(hDB, hkey, &key);
-              
+
                if (key.type == TID_KEY) {
                   /* for keys, don't display data value */
                   rsprintf("<tr class=\"%s\"><td colspan=9>%s<br></tr>\n", style, key.name);
@@ -5128,7 +5128,7 @@ void show_sc_page(const char *path, int refresh)
                      strlcpy(style, "ODBtableEven", sizeof(style));
                   else
                      strlcpy(style, "ODBtableOdd", sizeof(style));
-                  
+
                   if (hkeyset && j<key.num_values) {
                      size = sizeof(name);
                      db_get_data_index(hDB, hkeyset, name, &size, j, TID_STRING);
@@ -5166,7 +5166,7 @@ void show_sc_page(const char *path, int refresh)
                         rsprintf("<input type=hidden name=cmd value=Set>\n");
                         n_var++;
                      } else {
-                        sprintf(ref, "%s%s/%s?cmd=Edit&index=%d", back_path, 
+                        sprintf(ref, "%s%s/%s?cmd=Edit&index=%d", back_path,
                                 eq_name, group, n_var);
                         sprintf(odb_path, "Equipment/%s/Variables/%s[%d]", eq_name, varkey.name, j);
 
@@ -5464,9 +5464,9 @@ void show_odb_tag(const char *path, const char *keypath1, const char *format, in
             strlcat(options, tail, sizeof(options));
 
          rsprintf("<input type=\"checkbox\" %s>\n", options);
-      
+
       } else { // checkbox
-      
+
          if (edit == 1) {
             if (n_var == i_set) {
                /* set value */
@@ -5516,7 +5516,7 @@ void show_odb_tag(const char *path, const char *keypath1, const char *format, in
 /*------------------------------------------------------------------*/
 
 /* add labels using following syntax under /Custom/Images/<name.gif>/Labels/<name>:
-   
+
    [Name]    [Description]                       [Example]
 
    Src       ODB path for vairable to display    /Equipment/Environment/Variables/Input[0]
@@ -5551,7 +5551,7 @@ typedef struct {
 } CGIF_LABEL;
 
 /* add labels using following syntax under /Custom/Images/<name.gif>/Bars/<name>:
-   
+
    [Name]    [Description]                       [Example]
 
    Src       ODB path for vairable to display    /Equipment/Environment/Variables/Input[0]
@@ -5631,7 +5631,7 @@ int evaluate_src(char *key, char *src, double *fvalue)
    db_sprintf(value, data, size, 0, vkey.type);
    if (equal_ustring(value, "NAN"))
       return 0;
-   
+
    if (vkey.type == TID_BOOL) {
       *fvalue = (value[0] == 'y');
    } else
@@ -6048,11 +6048,11 @@ void show_custom_file(const char *name)
    HNDLE hDB;
 
    cm_get_experiment_database(&hDB, NULL);
-   
+
    custom_path[0] = 0;
    size = sizeof(custom_path);
    db_get_value(hDB, 0, "/Custom/Path", custom_path, &size, TID_STRING, FALSE);
-   
+
    /* check for file */
    strlcpy(filename, custom_path, sizeof(str));
    if (filename[strlen(filename)-1] != DIR_SEPARATOR)
@@ -6064,30 +6064,30 @@ void show_custom_file(const char *name)
       show_error(str);
       return;
    }
-   
+
    size = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
-   
+
    /* return audio file */
    rsprintf("HTTP/1.0 200 Document follows\r\n");
    rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
-   
+
    /* return proper header for file type */
    for (i = 0; i < (int) strlen(name); i++)
       str[i] = toupper(name[i]);
    str[i] = 0;
-   
+
    for (i = 0; filetype[i].ext[0]; i++)
       if (strstr(str, filetype[i].ext))
          break;
-   
+
    if (filetype[i].ext[0])
       rsprintf("Content-Type: %s\r\n", filetype[i].type);
    else if (strchr(str, '.') == NULL)
       rsprintf("Content-Type: text/plain\r\n");
    else
       rsprintf("Content-Type: application/octet-stream\r\n");
-   
+
    rsprintf("Content-Length: %d\r\n\r\n", size);
 
    rread(filename, fh, size);
@@ -6157,7 +6157,7 @@ void do_jrpc_rev0()
       HNDLE hDB, hrootkey, hsubkey, hkey;
 
       cm_get_experiment_database(&hDB, NULL);
-      
+
       /* find client which exports FCNA function */
       status = db_find_key(hDB, 0, "System/Clients", &hrootkey);
       if (status == DB_SUCCESS) {
@@ -6165,7 +6165,7 @@ void do_jrpc_rev0()
             status = db_enum_key(hDB, hrootkey, i, &hsubkey);
             if (status == DB_NO_MORE_SUBKEYS)
                break;
-            
+
             sprintf(str, "RPC/%d", rpc);
             status = db_find_key(hDB, hsubkey, str, &hkey);
             if (status == DB_SUCCESS) {
@@ -6194,7 +6194,7 @@ void do_jrpc_rev0()
 
                status = cm_connect_client(client_name, &hconn);
                rsprintf(" %d", status);
-      
+
                if (status == RPC_SUCCESS) {
                   status = rpc_client_call(hconn, rpc,
                                            getparam("arg0"),
@@ -6291,7 +6291,7 @@ void do_jrpc_rev1()
       HNDLE hDB, hrootkey, hsubkey, hkey;
 
       cm_get_experiment_database(&hDB, NULL);
-      
+
       int buf_length = 1024;
 
       int max_reply_length = atoi(getparam("max_reply_length"));
@@ -6307,7 +6307,7 @@ void do_jrpc_rev1()
             status = db_enum_key(hDB, hrootkey, i, &hsubkey);
             if (status == DB_NO_MORE_SUBKEYS)
                break;
-            
+
             char str[256];
             sprintf(str, "RPC/%d", rpc);
             status = db_find_key(hDB, hsubkey, str, &hkey);
@@ -6463,9 +6463,9 @@ void output_key(HNDLE hkey, int index, const char *format)
    HNDLE hDB, hsubkey;
    KEY key;
    char data[TEXT_SIZE];
-   
+
    cm_get_experiment_database(&hDB, NULL);
-   
+
    db_get_key(hDB, hkey, &key);
    if (key.type == TID_KEY) {
       for (i=0 ; ; i++) {
@@ -6511,7 +6511,7 @@ void output_key(HNDLE hkey, int index, const char *format)
       }
    }
 }
-   
+
 /*------------------------------------------------------------------*/
 
 bool starts_with(const std::string& s1, const char* s2)
@@ -6555,7 +6555,7 @@ void javascript_commands(const char *cookie_cpwd)
    if (isparam("cmd")) {
       cmd_parameter = getparam("cmd");
    }
-   
+
    if (isparam("encoding")) {
       encoding_parameter = getparam("encoding");
    }
@@ -6575,7 +6575,7 @@ void javascript_commands(const char *cookie_cpwd)
          jsonp_callback = getparam("callback");
       }
    }
-      
+
    if (isparam("odb")) {
       single = true;
       odb.push_back(getparam("odb"));
@@ -6595,10 +6595,10 @@ void javascript_commands(const char *cookie_cpwd)
    if (0) {
       printf("command [%s], encoding %d [%s], jsonp %d, single %d, multiple %d, odb array size %d\n", cmd_parameter.c_str(), encoding, encoding_parameter.c_str(), jsonp, single, multiple, (int)odb.size());
    }
-         
+
    /* process "jset" command */
    if (equal_ustring(getparam("cmd"), "jset")) {
-      
+
       if (*getparam("pnam")) {
          sprintf(ppath, "/Custom/Pwd/%s", getparam("pnam"));
          str[0] = 0;
@@ -6618,7 +6618,7 @@ void javascript_commands(const char *cookie_cpwd)
          *strchr(str, '[') = 0;
       } else
          index = 0;
-      
+
       if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS && isparam("value")) {
          db_get_key(hDB, hkey, &key);
          memset(data, 0, sizeof(data));
@@ -6629,16 +6629,16 @@ void javascript_commands(const char *cookie_cpwd)
                   size = sizeof(data);
                   db_sscanf(p, data, &size, 0, key.type);
                   if (strchr(data, ','))
-                     *strchr(data, ',') = 0; 
+                     *strchr(data, ',') = 0;
                   db_set_data_index(hDB, hkey, data, key.item_size, i, key.type);
                   p = strchr(p, ',');
                   if (p != NULL)
                      p++;
-               } 
+               }
             } else {
                size = sizeof(data);
                db_sscanf(getparam("value"), data, &size, 0, key.type);
-               
+
                /* extend data size for single string if necessary */
                if ((key.type == TID_STRING || key.type == TID_LINK)
                    && (int) strlen(data) + 1 > key.item_size && key.num_values == 1) {
@@ -6675,15 +6675,15 @@ void javascript_commands(const char *cookie_cpwd)
             }
          }
       }
-      
+
       show_text_header();
       rsprintf("OK");
       return;
    }
-   
+
    /* process "jget" command */
    if (equal_ustring(getparam("cmd"), "jget")) {
-      
+
       if (isparam("odb")) {
          strlcpy(str, getparam("odb"), sizeof(str));
          if (strchr(str, '[')) {
@@ -6694,17 +6694,17 @@ void javascript_commands(const char *cookie_cpwd)
             *strchr(str, '[') = 0;
          } else
             index = 0;
-         
+
          show_text_header();
 
          status = db_find_key(hDB, 0, str, &hkey);
-         
+
          if (status == DB_SUCCESS)
             output_key(hkey, index, getparam("format"));
          else
             rsputs("<DB_NO_KEY>");
       }
-      
+
       if (isparam("odb0")) {
          show_text_header();
          for (i=0 ; ; i++) {
@@ -6726,18 +6726,18 @@ void javascript_commands(const char *cookie_cpwd)
                   output_key(hkey, index, getparam(format));
                else
                   rsputs("<DB_NO_KEY>");
-               
+
             } else
                break;
          }
       }
-      
+
       return;
    }
-   
+
    /* process "jcopy" command */
    if (equal_ustring(getparam("cmd"), "jcopy")) {
-      
+
       bool fmt_odb  = false;
       bool fmt_xml  = false;
       bool fmt_json = true;
@@ -6747,7 +6747,7 @@ void javascript_commands(const char *cookie_cpwd)
       int recurse = 1;
       const char* fmt = NULL;
       const char* jsonp_callback = "callback";
-      
+
       if (isparam("encoding")) {
          fmt = getparam("encoding");
       } else if (isparam("format")) {
@@ -6779,7 +6779,7 @@ void javascript_commands(const char *cookie_cpwd)
          if (fmt_json && strstr(fmt, "-norecurse"))
             recurse = 0;
       }
-      
+
       if (isparam("odb")) {
          strlcpy(str, getparam("odb"), sizeof(str));
 
@@ -6790,26 +6790,26 @@ void javascript_commands(const char *cookie_cpwd)
          else
             status = db_find_key(hDB, 0, str, &hkey);
          if (status == DB_SUCCESS) {
-            
+
             if (fmt_jsonp) {
                rsputs(jsonp_callback);
                rsputs("(");
             }
-            
+
             int end = 0;
             int bufsize = WEB_BUFFER_SIZE;
             char* buf = (char *)malloc(bufsize);
-            
+
             if (fmt_xml)
                db_copy_xml(hDB, hkey, buf, &bufsize);
             else if (fmt_json)
                db_copy_json(hDB, hkey, &buf, &bufsize, &end, save_keys, follow_links, recurse);
             else
                db_copy(hDB, hkey, buf, &bufsize, (char *)"");
-            
+
             rsputs(buf);
             free(buf);
-            
+
             if (fmt_jsonp) {
                rsputs(");\n");
             }
@@ -6862,11 +6862,11 @@ void javascript_commands(const char *cookie_cpwd)
                   rsputs("<DB_NO_KEY>\n");
                continue;
             }
-            
+
             int end = 0;
             int bufsize = WEB_BUFFER_SIZE;
             char* buf = (char *)malloc(bufsize);
-            
+
             if (fmt_xml) {
                db_copy_xml(hDB, hkey, buf, &bufsize);
                const char* s = strstr(buf, "-->");
@@ -6882,7 +6882,7 @@ void javascript_commands(const char *cookie_cpwd)
                db_copy(hDB, hkey, buf, &bufsize, (char *)"");
                rsputs(buf);
             }
-            
+
             free(buf);
          }
 
@@ -6905,7 +6905,7 @@ void javascript_commands(const char *cookie_cpwd)
 
       // test:
       // curl "http://localhost:8080?cmd=jkey&odb0=/runinfo/run+number&odb1=/nonexistant&odb2=/&encoding=json&callback=aaa"
-      
+
       show_text_header();
 
       if (jsonp) {
@@ -6976,7 +6976,7 @@ void javascript_commands(const char *cookie_cpwd)
 
       return;
    }
-   
+
    /* process "jcreate" command */
    if (equal_ustring(getparam("cmd"), "jcreate")) {
 
@@ -6988,7 +6988,7 @@ void javascript_commands(const char *cookie_cpwd)
       // curl "http://localhost:8080?cmd=jcreate&odb=/test/foo12s5&type=12&strlen=32&arraylen=5"
       // curl "http://localhost:8080?cmd=jcreate&odb0=/test/foo12s5x&type0=12&strlen0=32&arraylen0=5"
 
-      
+
       show_text_header();
 
       if (jsonp) {
@@ -7067,7 +7067,7 @@ void javascript_commands(const char *cookie_cpwd)
 
       return;
    }
-   
+
    /* process "jresize" command */
    if (equal_ustring(getparam("cmd"), "jresize")) {
 
@@ -7077,7 +7077,7 @@ void javascript_commands(const char *cookie_cpwd)
       // curl "http://localhost:8080?cmd=jresize&odb=/test/foo12s5&arraylen=5"
       // curl "http://localhost:8080?cmd=jresize&odb=/test/foo12s5&strlen=16"
       // curl "http://localhost:8080?cmd=jresize&odb=/test/foo12s5&strlen=30&arraylen=10"
-      
+
       show_text_header();
 
       if (jsonp) {
@@ -7167,14 +7167,14 @@ void javascript_commands(const char *cookie_cpwd)
 
       return;
    }
-   
+
    /* process "jrename" command */
    if (equal_ustring(getparam("cmd"), "jrename")) {
 
       // test:
       // curl "http://localhost:8080?cmd=jrename&odb0=/test/foo&type0=7&odb1=/nonexistant&type1=100&odb2=/test/bar&type2=12&encoding=json&callback=aaa"
       // curl "http://localhost:8080?cmd=jrename&odb=/test/foo&name=foofoo"
-      
+
       show_text_header();
 
       if (jsonp) {
@@ -7229,13 +7229,13 @@ void javascript_commands(const char *cookie_cpwd)
 
       return;
    }
-   
+
    /* process "jlink" command */
    if (equal_ustring(getparam("cmd"), "jlink")) {
 
       // test:
       // curl "http://localhost:8080?cmd=jlink&odb=/test/link&dest=/test/foo"
-      // curl "http://localhost:8080?cmd=jlink&odb0=/test/link0&dest0=/test/foo&odb1=/test/link1&dest1=/test/foo"      
+      // curl "http://localhost:8080?cmd=jlink&odb0=/test/link0&dest0=/test/foo&odb1=/test/link1&dest1=/test/foo"
 
       show_text_header();
 
@@ -7290,14 +7290,14 @@ void javascript_commands(const char *cookie_cpwd)
 
       return;
    }
-   
+
    /* process "jreorder" command */
    if (equal_ustring(getparam("cmd"), "jreorder")) {
 
       // test:
       // curl "http://localhost:8080?cmd=jreorder&odb0=/test/foo&index0=0&odb1=/test/bar&index1=1"
       // curl "http://localhost:8080?cmd=jreorder&odb=/test/bar&index=0"
-      
+
       show_text_header();
 
       if (jsonp) {
@@ -7354,14 +7354,14 @@ void javascript_commands(const char *cookie_cpwd)
 
       return;
    }
-   
+
    /* process "jdelete" command */
    if (equal_ustring(getparam("cmd"), "jdelete")) {
 
       // test:
       // curl "http://localhost:8080?cmd=jdelete&odb0=/test/foo&odb1=/nonexistant&odb2=/test/bar&encoding=json&callback=aaa"
       // curl "http://localhost:8080?cmd=jdelete&odb=/test/foo"
-      
+
       show_text_header();
 
       if (jsonp) {
@@ -7409,47 +7409,47 @@ void javascript_commands(const char *cookie_cpwd)
 
       return;
    }
-   
+
    /* process "jmsg" command */
    if (equal_ustring(getparam("cmd"), "jmsg")) {
-      
+
       i = 1;
       if (*getparam("n"))
          i = atoi(getparam("n"));
-      
+
       show_text_header();
       cm_msg_retrieve(i, str, sizeof(str));
       rsputs(str);
       return;
    }
-   
+
    /* process "jgenmsg" command */
    if (equal_ustring(getparam("cmd"), "jgenmsg")) {
-      
+
       if (*getparam("msg")) {
          cm_msg(MINFO, "javascript_commands", "%s", getparam("msg"));
       }
-      
+
       show_text_header();
       rsputs("Message successfully created\n");
       return;
    }
-   
+
    /* process "jalm" command */
    if (equal_ustring(getparam("cmd"), "jalm")) {
-      
+
       show_text_header();
       al_get_alarms(str, sizeof(str));
       rsputs(str);
       return;
    }
-   
+
    /* process "jrpc" command */
    if (equal_ustring(getparam("cmd"), "jrpc_rev0")) {
       do_jrpc_rev0();
       return;
    }
-   
+
    /* process "jrpc" command */
    if (equal_ustring(getparam("cmd"), "jrpc_rev1")) {
       do_jrpc_rev1();
@@ -7623,7 +7623,7 @@ void show_custom_page(const char *path, const char *cookie_cpwd)
          free(ctext);
          return;
       }
-      
+
       /* HTTP header */
       rsprintf("HTTP/1.0 200 Document follows\r\n");
       rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
@@ -8082,7 +8082,7 @@ void create_mscb_tree()
 {
    HNDLE hDB, hKeySubm, hKeyEq, hKeyAdr, hKey, hKeyDev;
    KEY key;
-   int i, j, k, l, size, address[1000], dev_badr[1000], dev_adr[1000], dev_chn[1000], 
+   int i, j, k, l, size, address[1000], dev_badr[1000], dev_adr[1000], dev_chn[1000],
       n_address, n_dev_adr;
    char mscb_dev[256], mscb_pwd[32], eq_name[32];
 
@@ -8107,7 +8107,7 @@ void create_mscb_tree()
                db_enum_key(hDB, hKeyDev, j, &hKey);
                if (!hKey)
                   break;
-               
+
                if (db_find_key(hDB, hKey, "MSCB Address", &hKeyAdr) == DB_SUCCESS) {
                   /* mscbdev type of device */
                   size = sizeof(mscb_dev);
@@ -8116,7 +8116,7 @@ void create_mscb_tree()
                   size = sizeof(mscb_pwd);
                   if (db_get_value(hDB, hKey, "Pwd", mscb_pwd, &size, TID_STRING, FALSE) != DB_SUCCESS)
                      continue;
-                  
+
                   size = sizeof(dev_adr);
                   db_get_data(hDB, hKeyAdr, dev_adr, &size, TID_INT);
                   n_dev_adr = size / sizeof(int);
@@ -8128,7 +8128,7 @@ void create_mscb_tree()
                   size = sizeof(mscb_pwd);
                   if (db_get_value(hDB, hKey, "MSCB Pwd", mscb_pwd, &size, TID_STRING, FALSE) != DB_SUCCESS)
                      continue;
-                  
+
                   n_dev_adr = 0;
                   size = sizeof(dev_badr);
                   db_get_data(hDB, hKeyAdr, dev_badr, &size, TID_INT);
@@ -8141,7 +8141,7 @@ void create_mscb_tree()
                   }
                } else
                   continue;
-               
+
                /* create or open submaster entry */
                db_find_key(hDB, hKeySubm, mscb_dev, &hKey);
                if (!hKey) {
@@ -8149,27 +8149,27 @@ void create_mscb_tree()
                   db_find_key(hDB, hKeySubm, mscb_dev, &hKey);
                   assert(hKey);
                }
-               
+
                /* get old address list */
                size = sizeof(address);
                if (db_get_value(hDB, hKey, "Address", address, &size, TID_INT, FALSE) == DB_SUCCESS)
                   n_address = size / sizeof(int);
                else
                   n_address = 0;
-               
+
                /* merge with new address list */
                for (k=0 ; k<n_dev_adr ; k++) {
                   for (l=0 ; l<n_address ; l++)
                      if (address[l] == dev_adr[k])
                         break;
-                  
+
                   if (l == n_address)
                      address[n_address++] = dev_adr[k];
                }
-               
+
                /* sort address list */
                qsort(address, n_address, sizeof(int), cmp_int);
-               
+
                /* store new address list */
                db_set_value(hDB, hKey, "Pwd", mscb_pwd, 32, 1, TID_STRING);
                db_set_value(hDB, hKey, "Comment", eq_name, 32, 1, TID_STRING);
@@ -8204,7 +8204,7 @@ void show_mscb_page(const char *path, int refresh)
 
    if (strstr(path, "favicon") != NULL)
       return;
-   
+
    strlcpy(cur_subm_name, getparam("subm"), sizeof(cur_subm_name));
    if (cur_subm_name[0] == 0) {
       db_enum_key(hDB, hKeySubm, 0, &hKeyCurSubm);
@@ -8217,7 +8217,7 @@ void show_mscb_page(const char *path, int refresh)
       strcpy(cur_subm_name, key.name);
    } else
       db_find_key(hDB, hKeySubm, cur_subm_name, &hKeyCurSubm);
-   
+
    /* perform MSCB rescan */
    if (isparam("cmd") && equal_ustring(getparam("cmd"), "Rescan") && isparam("subm")) {
       /* create Pwd and Comment if not there */
@@ -8242,7 +8242,7 @@ void show_mscb_page(const char *path, int refresh)
          n_addr = 0;
          addr = (int *)malloc(sizeof(int));
       }
-      
+
       comment_created = FALSE;
       db_find_key(hDB, hKeyCurSubm, "Node comment", &hKeyComm);
       if (hKeyComm) {
@@ -8276,19 +8276,19 @@ void show_mscb_page(const char *path, int refresh)
          for (ind = n = 0; ind < 0x10000; ind++) {
             if (!ping_addr[ind])
                continue;
-            
+
             status = mscb_ping(fd, (unsigned short) ind, 1);
             if (status == MSCB_SUCCESS) {
-               
+
                /* node found, search next 100 as well */
                for (j=ind; j<ind+100 && j<0x10000 ; j++)
                   if (j >= 0)
                      ping_addr[j] = 1;
-               
+
                status = mscb_info(fd, (unsigned short) ind, &info);
                strncpy(str, info.node_name, sizeof(info.node_name));
                str[16] = 0;
-               
+
                if (status == MSCB_SUCCESS) {
                   /* check if node already in list */
                   for (j=0 ; j<n_addr ; j++)
@@ -8309,7 +8309,7 @@ void show_mscb_page(const char *path, int refresh)
                }
             }
          }
-         
+
          db_set_data(hDB, hKeyAddr, addr, n_addr*sizeof(int), n_addr, TID_INT);
          free(addr);
          db_set_data(hDB, hKeyComm, node_comment, n_addr*32, n_addr, TID_STRING);
@@ -8321,7 +8321,7 @@ void show_mscb_page(const char *path, int refresh)
             sprintf(str, "%s", cur_subm_name);
          redirect(str);
          return;
-         
+
       } else {
          sprintf(str, "Cannot talk to submaster \"%s\"", cur_subm_name);
          show_error(str);
@@ -8340,7 +8340,7 @@ void show_mscb_page(const char *path, int refresh)
 
          fd = mscb_init(cur_subm_name, 0, "", FALSE);
          if (fd >= 0) {
-            status = mscb_info_variable(fd, 
+            status = mscb_info_variable(fd,
                        (unsigned short) cur_node, (unsigned char) i, &info_var);
             if (status == MSCB_SUCCESS) {
                if (info_var.unit == UNIT_STRING) {
@@ -8472,7 +8472,7 @@ void show_mscb_page(const char *path, int refresh)
    rsprintf("<tr><td colspan=2>\n");
    rsprintf("<table width=100%%><tr>\n");
    rsprintf("<td><input type=submit name=cmd value=Reload></td>\n");
-   
+
    rsprintf("<tr><td colspan=\"2\" cellpadding=\"0\" cellspacing=\"0\">\r\n");
 
    status = db_find_key(hDB, 0, "MSCB/Submaster", &hKeySubm);
@@ -8480,8 +8480,8 @@ void show_mscb_page(const char *path, int refresh)
       rsprintf("<h1>No MSCB Submasters defined in ODB</h1>\r\n");
       rsprintf("</td></tr>\r\n");
       rsprintf("</table>\r\n"); //submaster table
-      rsprintf("</td></tr>\r\n");  
-      rsprintf("</table>\r\n");  //main table      
+      rsprintf("</td></tr>\r\n");
+      rsprintf("</table>\r\n");  //main table
       page_footer(TRUE);
       return;
    }
@@ -8500,7 +8500,7 @@ void show_mscb_page(const char *path, int refresh)
    }
    if (i<2)
       i = 2;
-   
+
    rsprintf("<select name=\"subm\" size=%d onChange=\"document.form1.submit();\">\r\n", i);
    hKeyCurSubm = 0;
    for (i = 0;;i++) {
@@ -8515,7 +8515,7 @@ void show_mscb_page(const char *path, int refresh)
          strlcat(str, comment, sizeof(str));
       }
 
-      if ((cur_subm_name[0] && equal_ustring(cur_subm_name, key.name)) || 
+      if ((cur_subm_name[0] && equal_ustring(cur_subm_name, key.name)) ||
           (cur_subm_name[0] == 0 && i == 0)) {
          cur_subm_index = i;
          rsprintf("<option value=\"%s\" selected>%s</option>\r\n", key.name, str);
@@ -8528,7 +8528,7 @@ void show_mscb_page(const char *path, int refresh)
    /*---- node list ----*/
    rsprintf("<td class=\"node\">\r\n");
    rsprintf("Node ");
-   
+
    rsprintf("<script type=\"text/javascript\">\n");
    rsprintf("<!--\n");
    rsprintf("function rescan()\n");
@@ -8539,7 +8539,7 @@ void show_mscb_page(const char *path, int refresh)
    rsprintf("}\n");
    rsprintf("//-->\n");
    rsprintf("</script>\n");
-   
+
    rsprintf("<input type=button name=cmd value=\"Rescan\" onClick=\"rescan();\">");
    rsprintf("<hr>\r\n");
 
@@ -8554,7 +8554,7 @@ void show_mscb_page(const char *path, int refresh)
       page_footer(TRUE);
       return;
    }
-   
+
    db_find_key(hDB, hKeyCurSubm, "Address", &hKeyAddr);
    db_find_key(hDB, hKeyCurSubm, "Node comment", &hKeyComm);
 
@@ -8570,7 +8570,7 @@ void show_mscb_page(const char *path, int refresh)
    if (hKeyAddr) {
       db_get_key(hDB, hKeyAddr, &key);
       size = sizeof(adr);
-      
+
       /* check if current node is in list */
       for (i = 0; i<key.num_values ;i++) {
          size = sizeof(adr);
@@ -8580,7 +8580,7 @@ void show_mscb_page(const char *path, int refresh)
       }
       if (i == key.num_values) // if not found, use first one in list
          db_get_data_index(hDB, hKeyAddr, &cur_node, &size, 0, TID_INT);
-      
+
       for (i = 0; i<key.num_values ;i++) {
          size = sizeof(adr);
          db_get_data_index(hDB, hKeyAddr, &adr, &size, i, TID_INT);
@@ -8643,7 +8643,7 @@ void show_mscb_page(const char *path, int refresh)
       for (i=0 ; i<6 ; i++)
          info.rtc[i] = (info.rtc[i] / 0x10) * 10 + info.rtc[i] % 0x10;
       rsprintf("<tr><td class=\"v1\">Real Time Clock<td colspan=2 class=\"v2\">%02d-%02d-%02d %02d:%02d:%02d</td>\n",
-         info.rtc[0], info.rtc[1], info.rtc[2], 
+         info.rtc[0], info.rtc[1], info.rtc[2],
          info.rtc[3], info.rtc[4], info.rtc[5]);
    }
 
@@ -8691,7 +8691,7 @@ void show_mscb_page(const char *path, int refresh)
             rsprintf("<tr><td class=\"v1\">%s</td>\r\n", str);
             rsprintf("<td class=\"v2\">\r\n");
             print_mscb_var(value, evalue, unit, &info_var, pd);
-            rsprintf("<a href=\"#\" onClick=\"mscb_edit(%d,'%s')\">%s</a>", 
+            rsprintf("<a href=\"#\" onClick=\"mscb_edit(%d,'%s')\">%s</a>",
                j, evalue, value);
             rsprintf("</td><td class=\"v3\">%s</td>", unit);
             rsprintf("</tr>\r\n");
@@ -8832,18 +8832,18 @@ void show_start_page(int script)
       rsprintf("<table class=\"ODBTable\">\n");
       rsprintf("<tr><th colspan=2 class=\"subStatusTitle\">Start new run</tr>\n");
       rsprintf("<tr><td>Run number");
-      
+
       /* run number */
       size = sizeof(rn);
       status = db_get_value(hDB, 0, "/Runinfo/Run number", &rn, &size, TID_INT, TRUE);
       assert(status == SUCCESS);
-      
+
       if (rn < 0) { // value "zero" is ok
          cm_msg(MERROR, "show_start_page",
                 "aborting on attempt to use invalid run number %d", rn);
          abort();
       }
-      
+
       size = sizeof(i);
       if (db_find_key(hDB, 0, "/Experiment/Edit on start/Edit Run number", &hkey) ==
           DB_SUCCESS && db_get_data(hDB, hkey, &i, &size, TID_BOOL) && i == 0)
@@ -8934,7 +8934,7 @@ void show_start_page(int script)
 void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_access)
 {
    int i, j, keyPresent, scan, size, status, line;
-   char str[256], tmp_path[256], url_path[256], data_str[TEXT_SIZE], 
+   char str[256], tmp_path[256], url_path[256], data_str[TEXT_SIZE],
       hex_str[256], ref[256], keyname[32], link_name[256], link_ref[256],
       full_path[256], root_path[256], odb_path[256], colspan, style[32];
    char *p;
@@ -8970,7 +8970,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
 
    /* use javascript file */
    rsprintf("<script type=\"text/javascript\" src=\"%s\"></script>\n", tmp_path);
-   
+
    /* find key via path */
    status = db_find_key(hDB, 0, dec_path, &hkeyroot);
    if (status != DB_SUCCESS) {
@@ -9001,9 +9001,9 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
    }
 
    /*---- navigation bar ----*/
-   
+
    colspan = 7;
-   
+
    if (elog_mode) {
       rsprintf("<table class=\"headerTable\">\n");
       rsprintf("<tr><td colspan=%d>\n", colspan);
@@ -9013,7 +9013,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
       show_navigation_bar("ODB");
 
    /*---- begin ODB directory table ----*/
-   
+
    rsprintf("<table class=\"ODBtable\" style=\"border-spacing:0px;\">\n");
    rsprintf("<tr><th colspan=%d class=\"subStatusTitle\">Online Database Browser</tr>\n", colspan);
    //buttons:
@@ -9238,7 +9238,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
                         rsprintf("</a>\n");
                      }
                   }
-                  
+
                   /* extended key information */
                   rsprintf("<td class=\"ODBkey\" name=\"ext\" style=\"display:none\">");
                   rsprintf("%s", rpc_tid_name(key.type));
@@ -9265,7 +9265,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
                   else
                      rsprintf(">99d");
                   rsprintf("</td>\n");
-                  
+
                   rsprintf("<td class=\"ODBkey\" name=\"ext\" style=\"display:none\">");
                   if (key.access_mode & MODE_READ)
                      rsprintf("R");
@@ -9311,7 +9311,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
 
                         sprintf(ref, "%s?cmd=Set&index=%d", full_path, j);
                         sprintf(str, "%s[%d]", odb_path, j);
-                        
+
                         if (j > 0)
                            rsprintf("<tr>");
 
@@ -9326,21 +9326,21 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
                            rsprintf("%s (%s)</a>\n", data_str, hex_str);
                         else
                            rsprintf("%s</a>\n", data_str);
-                        
+
                         if (j == 0) {
                            /* extended key information */
                            rsprintf("<td class=\"ODBkey\" name=\"ext\" style=\"display:none\" rowspan=%d>", key.num_values);
                            rsprintf("%s", rpc_tid_name(key.type));
                            rsprintf("</td>\n");
-                           
+
                            rsprintf("<td class=\"ODBkey\" name=\"ext\" style=\"display:none\" rowspan=%d>", key.num_values);
                            rsprintf("%d", key.num_values);
                            rsprintf("</td>\n");
-                           
+
                            rsprintf("<td class=\"ODBkey\" name=\"ext\" style=\"display:none\" rowspan=%d>", key.num_values);
                            rsprintf("%d", key.item_size);
                            rsprintf("</td>\n");
-                           
+
                            rsprintf("<td class=\"ODBkey\" name=\"ext\" style=\"display:none\" rowspan=%d>", key.num_values);
                            db_get_key_time(hDB, hkey, &delta);
                            if (delta < 60)
@@ -9354,7 +9354,7 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
                            else
                               rsprintf(">99d");
                            rsprintf("</td>\n");
-                           
+
                            rsprintf("<td class=\"ODBkey\" name=\"ext\" style=\"display:none\" rowspan=%d>", key.num_values);
                            if (key.access_mode & MODE_READ)
                               rsprintf("R");
@@ -9368,13 +9368,13 @@ void show_odb_page(char *enc_path, int enc_path_size, char *dec_path, int write_
                         }
                         line++;
                      }
-                     
+
                      rsprintf("</tr>\n");
                   }
                }
             } else if(key.type != TID_KEY){
                keyPresent = 1;  //flag that we've seen a key on the first pass, and should therefore write the Key / Value headline
-            } 
+            }
          }
       }
    }
@@ -9563,7 +9563,7 @@ void show_find_page(const char *enc_path, const char *value)
       rsprintf("</table>");
 
       //find dialog:
-      rsprintf("<table class=\"dialogTable\">");      
+      rsprintf("<table class=\"dialogTable\">");
 
       rsprintf("<tr><th colspan=2>Find string in Online Database</tr>\n");
       rsprintf("<tr><td>Enter substring (case insensitive)\n");
@@ -9789,7 +9789,7 @@ void show_delete_page(const char *enc_path, const char *dec_path, const char *va
          strlcpy(str, strrchr(str, '/')+1, sizeof(str));
       show_header("Delete ODB entry", "GET", str, 0);
       //close header
-      rsprintf("</table>");      
+      rsprintf("</table>");
 
       rsprintf("<script src=\'%s\'></script>\n", get_js_filename());
 
@@ -9902,7 +9902,7 @@ void show_alarm_page()
 
    /*---- global flag ----*/
    active = TRUE;
-   rsprintf("<table id=\"statusTable\" style=\"padding-top:0px;\">\n");   
+   rsprintf("<table id=\"statusTable\" style=\"padding-top:0px;\">\n");
    size = sizeof(active);
    db_get_value(hDB, 0, "/Alarms/Alarm System active", &active, &size, TID_BOOL, TRUE);
    if (!active) {
@@ -10025,7 +10025,7 @@ void show_alarm_page()
                   db_get_value(hDB, hkey, "Check interval", &interval, &size, TID_INT,
                                TRUE);
                   last += interval;
-                  
+
                   if (ctime(&last) == NULL)
                      strcpy(value, "<invalid>");
                   else
@@ -10046,7 +10046,7 @@ void show_alarm_page()
 
             rsprintf("</tr>\n");
             rsprintf("</form>\n");
-            
+
          }
          rsprintf("</table></td></tr>\n"); //closes subTables
       }
@@ -10161,7 +10161,7 @@ void show_programs_page()
                db_get_value(hDB, hkeycl, "Name", name, &size, TID_STRING, TRUE);
 
                db_get_key(hDB, hkeycl, &keycl);
-               
+
                // check if client name is longer than the program name
                // necessary for multiple started processes which will have names
                // as client_name, client_name1, ...
@@ -10175,7 +10175,7 @@ void show_programs_page()
                         client = FALSE;
                         break;
                      }
-                  }  
+                  }
                }
                name[strlen(key.name)] = 0;
 
@@ -10261,7 +10261,7 @@ void show_config_page(int refresh)
 
    show_header("Configure", "GET", "", 0);
    show_navigation_bar("Config");
-  
+
    //main table
    rsprintf("<table class=\"dialogTable\">");
    rsprintf("<tr><th colspan=2 class=\"subStatusTitle\">Configure</tr>\n");
@@ -10881,7 +10881,7 @@ struct HistoryData
       num_entries = ALLOC(int, alloc_nvars);
       t = ALLOC(time_t*, alloc_nvars);
       v = ALLOC(double*, alloc_nvars);
-      
+
       have_last_written = false;
       last_written = ALLOC(time_t, alloc_nvars);
    }
@@ -11001,7 +11001,7 @@ int read_history(HNDLE hDB, const char *path, int index, int flags, time_t tstar
       }
 
       *p = 0;
-      
+
       data->odb_index[data->nvars] = i;
       data->event_names[data->nvars] = STRDUP(str);
       data->var_index[data->nvars] = 0;
@@ -11047,7 +11047,7 @@ int read_history(HNDLE hDB, const char *path, int index, int flags, time_t tstar
                            data->t,
                            data->v,
                            data->status);
-   
+
       if (status != HS_SUCCESS) {
          cm_msg(MERROR, "read_history", "Complete history failure, hs_read() status %d, see messages", status);
          return HS_FILE_ERROR;
@@ -11063,7 +11063,7 @@ int read_history(HNDLE hDB, const char *path, int index, int flags, time_t tstar
 
    if (flags & READ_HISTORY_LAST_WRITTEN)
       get_last_written = true;
-   
+
    if (get_last_written) {
       data->have_last_written = true;
 
@@ -11079,7 +11079,7 @@ int read_history(HNDLE hDB, const char *path, int index, int flags, time_t tstar
          data->have_last_written = false;
       }
    }
-   
+
    return SUCCESS;
 }
 
@@ -11108,12 +11108,12 @@ int get_hist_last_written(const char *path, time_t endtime, int index, int want_
    int flags = READ_HISTORY_LAST_WRITTEN;
 
    status = read_history(hDB, panel, index, flags, endtime, endtime, 0, hsdata);
-      
+
    if (status != HS_SUCCESS) {
       //sprintf(str, "Complete history failure, read_history() status %d, see messages", status);
       return status;
    }
-      
+
    if (!hsdata->have_last_written) {
       //sprintf(str, "Complete history failure, read_history() status %d, see messages", status);
       return HS_FILE_ERROR;
@@ -11125,7 +11125,7 @@ int get_hist_last_written(const char *path, time_t endtime, int index, int want_
 
    for (int k=0; k<hsdata->nvars; k++) {
       int i = hsdata->odb_index[k];
-      
+
       if (i<0)
          continue;
       if (index != -1 && index != i)
@@ -11150,15 +11150,15 @@ int get_hist_last_written(const char *path, time_t endtime, int index, int want_
       //printf("odb index %d, last_written[%d] = %.0f, tmin %.0f, tmax %.0f, endtime %.0f\n", i, k, (double)lw, (double)tmin, (double)tmax, (double)endtime);
    }
 
-   if (count == 0) // all variables have no last_written 
-      return HS_FILE_ERROR; 
+   if (count == 0) // all variables have no last_written
+      return HS_FILE_ERROR;
 
    if (want_all)
       *plastwritten = tmin; // all variables have data
    else
       *plastwritten = tmax; // at least one variable has data
 
-   //printf("tmin %.0f, tmax %.0f, endtime %.0f, last written %.0f\n", (double)tmin, (double)tmax, (double)endtime, (double)*plastwritten); 
+   //printf("tmin %.0f, tmax %.0f, endtime %.0f, last written %.0f\n", (double)tmin, (double)tmax, (double)endtime, (double)*plastwritten);
 
    double tend = ss_millitime();
 
@@ -11596,24 +11596,24 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
       flags |= READ_HISTORY_RUNMARKER;
 
    status = read_history(hDB, panel, index, flags, starttime, endtime, scale/1000+1, hsdata);
-      
+
    if (status != HS_SUCCESS) {
       sprintf(str, "Complete history failure, read_history() status %d, see messages", status);
       gdImageString(im, gdFontSmall, width / 2 - (strlen(str) * gdFontSmall->w) / 2, height / 2, str, red);
       goto error;
    }
-      
+
    for (int k=0; k<hsdata->nvars; k++) {
       int i = hsdata->odb_index[k];
-      
+
       if (i<0)
          continue;
-      
+
       if (index != -1 && index != i)
          continue;
-      
+
       n_point[i] = 0;
-         
+
       var_status[i][0] = 0;
       if (hsdata->status[k] == HS_UNDEFINED_VAR) {
          sprintf(var_status[i], "not found in history");
@@ -11622,26 +11622,26 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
          sprintf(var_status[i], "hs_read() error %d, see messages", hsdata->status[k]);
          continue;
       }
-      
+
       for (int j = n_vp = 0; j < hsdata->num_entries[k]; j++) {
          x[i][n_vp] = (int)(hsdata->t[k][j]);
          y[i][n_vp] = hsdata->v[k][j];
-         
+
          /* skip NaNs */
          if (ss_isnan(y[i][n_vp]))
             continue;
-         
+
          /* skip INFs */
          if (!ss_isfin(y[i][n_vp]))
             continue;
-         
+
          /* avoid overflow */
          if (y[i][n_vp] > 1E30)
             y[i][n_vp] = 1E30f;
-         
+
          /* apply factor and offset */
          y[i][n_vp] = y[i][n_vp] * factor[i] + offset[i];
-         
+
          /* calculate ymin and ymax */
          if ((i == 0 || index != -1) && n_vp == 0)
             ymin = ymax = y[i][0];
@@ -11651,14 +11651,14 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
             if (y[i][n_vp] < ymin)
                ymin = y[i][n_vp];
          }
-         
+
          /* increment number of valid points */
          n_vp++;
-         
+
       } // loop over data
-      
+
       n_point[i] = n_vp;
-      
+
       assert(n_point[i]<=MAX_POINTS);
    }
 
@@ -11761,13 +11761,13 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
    if (0 && runmarker) {
 
       const char* event_names[] = {
-         "Run transitions", 
-         "Run transitions", 
+         "Run transitions",
+         "Run transitions",
          0 };
 
       const char* tag_names[] = {
-         "State", 
-         "Run number", 
+         "State",
+         "Run number",
          0 };
 
       const int tag_indexes[] = {
@@ -12197,7 +12197,12 @@ time_t mktime_with_dst(const struct tm* ptms)
    struct tm tms = *ptms;
    struct tm tms2;
    time_t t1 = mktime(&tms);
+#ifdef OS_WINNT
+   struct tm *ptms2 = localtime(&t1);
+   memcpy(&tms2, ptms2, sizeof(tms2));
+#else
    localtime_r(&t1, &tms2);
+#endif
    tms2.tm_year = ptms->tm_year;
    tms2.tm_mon  = ptms->tm_mon;
    tms2.tm_mday = ptms->tm_mday;
@@ -12441,7 +12446,7 @@ static int cmp_names(const void *a, const void *b)
 
     if (debug)
       printf("index %d, char [%c] [%c]\n", i, sa[i], sb[i]);
-    
+
     if (sa[i] == 0) // string sa is shorter
       return -1;
     else if (sb[i] == 0) // string sb is shorter
@@ -12597,10 +12602,10 @@ static void load_vars_param(hist_var_t vars[])
 
       sprintf(str, "fac%d", index);
       vars[index].hist_factor = (float) atof(getparam(str));
-    
+
       sprintf(str, "ofs%d", index);
       vars[index].hist_offset = (float) atof(getparam(str));
-    
+
       sprintf(str, "col%d", index);
       STRLCPY(vars[index].hist_col, getparam(str));
 
@@ -12690,15 +12695,15 @@ void save_vars_odb(HNDLE hDB, const char* path, const hist_var_t vars[])
       sprintf(str, "/History/Display/%s/Factor", path);
       xdb_find_key(hDB, 0, str, &hKey, TID_FLOAT, 0);
       db_set_data_index(hDB, hKey, &vars[index].hist_factor, sizeof(float), index, TID_FLOAT);
-     
+
       sprintf(str, "/History/Display/%s/Offset", path);
       xdb_find_key(hDB, 0, str, &hKey, TID_FLOAT, 0);
       db_set_data_index(hDB, hKey, &vars[index].hist_offset, sizeof(float), index, TID_FLOAT);
-     
+
       sprintf(str, "/History/Display/%s/Colour", path);
       xdb_find_key(hDB, 0, str, &hKey, TID_STRING, NAME_LENGTH);
       db_set_data_index(hDB, hKey, vars[index].hist_col, NAME_LENGTH, index, TID_STRING);
-     
+
       sprintf(str, "/History/Display/%s/Label", path);
       xdb_find_key(hDB, 0, str, &hKey, TID_STRING, NAME_LENGTH);
       db_set_data_index(hDB, hKey, vars[index].hist_label, NAME_LENGTH, index, TID_STRING);
@@ -12824,7 +12829,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
 	 STRLCPY(tag_name, s+1);
 
          add_vars(vars, event_name, tag_name);
-      } 
+      }
    }
 
    //print_vars(vars);
@@ -13181,7 +13186,7 @@ void show_hist_config_page(const char *path, const char *hgroup, const char *pan
 		    }
 		  }
 #endif
-                  
+
 
 
 		  rsprintf("<tr align=left>\n");
@@ -13396,12 +13401,12 @@ void export_hist(const char *path, time_t endtime, int scale, int index, int lab
          db_find_key(hDB, hkeypanel, "Timescale", &hkey);
          if (hkey)
             db_delete_key(hDB, hkey, FALSE);
-         
+
          strcpy(str, "1h");
          size = NAME_LENGTH;
          status = db_get_value(hDB, hkeypanel, "Timescale", str, &size, TID_STRING, TRUE);
       }
-      
+
       scale = time_to_sec(str);
    }
 
@@ -13422,7 +13427,7 @@ void export_hist(const char *path, time_t endtime, int scale, int index, int lab
 
    int *i_var = (int *)malloc(sizeof(int)*hsdata->nvars);
 
-   for (int i = 0; i < hsdata->nvars; i++) 
+   for (int i = 0; i < hsdata->nvars; i++)
       i_var[i] = -1;
 
    time_t t = 0;
@@ -13517,7 +13522,7 @@ void export_hist(const char *path, time_t endtime, int scale, int index, int lab
             rsprintf("%s, %d, N/A, N/A, ", str, (int)t);
       } else
          rsprintf("%s, %d, ", str, (int)t);
-      
+
       //for (int i= 0 ; i < hsdata->nvars ; i++)
       //printf(" %d", i_var[i]);
       //printf("\n");
@@ -13625,7 +13630,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
       if (*p == '/')
          strlcat(back_path, "../", sizeof(back_path));
 
-   if (isparam("fpanel") && isparam("fgroup") && 
+   if (isparam("fpanel") && isparam("fgroup") &&
       !isparam("scale")  && !isparam("shift") && !isparam("width") && !isparam("cmd")) {
 
       if (strchr(path, '/')) {
@@ -13717,7 +13722,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
 
    if (*getparam("panel")) {
       strlcpy(panel, getparam("panel"), sizeof(panel));
-      
+
       /* strip leading/trailing spaces */
       while (*panel == ' ') {
          strlcpy(str, panel+1, sizeof(str));
@@ -14014,7 +14019,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
    //   xrefresh = 0;
    show_header(str, "GET", str, xrefresh);
    show_navigation_bar("History");
-   
+
    rsprintf("<table class=\"genericTable\">");
    rsprintf("<tr><th class=\"subStatusTitle\" colspan=2>History</th></tr>");
 
@@ -14140,7 +14145,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
                          back_path, key.name, key.name);
 
             for (j = 0;; j++) {
-               // scan items 
+               // scan items
                db_enum_link(hDB, hkeyp, j, &hikeyp);
 
                if (!hikeyp) {
@@ -14242,7 +14247,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
             }
          }
 
-         if (found) 
+         if (found)
             rsprintf("<option value=\"\">- all -\n");
          else
             rsprintf("<option selected value=\"\">- all -\n");
@@ -14274,7 +14279,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
       strcpy(strwidth, "Small");
       size = sizeof(strwidth);
       db_get_value(hDB, 0, "/History/Display Settings/Width Gropup", strwidth, &size, TID_STRING, TRUE);
-      
+
       sprintf(str, "/History/Display/%s", path);
       db_find_key(hDB, 0, str, &hkey);
       if (hkey) {
@@ -14439,7 +14444,7 @@ void show_hist_page(const char *path, int path_size, char *buffer, int *buffer_s
             db_get_key(hDB, hkeyp, &key);
 
             for (j = 0;; j++, k++) {
-               // scan items 
+               // scan items
                db_enum_link(hDB, hkeyp, j, &hikeyp);
 
                if (!hikeyp)
@@ -14552,7 +14557,7 @@ FILE *open_resource_file(const char *filename, std::string* pfilename)
          if (fp)
             break;
       }
-   
+
       path = filename;
       fp = fopen(path.c_str(), "r");
       if (fp)
@@ -14621,7 +14626,7 @@ static char _css_file[1024];
 char *get_css_filename()
 {
    HNDLE hDB;
-   
+
    cm_get_experiment_database(&hDB, NULL);
    char filename[1024];
    int size = sizeof(filename);
@@ -14638,7 +14643,7 @@ static char _js_file[1024];
 char *get_js_filename()
 {
    HNDLE hDB;
-   
+
    cm_get_experiment_database(&hDB, NULL);
    char filename[1024];
    int size = sizeof(filename);
@@ -14685,7 +14690,7 @@ void send_css()
       fclose(fp);
       return;
    }
-   
+
    int length = 0;
    rsprintf("Content-Length: %d\r\n\r\n", length);
 }
@@ -14828,14 +14833,14 @@ const char *mhttpd_js =
 "function ODBMGet(paths, callback, formats)\n"
 "{\n"
 "   var request = XMLHttpRequestGeneric();\n"
-"\n"   
+"\n"
 "   var url = '?cmd=jget';\n"
 "   for (var i=0 ; i<paths.length ; i++) {\n"
 "      url += '&odb'+i+'='+paths[i];\n"
 "      if (formats != undefined && formats != '')\n"
 "         url += '&format'+i+'=' + formats[i];\n"
 "   }\n"
-"\n"   
+"\n"
 "   if (callback != undefined) {\n"
 "      request.onreadystatechange = function() \n"
 "         {\n"
@@ -14856,7 +14861,7 @@ const char *mhttpd_js =
 "   } else\n"
 "      request.open('GET', url, false);\n"
 "   request.send(null);\n"
-"\n"   
+"\n"
 "   if (callback == undefined) {\n"
 "      var array = request.responseText.split('$#----#$\\n');\n"
 "      for (var i=0 ; i<array.length ; i++) {\n"
@@ -15046,7 +15051,7 @@ void send_js()
       fclose(fp);
       return;
    }
-   
+
    length = strlen(mhttpd_js);
    rsprintf("Content-Length: %d\r\n\r\n", length);
 
@@ -15084,18 +15089,18 @@ void send_alarm_sound()
 
 void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *cookie_cpwd, const char *dec_path, int refresh)
 /********************************************************************\
- 
+
  Routine: interprete
- 
+
  Purpose: Interprete parametersand generate HTML output from odb.
- 
+
  Input:
  char *cookie_pwd        Cookie containing encrypted password
  char *path              ODB path "/dir/subdir/key"
- 
+
  <implicit>
  _param/_value array accessible via getparam()
- 
+
  \********************************************************************/
 {
    int i, j, n, status, size, run_state, index, write_access;
@@ -15110,23 +15115,23 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
    struct tm *gmt;
 
    //printf("dec_path [%s]\n", dec_path);
-   
+
    if (strstr(dec_path, "favicon.ico") != 0 ||
        strstr(dec_path, "favicon.png")) {
       send_icon(dec_path);
       return;
    }
-   
+
    if (strstr(dec_path, get_css_filename())) {
       send_css();
       return;
    }
-   
+
    if (strstr(dec_path, get_js_filename())) {
       send_js();
       return;
    }
-   
+
    strlcpy(enc_path, dec_path, sizeof(enc_path));
    urlEncode(enc_path, sizeof(enc_path));
    set_dec_path(dec_path);
@@ -15140,28 +15145,28 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
    index = atoi(getparam("index"));
 
    //printf("interprete: dec_path [%s], command [%s] value [%s]\n", dec_path, command, value);
-   
+
    cm_get_experiment_database(&hDB, NULL);
-   
+
    if (history_mode) {
       if (strncmp(dec_path, "HS/", 3) == 0) {
          if (equal_ustring(command, "config")) {
             return;
          }
-         
+
          show_hist_page(dec_path + 3, sizeof(dec_path) - 3, NULL, NULL, refresh);
          return;
       }
-      
+
       return;
    }
-   
+
    /* check for password */
    db_find_key(hDB, 0, "/Experiment/Security/Password", &hkey);
    if (!password[0] && hkey) {
       size = sizeof(str);
       db_get_data(hDB, hkey, str, &size, TID_STRING);
-      
+
       /* check for excemption */
       db_find_key(hDB, 0, "/Experiment/Security/Allowed programs/mhttpd", &hkey);
       if (hkey == 0 && strcmp(cookie_pwd, str) != 0) {
@@ -15169,53 +15174,53 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
          return;
       }
    }
-   
+
    /* get run state */
    run_state = STATE_STOPPED;
    size = sizeof(run_state);
    db_get_value(hDB, 0, "/Runinfo/State", &run_state, &size, TID_INT, TRUE);
-   
+
    /*---- redirect with cookie if password given --------------------*/
-   
+
    if (password[0]) {
       rsprintf("HTTP/1.0 302 Found\r\n");
       rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
-      
+
       time(&now);
       now += 3600 * 24;
       gmt = gmtime(&now);
       strftime(str, sizeof(str), "%A, %d-%b-%Y %H:00:00 GMT", gmt);
-      
+
       rsprintf("Set-Cookie: midas_pwd=%s; path=/; expires=%s\r\n",
                ss_crypt(password, "mi"), str);
-      
+
       rsprintf("Location: ./\n\n<html>redir</html>\r\n");
       return;
    }
-   
+
    if (wpassword[0]) {
       /* check if password correct */
       if (!check_web_password(ss_crypt(wpassword, "mi"), getparam("redir"), experiment))
          return;
-      
+
       rsprintf("HTTP/1.0 302 Found\r\n");
       rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
-      
+
       time(&now);
       now += 3600 * 24;
       gmt = gmtime(&now);
       strftime(str, sizeof(str), "%A, %d-%b-%Y %H:%M:%S GMT", gmt);
-      
+
       rsprintf("Set-Cookie: midas_wpwd=%s; path=/; expires=%s\r\n",
                ss_crypt(wpassword, "mi"), str);
-      
+
       sprintf(str, "./%s", getparam("redir"));
       rsprintf("Location: %s\n\n<html>redir</html>\r\n", str);
       return;
    }
-   
+
    /*---- redirect if ODB command -----------------------------------*/
-   
+
    if (equal_ustring(command, "ODB")) {
       str[0] = 0;
       for (p=dec_path ; *p ; p++)
@@ -15225,16 +15230,16 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       redirect(str);
       return;
    }
-   
+
    /*---- send sound file -------------------------------------------*/
-   
+
    if (equal_ustring(dec_path, "alarm.mid")) {
       send_alarm_sound();
       return;
    }
-   
+
    /*---- java script commands --------------------------------------*/
-   
+
    if (equal_ustring(command, "jset") ||
        equal_ustring(command, "jget") ||
        equal_ustring(command, "jcopy") ||
@@ -15255,16 +15260,16 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       javascript_commands(cookie_cpwd);
       return;
    }
-   
+
    /*---- redirect if SC command ------------------------------------*/
-   
+
    if (equal_ustring(command, "SC")) {
       redirect("SC/");
       return;
    }
-   
+
    /*---- redirect if status command --------------------------------*/
-   
+
    if (equal_ustring(command, "status")) {
       str[0] = 0;
       for (p=dec_path ; *p ; p++)
@@ -15273,18 +15278,18 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       redirect(str);
       return;
    }
-   
+
    /*---- script command --------------------------------------------*/
-   
+
    if (getparam("script") && *getparam("script")) {
       sprintf(str, "%s?script=%s", dec_path, getparam("script"));
       if (!check_web_password(cookie_wpwd, str, experiment))
          return;
-      
+
       sprintf(str, "/Script/%s", getparam("script"));
-      
+
       db_find_key(hDB, 0, str, &hkey);
-      
+
       if (hkey) {
          /* for NT: close reply socket before starting subprocess */
          if (isparam("redir"))
@@ -15298,21 +15303,21 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
          else
             redirect2("");
       }
-      
+
       return;
    }
-   
+
    /*---- customscript command --------------------------------------*/
-   
+
    if (getparam("customscript") && *getparam("customscript")) {
       sprintf(str, "%s?customscript=%s", dec_path, getparam("customscript"));
       if (!check_web_password(cookie_wpwd, str, experiment))
          return;
-      
+
       sprintf(str, "/CustomScript/%s", getparam("customscript"));
-      
+
       db_find_key(hDB, 0, str, &hkey);
-      
+
       if (hkey) {
          /* for NT: close reply socket before starting subprocess */
          if (isparam("redir"))
@@ -15326,12 +15331,12 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
          else
             redirect("");
       }
-      
+
       return;
    }
-   
+
    /*---- alarms command --------------------------------------------*/
-   
+
    if (equal_ustring(command, "alarms")) {
       str[0] = 0;
       for (p=dec_path ; *p ; p++)
@@ -15345,18 +15350,18 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       show_alarm_page();
       return;
    }
-   
+
    /*---- alarms reset command --------------------------------------*/
-   
+
    if (equal_ustring(command, "alrst")) {
       if (*getparam("name"))
          al_reset_alarm(getparam("name"));
       redirect("");
       return;
    }
-   
+
    /*---- history command -------------------------------------------*/
-   
+
    if (equal_ustring(command, "history")) {
       str[0] = 0;
       for (p=dec_path ; *p ; p++)
@@ -15366,20 +15371,20 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       redirect(str);
       return;
    }
-   
+
    if (strncmp(dec_path, "HS/", 3) == 0) {
       if (equal_ustring(command, "config")) {
          sprintf(str, "%s?cmd=%s", dec_path, command);
          if (!check_web_password(cookie_wpwd, str, experiment))
             return;
       }
-      
+
       show_hist_page(dec_path + 3, sizeof(dec_path) - 3, NULL, NULL, refresh);
       return;
    }
-   
+
    /*---- MSCB command ----------------------------------------------*/
-   
+
    if (equal_ustring(command, "MSCB")) {
       str[0] = 0;
       for (p=dec_path ; *p ; p++)
@@ -15389,14 +15394,14 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       redirect(str);
       return;
    }
-   
+
    if (strncmp(dec_path, "MS/", 3) == 0) {
       if (equal_ustring(command, "set")) {
          sprintf(str, "%s?cmd=%s", dec_path, command);
          if (!check_web_password(cookie_wpwd, str, experiment))
             return;
       }
-      
+
 #ifdef HAVE_MSCB
       show_mscb_page(dec_path + 3, refresh);
 #else
@@ -15404,25 +15409,25 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
 #endif
       return;
    }
-   
+
    /*---- help command ----------------------------------------------*/
-   
+
    if (equal_ustring(command, "help")) {
       show_help_page();
       return;
    }
-   
+
    /*---- pause run -------------------------------------------*/
-   
+
    if (equal_ustring(command, "pause")) {
       if (run_state != STATE_RUNNING) {
          show_error("Run is not running");
          return;
       }
-      
+
       if (!check_web_password(cookie_wpwd, "?cmd=pause", experiment))
          return;
-      
+
       status = cm_transition(TR_PAUSE, 0, str, sizeof(str), TR_MTHREAD | TR_ASYNC, FALSE);
       if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
          show_error(str);
@@ -15430,25 +15435,25 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
          redirect(getparam("redir"));
       else
          redirect("");
-      
+
       requested_old_state = run_state;
       if (status == SUCCESS)
          requested_transition = TR_PAUSE;
-      
+
       return;
    }
-   
+
    /*---- resume run ------------------------------------------*/
-   
+
    if (equal_ustring(command, "resume")) {
       if (run_state != STATE_PAUSED) {
          show_error("Run is not paused");
          return;
       }
-      
+
       if (!check_web_password(cookie_wpwd, "?cmd=resume", experiment))
          return;
-      
+
       status = cm_transition(TR_RESUME, 0, str, sizeof(str), TR_MTHREAD | TR_ASYNC, FALSE);
       if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
          show_error(str);
@@ -15456,22 +15461,22 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
          redirect(getparam("redir"));
       else
          redirect("");
-      
+
       requested_old_state = run_state;
       if (status == SUCCESS)
          requested_transition = TR_RESUME;
-      
+
       return;
    }
-   
+
    /*---- start dialog --------------------------------------------*/
-   
+
    if (equal_ustring(command, "start")) {
       if (run_state == STATE_RUNNING) {
          show_error("Run is already started");
          return;
       }
-      
+
       if (value[0] == 0) {
          if (!check_web_password(cookie_wpwd, "?cmd=start", experiment))
             return;
@@ -15482,12 +15487,12 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
          if (hkey) {
             for (i = 0, n = 0;; i++) {
                db_enum_key(hDB, hkey, i, &hsubkey);
-               
+
                if (!hsubkey)
                   break;
-               
+
                db_get_key(hDB, hsubkey, &key);
-               
+
                for (j = 0; j < key.num_values; j++) {
                   size = key.item_size;
                   sprintf(str, "x%d", n++);
@@ -15496,7 +15501,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
                }
             }
          }
-         
+
          i = atoi(value);
          if (i <= 0) {
             cm_msg(MERROR, "interprete", "Start run: invalid run number %d", i);
@@ -15504,15 +15509,15 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
             show_error(str);
             return;
          }
-         
+
          status = cm_transition(TR_START, i, str, sizeof(str), TR_MTHREAD | TR_ASYNC, FALSE);
          if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION) {
             show_error(str);
          } else {
-            
+
             requested_old_state = run_state;
             requested_transition = TR_START;
-            
+
             if (isparam("redir"))
                redirect(getparam("redir"));
             else
@@ -15521,18 +15526,18 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       }
       return;
    }
-   
+
    /*---- stop run --------------------------------------------*/
-   
+
    if (equal_ustring(command, "stop")) {
       if (run_state != STATE_RUNNING && run_state != STATE_PAUSED) {
          show_error("Run is not running");
          return;
       }
-      
+
       if (!check_web_password(cookie_wpwd, "?cmd=stop", experiment))
          return;
-      
+
       status = cm_transition(TR_STOP, 0, str, sizeof(str), TR_MTHREAD | TR_ASYNC, FALSE);
       if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
          show_error(str);
@@ -15540,36 +15545,36 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
          redirect(getparam("redir"));
       else
          redirect("");
-      
+
       requested_old_state = run_state;
       if (status == CM_SUCCESS)
          requested_transition = TR_STOP;
-      
+
       return;
    }
-   
+
    /*---- trigger equipment readout ---------------------------*/
-   
+
    if (strncmp(command, "Trigger", 7) == 0) {
       sprintf(str, "?cmd=%s", command);
       if (!check_web_password(cookie_wpwd, str, experiment))
          return;
-      
+
       /* extract equipment name */
       strlcpy(eq_name, command + 8, sizeof(eq_name));
       if (strchr(eq_name, ' '))
          *strchr(eq_name, ' ') = 0;
-      
+
       /* get frontend name */
       sprintf(str, "/Equipment/%s/Common/Frontend name", eq_name);
       size = NAME_LENGTH;
       db_get_value(hDB, 0, str, fe_name, &size, TID_STRING, TRUE);
-      
+
       /* and ID */
       sprintf(str, "/Equipment/%s/Common/Event ID", eq_name);
       size = sizeof(event_id);
       db_get_value(hDB, 0, str, &event_id, &size, TID_WORD, TRUE);
-      
+
       if (cm_exist(fe_name, FALSE) != CM_SUCCESS) {
          sprintf(str, "Frontend \"%s\" not running!", fe_name);
          show_error(str);
@@ -15584,27 +15589,27 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
                show_error("Error triggering event");
             else
                redirect("");
-            
+
             cm_disconnect_client(hconn, FALSE);
          }
       }
-      
+
       return;
    }
-   
+
    /*---- switch to next subrun -------------------------------------*/
-   
+
    if (strncmp(command, "Next Subrun", 11) == 0) {
       i = TRUE;
       db_set_value(hDB, 0, "/Logger/Next subrun", &i, sizeof(i), 1, TID_BOOL);
       redirect("");
       return;
    }
-   
+
    /*---- cancel command --------------------------------------------*/
-   
+
    if (equal_ustring(command, "cancel")) {
-      
+
       if (group[0]) {
          /* extract equipment name */
          eq_name[0] = 0;
@@ -15613,7 +15618,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
             if (strchr(eq_name, '/'))
                *strchr(eq_name, '/') = 0;
          }
-         
+
          /* back to SC display */
          sprintf(str, "SC/%s/%s", eq_name, group);
          redirect(str);
@@ -15623,15 +15628,15 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
          else
             redirect("./");
       }
-      
+
       return;
    }
-   
+
    /*---- set command -----------------------------------------------*/
-   
+
    if (equal_ustring(command, "set") && strncmp(dec_path, "SC/", 3) != 0
        && strncmp(dec_path, "CS/", 3) != 0) {
-      
+
       if (strchr(enc_path, '/'))
          strlcpy(str, strrchr(enc_path, '/') + 1, sizeof(str));
       else
@@ -15644,62 +15649,62 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       show_set_page(enc_path, sizeof(enc_path), str, group, index, value);
       return;
    }
-   
+
    /*---- find command ----------------------------------------------*/
-   
+
    if (equal_ustring(command, "find")) {
       show_find_page(enc_path, value);
       return;
    }
-   
+
    /*---- create command --------------------------------------------*/
-   
+
    if (equal_ustring(command, "create")) {
       sprintf(str, "%s?cmd=create", enc_path);
       if (!check_web_password(cookie_wpwd, str, experiment))
          return;
-      
+
       show_create_page(enc_path, dec_path, value, index, atoi(getparam("type")));
       return;
    }
-   
+
    /*---- CAMAC CNAF command ----------------------------------------*/
-   
+
    if (equal_ustring(command, "CNAF") || strncmp(dec_path, "CNAF", 4) == 0) {
       if (!check_web_password(cookie_wpwd, "?cmd=CNAF", experiment))
          return;
-      
+
       show_cnaf_page();
       return;
    }
-   
+
    /*---- alarms command --------------------------------------------*/
-   
+
    if (equal_ustring(command, "reset all alarms")) {
       if (!check_web_password(cookie_wpwd, "?cmd=reset%20all%20alarms", experiment))
          return;
-      
+
       al_reset_alarm(NULL);
       redirect("./?cmd=alarms");
       return;
    }
-   
+
    if (equal_ustring(command, "reset")) {
       if (!check_web_password(cookie_wpwd, "?cmd=reset%20all%20alarms", experiment))
          return;
-      
+
       al_reset_alarm(dec_path);
       redirect("./?cmd=alarms");
       return;
    }
-   
+
    if (equal_ustring(command, "Alarms on/off")) {
       redirect("Alarms/Alarm system active?cmd=set");
       return;
    }
-   
+
    /*---- programs command ------------------------------------------*/
-   
+
    if (equal_ustring(command, "programs")) {
       str[0] = 0;
       for (p=dec_path ; *p ; p++)
@@ -15710,35 +15715,35 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
          redirect(str);
          return;
       }
-      
+
       str[0] = 0;
       if (*getparam("Start"))
          sprintf(str, "?cmd=programs&Start=%s", getparam("Start"));
       if (*getparam("Stop"))
          sprintf(str, "?cmd=programs&Stop=%s", getparam("Stop"));
-      
+
       if (str[0])
          if (!check_web_password(cookie_wpwd, str, experiment))
             return;
-      
+
       show_programs_page();
       return;
    }
-   
+
    /*---- config command --------------------------------------------*/
-   
+
    if (equal_ustring(command, "config")) {
       show_config_page(refresh);
       return;
    }
-   
+
    /*---- Messages command ------------------------------------------*/
-   
+
    if (equal_ustring(command, "messages")) {
       show_messages_page(refresh, 20);
       return;
    }
-   
+
    if (strncmp(command, "More", 4) == 0 && strncmp(dec_path, "EL/", 3) != 0) {
       i = atoi(command + 4);
       if (i == 0)
@@ -15746,15 +15751,15 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       show_messages_page(0, i);
       return;
    }
-   
+
    /*---- ELog command ----------------------------------------------*/
-   
+
    if (equal_ustring(command, "elog")) {
       get_elog_url(str, sizeof(str));
       redirect(str);
       return;
    }
-   
+
    if (strncmp(dec_path, "EL/", 3) == 0) {
       if (equal_ustring(command, "new") || equal_ustring(command, "edit")
           || equal_ustring(command, "reply")) {
@@ -15762,66 +15767,66 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
          if (!check_web_password(cookie_wpwd, str, experiment))
             return;
       }
-      
+
       strlcpy(str, dec_path + 3, sizeof(str));
       show_elog_page(str, sizeof(str));
       return;
    }
-   
+
    if (equal_ustring(command, "Create ELog from this page")) {
       strlcpy(str, dec_path, sizeof(str));
       show_elog_page(str, sizeof(str));
       return;
    }
-   
+
    /*---- accept command --------------------------------------------*/
-   
+
    if (equal_ustring(command, "accept")) {
       refresh = atoi(getparam("refr"));
-      
+
       /* redirect with cookie */
       rsprintf("HTTP/1.0 302 Found\r\n");
       rsprintf("Server: MIDAS HTTP %d\r\n", mhttpd_revision());
       rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n");
-      
+
       time(&now);
       now += 3600 * 24 * 365;
       gmt = gmtime(&now);
       strftime(str, sizeof(str), "%A, %d-%b-%Y %H:00:00 GMT", gmt);
-      
+
       rsprintf("Set-Cookie: midas_refr=%d; path=/; expires=%s\r\n", refresh, str);
-      
+
       rsprintf("Location: ./\r\n\r\n<html>redir</html>\r\n");
-      
+
       return;
    }
-   
+
    /*---- delete command --------------------------------------------*/
-   
+
    if (equal_ustring(command, "delete")) {
       sprintf(str, "%s?cmd=delete", enc_path);
       if (!check_web_password(cookie_wpwd, str, experiment))
          return;
-      
+
       show_delete_page(enc_path, dec_path, value, index);
       return;
    }
-   
+
    /*---- slow control display --------------------------------------*/
-   
+
    if (strncmp(dec_path, "SC/", 3) == 0) {
       if (equal_ustring(command, "edit")) {
          sprintf(str, "%s?cmd=Edit&index=%d", dec_path, index);
          if (!check_web_password(cookie_wpwd, str, experiment))
             return;
       }
-      
+
       show_sc_page(dec_path + 3, refresh);
       return;
    }
-   
+
    /*---- sequencer page --------------------------------------------*/
-   
+
    if (equal_ustring(command, "sequencer")) {
       str[0] = 0;
       for (p=dec_path ; *p ; p++)
@@ -15831,50 +15836,50 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
       redirect(str);
       return;
    }
-   
+
    if (strncmp(dec_path, "SEQ/", 4) == 0) {
       show_seq_page();
       return;
    }
-   
+
    /*---- custom page -----------------------------------------------*/
-   
+
    if (strncmp(dec_path, "CS/", 3) == 0) {
       if (equal_ustring(command, "edit")) {
          sprintf(str, "%s?cmd=Edit&index=%d", dec_path+3, index);
          if (!check_web_password(cookie_wpwd, str, experiment))
             return;
       }
-      
+
       show_custom_page(dec_path + 3, cookie_cpwd);
       return;
    }
-   
+
    if (db_find_key(hDB, 0, "/Custom/Status", &hkey) == DB_SUCCESS && dec_path[0] == 0) {
       if (equal_ustring(command, "edit")) {
          sprintf(str, "%s?cmd=Edit&index=%d", dec_path, index);
          if (!check_web_password(cookie_wpwd, str, experiment))
             return;
       }
-      
+
       show_custom_page("Status", cookie_cpwd);
       return;
    }
-   
+
    /*---- show status -----------------------------------------------*/
-   
+
    if (dec_path[0] == 0) {
       if (elog_mode) {
          redirect("EL/");
          return;
       }
-      
+
       show_status_page(refresh, cookie_wpwd);
       return;
    }
-   
+
    /*---- show ODB --------------------------------------------------*/
-   
+
    if (dec_path[0]) {
       write_access = TRUE;
       db_find_key(hDB, 0, "/Experiment/Security/Web Password", &hkey);
@@ -15898,7 +15903,7 @@ void interprete(const char *cookie_pwd, const char *cookie_wpwd, const char *coo
 void decode_query(const char *query_string)
 {
    int len = strlen(query_string);
-   char buf[len+1];
+   char *buf = (char *)malloc(len+1);
    memcpy(buf, query_string, len+1);
    char* p = buf;
    p = strtok(p, "&");
@@ -15910,12 +15915,13 @@ void decode_query(const char *query_string)
          urlDecode(pitem); // parameter name
          if (!equal_ustring(pitem, "format"))
             urlDecode(p); // parameter value
-         
+
          setparam(pitem, p); // decoded query parameters
-         
+
          p = strtok(NULL, "&");
       }
    }
+   free(buf);
 }
 
 void decode_get(char *string, const char *cookie_pwd, const char *cookie_wpwd, const char *cookie_cpwd, int refresh, bool decode_url, const char* url, const char* query_string)
@@ -15924,12 +15930,12 @@ void decode_get(char *string, const char *cookie_pwd, const char *cookie_wpwd, c
 
    //printf("decode_get: string [%s], decode_url %d, url [%s], query_string [%s]\n", string, decode_url, url, query_string);
 
-   initparam();   
+   initparam();
    if (url)
       strlcpy(path, url + 1, sizeof(path));     /* strip leading '/' */
    else {
       strlcpy(path, string + 1, sizeof(path));     /* strip leading '/' */
-      
+
       if (strchr(path, '?'))
          *strchr(path, '?') = 0;
    }
@@ -15967,7 +15973,7 @@ void decode_post(const char *header, char *string, const char *boundary, int len
 
    initparam();
 
-   if (url) 
+   if (url)
       strlcpy(path, url + 1, sizeof(path));     /* strip leading '/' */
    else {
       strlcpy(path, header + 1, sizeof(path));     /* strip leading '/' */
@@ -16120,7 +16126,7 @@ INT check_odb_records(void)
          if (!hKey)
             break;
          db_get_key(hDB, hKey, &key);
-         
+
          status = db_check_record(hDB, hKey, "Common", EQUIPMENT_COMMON_STR, FALSE);
          if (status == DB_STRUCT_MISMATCH) {
             status = db_check_record(hDB, hKey, "Common", EQUIPMENT_COMMON_STR, TRUE);
@@ -16136,7 +16142,7 @@ INT check_odb_records(void)
          }
       }
    }
-   
+
    return CM_SUCCESS;
 }
 
@@ -16428,23 +16434,23 @@ void server_loop()
                         content_length = atoi(strstr(net_buffer, "Content-length:") + 15);
 
                      //printf("content-length %d\n", content_length);
-                     
+
                      boundary[0] = 0;
                      if (strstr(net_buffer, "boundary=")) {
                         strlcpy(boundary, strstr(net_buffer, "boundary=") + 9, sizeof(boundary));
                         if (strchr(boundary, '\r'))
                            *strchr(boundary, '\r') = 0;
                      }
-                     
+
                      if (strstr(net_buffer, "\r\n\r\n"))
                         header_length = (POINTER_T) strstr(net_buffer, "\r\n\r\n") - (POINTER_T) net_buffer + 4;
-                     
+
                      if (strstr(net_buffer, "\r\r\n\r\r\n"))
                         header_length = (POINTER_T) strstr(net_buffer, "\r\r\n\r\r\n") - (POINTER_T) net_buffer + 6;
                   }
 
                   //printf("header_length %d, len %d, header+contents %d\n", header_length, len, header_length + content_length);
-                  
+
                   if (header_length > 0 && (int) len >= header_length + content_length) {
                      if (header_length)
                         net_buffer[header_length - 1] = 0;
@@ -16600,7 +16606,7 @@ void server_loop()
       status = cm_yield(0);
       if (status == RPC_SHUTDOWN)
          break;
-      
+
       /* call sequencer periodically */
       sequencer();
 
@@ -16710,7 +16716,7 @@ static int event_handler_mg(struct mg_event *event)
       } else if (strcmp( event->request_info->request_method, "POST") == 0) {
 
          int max_post_data = 1024*1024;
-         char post_data[max_post_data];
+         char *post_data = (char *)malloc(max_post_data);
          // User has submitted a form, show submitted data and a variable value
          int post_data_len = mg_read(event->conn, post_data, sizeof(post_data));
 
@@ -16729,6 +16735,7 @@ static int event_handler_mg(struct mg_event *event)
          assert(status == SS_SUCCESS);
          locked = true;
          decode_post(NULL, post_data, boundary, post_data_len, cookie_pwd, cookie_wpwd, refresh, false, event->request_info->uri);
+         free(post_data);
       }
 
       if (debug_mg)
@@ -16740,7 +16747,7 @@ static int event_handler_mg(struct mg_event *event)
 
          if (debug_mg)
             printf("mongoose: corrected return buffer length %d bytes\n", return_length);
-         
+
          mg_write(event->conn, return_buffer, return_length);
 
          if (locked)
@@ -16753,7 +16760,7 @@ static int event_handler_mg(struct mg_event *event)
          ss_mutex_release(request_mutex);
 
       return 0;
-      
+
       // Returning non-zero tells mongoose that our function has replied to
       // the client, and mongoose should not send client any more data.
       // return 1; // return value "1" means we send reply to client. return value "0" means we do not know what to do with this.
@@ -16977,7 +16984,7 @@ int start_mg(const char* tcp_ports, int verbose)
          fclose(fp);
          fp = NULL;
       }
-      
+
       if (status != SUCCESS) {
          cm_msg(MERROR, "mongoose", "mongoose web server cannot find password file \"%s\"", path.c_str());
          cm_msg(MERROR, "mongoose", "please create password file: htdigest -c %s %s midas", path.c_str(), realm);
@@ -17003,11 +17010,13 @@ int start_mg(const char* tcp_ports, int verbose)
    }
 
    const char** options = get_options_mg();
-   
+
    if (debug_mg)
       printf("start_mg!\n");
 
+#ifndef OS_WINNT
    signal(SIGPIPE, SIG_IGN);
+#endif
 
    if (!request_mutex) {
       status = ss_mutex_create(&request_mutex);
@@ -17039,7 +17048,7 @@ int stop_mg()
 int loop_mg()
 {
    int status = SUCCESS;
-   
+
    /* establish Ctrl-C handler - will set _abort to TRUE */
    ss_ctrlc_handler(ctrlc_handler);
 
@@ -17048,7 +17057,7 @@ int loop_mg()
       status = cm_yield(100);
       if (status == RPC_SHUTDOWN)
          break;
-      
+
       /* call sequencer periodically */
       sequencer();
    }
@@ -17183,7 +17192,7 @@ int main(int argc, const char *argv[])
       }
    }
 #endif
-   
+
    /* place a request for system messages */
    cm_msg_register(receive_message);
 

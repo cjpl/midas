@@ -23,7 +23,7 @@ The main include file
 
 /** @defgroup midasincludecode The midas.h & midas.c
  */
-/** @defgroup mdefineh Midas Define 
+/** @defgroup mdefineh Midas Define
  */
 /** @defgroup mmacroh Midas Macros
  */
@@ -34,11 +34,11 @@ The main include file
 
 /**dox***************************************************************/
 /** @addtogroup midasincludecode
- *  
+ *
  *  @{  */
 
 /* has to be changed whenever binary ODB format changes */
-#define DATABASE_VERSION 3      
+#define DATABASE_VERSION 3
 
 /* MIDAS version number which will be incremented for every release */
 #define MIDAS_VERSION "2.1"
@@ -126,7 +126,7 @@ typedef long int INT;
 #include <windows.h>
 #endif
 
-#undef DB_TRUNCATED 
+#undef DB_TRUNCATED
 
 #else
 typedef int INT;
@@ -273,7 +273,7 @@ Timeouts [ms] */
 
 /**dox***************************************************************/
 /** @addtogroup mdefineh
- *  
+ *
  *  @{  */
 
 /**
@@ -370,7 +370,7 @@ Transitions values */
 #define TR_STARTABORT (1<<4)  /**< Start aborted transition  */
 #define TR_DEFERRED   (1<<12)
 
-/** 
+/**
 Equipment types */
 #define EQ_PERIODIC    (1<<0)   /**< Periodic Event */
 #define EQ_POLLED      (1<<1)   /**< Polling Event */
@@ -382,7 +382,7 @@ Equipment types */
 #define EQ_EB          (1<<7)   /**< Event run through the event builder */
 #define EQ_USER        (1<<8)   /**< Polling handled in user part */
 
-/** 
+/**
 Read - On flags */
 #define RO_RUNNING    (1<<0)   /**< While running */
 #define RO_STOPPED    (1<<1)   /**< Before stopping the run */
@@ -427,19 +427,19 @@ Code the LAM crate and LAM station into a bitwise register.
 */
 #define LAM_SOURCE(c, s)         (c<<24 | ((s) & 0xFFFFFF))
 
-/** 
+/**
 Code the Station number bitwise for the LAM source.
 @param s Slot number
 */
 #define LAM_STATION(s)           (1<<(s-1))
 
-/** 
+/**
 Convert the coded LAM crate to Crate number.
 @param c coded crate
 */
 #define LAM_SOURCE_CRATE(c)      (c>>24)
 
-/** 
+/**
 Convert the coded LAM station to Station number.
 @param s Slot number
 */
@@ -458,7 +458,7 @@ CNAF commands */
 
 /**dox***************************************************************/
 /** @addtogroup mmacroh
- *  
+ *
  *  @{
  */
 
@@ -489,7 +489,7 @@ Align macro for variable data alignment */
 
 /**dox***************************************************************/
 /** @addtogroup mdefineh
- *  
+ *
  *  @{  */
 /*
 * Bit flags */
@@ -529,7 +529,7 @@ System message types */
 
 /**dox***************************************************************/
 /** @addtogroup mdeferrorh
- *  
+ *
  *  @{
  */
 
@@ -581,7 +581,7 @@ System message types */
           /** @} *//* end of group 22 */
 
 /**dox***************************************************************/
-/**  @defgroup err23 Online Database error codes 
+/**  @defgroup err23 Online Database error codes
 @{ */
 #define DB_SUCCESS                    1   /**< - */
 #define DB_CREATED                  302   /**< - */
@@ -675,7 +675,7 @@ System message types */
 #define FE_ERR_DISABLED             604   /**< - */
 #define FE_ERR_DRIVER               605   /**< - */
 
-/** 
+/**
 History error code */
 #define HS_SUCCESS                    1   /**< - */
 #define HS_FILE_ERROR               702   /**< - */
@@ -685,7 +685,7 @@ History error code */
 #define HS_UNDEFINED_EVENT          706   /**< - */
 #define HS_UNDEFINED_VAR            707   /**< - */
 
-/** 
+/**
 FTP error code */
 #define FTP_SUCCESS                   1   /**< - */
 #define FTP_NET_ERROR               802   /**< - */
@@ -693,7 +693,7 @@ FTP error code */
 #define FTP_RESPONSE_ERROR          804   /**< - */
 #define FTP_INVALID_ARG             805   /**< - */
 
-/** 
+/**
 ELog error code */
 #define EL_SUCCESS                    1   /**< - */
 #define EL_FILE_ERROR               902   /**< - */
@@ -702,7 +702,7 @@ ELog error code */
 #define EL_FIRST_MSG                905   /**< - */
 #define EL_LAST_MSG                 906   /**< - */
 
-/** 
+/**
 Alarm error code */
 #define AL_SUCCESS                    1   /**< - */
 #define AL_INVALID_NAME            1002   /**< - */
@@ -710,7 +710,7 @@ Alarm error code */
 #define AL_RESET                   1004   /**< - */
 #define AL_TRIGGERED               1005   /**< - */
 
-/** 
+/**
 Slow control device driver commands */
 #define CMD_INIT                      1 /* misc. commands must be below 20 !! */
 #define CMD_EXIT                      2
@@ -758,7 +758,7 @@ Slow control device driver commands */
 #define CMD_ENABLE_COMMAND       (1<<14)  /* these two commands can be used to enable/disable */
 #define CMD_DISABLE_COMMAND      (1<<15)  /* one of the other commands                        */
 
-/** 
+/**
 Slow control bus driver commands */
 #define CMD_WRITE                   100
 #define CMD_READ                    101
@@ -767,7 +767,7 @@ Slow control bus driver commands */
 #define CMD_DEBUG                   104
 #define CMD_NAME                    105
 
-/** 
+/**
 Commands for interrupt events */
 #define CMD_INTERRUPT_ENABLE        100
 #define CMD_INTERRUPT_DISABLE       101
@@ -796,7 +796,7 @@ macros for bus driver access */
 
 /**dox***************************************************************/
 /** @addtogroup msectionh
- *  
+ *
  *  @{  */
 
 /**dox***************************************************************/
@@ -1329,7 +1329,7 @@ NULL }
 /*---- Alarm system ------------------------------------------------*/
 /**dox***************************************************************/
 /** @defgroup malarmh Alarm related
- * Alarm structure. 
+ * Alarm structure.
  *  @{  */
 
 /********************************************************************/
@@ -1880,7 +1880,7 @@ extern "C" {
    INT EXPRT rpc_client_call(HNDLE hConn, const INT routine_id, ...);
    INT EXPRT rpc_call(const INT routine_id, ...);
    INT EXPRT rpc_tid_size(INT id);
-   const char* EXPRT rpc_tid_name(INT id);
+   const char EXPRT *rpc_tid_name(INT id);
    INT EXPRT rpc_server_connect(const char *host_name, const char *exp_name);
    INT EXPRT rpc_client_connect(const char *host_name, INT midas_port,
                                 const char *client_name, HNDLE * hConnection);

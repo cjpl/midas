@@ -1,0 +1,1 @@
+echo \#define GIT_REVISION \"`git log -n 1 --pretty=format:'%ad - %h' --date=short`\"

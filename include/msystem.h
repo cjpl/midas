@@ -26,7 +26,7 @@ The Midas System include file
 
 /**dox***************************************************************/
 /** @addtogroup msystemincludecode
- *  
+ *
  *  @{  */
 
 /**dox***************************************************************/
@@ -39,7 +39,7 @@ The Midas System include file
 
 /**dox***************************************************************/
 /** @addtogroup msdefineh
- *  
+ *
  *  @{  */
 
 /**
@@ -59,7 +59,7 @@ data representations
 
 /**dox***************************************************************/
 /** @addtogroup msmacroh
- *  
+ *
  *  @{  */
 
 /* Byte and Word swapping big endian <-> little endian */
@@ -246,6 +246,15 @@ extern char **environ;
 #define MAX_SHM_SIZE      0x20000       /* 128k */
 #endif
 
+/* missing isnan() & co under Windows */
+#ifdef OS_WINNT
+#define isnan(x) _isnan(x)
+#define isinf(x) (!_finite(x))
+#define strcasecmp _stricmp
+#define strncasecmp _strnicmp
+#define ftruncate(x,y) _chsize(x,y)
+#endif
+
 /*------------------------------------------------------------------*/
 
 /* Network structures */
@@ -343,7 +352,7 @@ typedef struct {
 
 /**dox***************************************************************/
 /** @addtogroup mssectionh
- *  
+ *
  *  @{  */
 
 typedef struct {
@@ -606,7 +615,7 @@ extern "C" {
    INT ss_shm_open(const char *name, INT size, void **adr, HNDLE *handle, BOOL get_size);
    INT ss_shm_close(const char *name, void *adr, HNDLE handle, INT destroy_flag);
    INT ss_shm_flush(const char *name, const void *adr, INT size, HNDLE handle);
-   INT ss_shm_delete(const char *name);
+   INT EXPRT ss_shm_delete(const char *name);
    INT ss_shm_protect(HNDLE handle, void *adr);
    INT ss_shm_unprotect(HNDLE handle, void **adr);
    INT ss_spawnv(INT mode, const char *cmdname, char *argv[]);
@@ -697,5 +706,5 @@ extern "C" {
 #endif
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
-          
+
 /**dox***************************************************************//** @} *//* end of msystemincludecode */

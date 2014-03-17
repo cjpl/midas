@@ -27,12 +27,12 @@ The Midas System file
 
 /**dox***************************************************************/
 /** @addtogroup msystemincludecode
- *  
+ *
  *  @{  */
 
 /**dox***************************************************************/
 /** @addtogroup msfunctionc
- *  
+ *
  *  @{  */
 
 /**dox***************************************************************/
@@ -495,15 +495,15 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
 #ifdef OS_UNIX
 
    if (use_sysv_shm) {
-      
+
       int key, shmid, fh, file_size;
       struct shmid_ds buf;
-      
+
       status = SS_SUCCESS;
-      
+
       /* create a unique key from the file name */
       key = ftok(file_name, 'M');
-      
+
       /* if file doesn't exist, create it */
       if (key == -1) {
          fh = open(file_name, O_CREAT | O_TRUNC | O_BINARY | O_RDWR, 0644);
@@ -512,16 +512,16 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
             close(fh);
          }
          key = ftok(file_name, 'M');
-         
+
          if (key == -1) {
             cm_msg(MERROR, "ss_shm_open", "ftok() failed");
             return SS_FILE_ERROR;
          }
-         
+
          status = SS_CREATED;
-         
+
          /* delete any previously created memory */
-         
+
          shmid = shmget(key, 0, 0);
          shmctl(shmid, IPC_RMID, &buf);
       } else {
@@ -535,7 +535,7 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
             return SS_SIZE_MISMATCH;
          }
       }
-      
+
       /* get the shared memory, create if not existing */
       shmid = shmget(key, size, 0);
       if (shmid == -1) {
@@ -549,27 +549,27 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
          }
          status = SS_CREATED;
       }
-      
+
       if (shmid == -1) {
          cm_msg(MERROR, "ss_shm_open", "shmget(key=0x%x,size=%d) failed, errno %d (%s)",
                 key, size, errno, strerror(errno));
          return SS_NO_MEMORY;
       }
-      
+
       memset(&buf, 0, sizeof(buf));
       buf.shm_perm.uid = getuid();
       buf.shm_perm.gid = getgid();
       buf.shm_perm.mode = 0666;
       shmctl(shmid, IPC_SET, &buf);
-      
+
       *adr = shmat(shmid, 0, 0);
       *handle = (HNDLE) shmid;
-      
+
       if ((*adr) == (void *) (-1)) {
          cm_msg(MERROR, "ss_shm_open", "shmat(shmid=%d) failed, errno %d (%s)", shmid, errno, strerror(errno));
          return SS_NO_MEMORY;
       }
-      
+
       /* if shared memory was created, try to load it from file */
       if (status == SS_CREATED) {
          fh = open(file_name, O_RDONLY, 0644);
@@ -579,16 +579,16 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
             read(fh, *adr, size);
          close(fh);
       }
-      
+
       return status;
    }
-   
+
    if (use_mmap_shm) {
-      
+
       int ret;
       int fh, file_size;
       int i;
-      
+
       if (1) {
          static int once = 1;
          if (once && strstr(file_name, "ODB")) {
@@ -597,43 +597,43 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
                    "WARNING: This version of MIDAS system.c uses the experimental mmap() based implementation of MIDAS shared memory.");
          }
       }
-      
+
       status = SS_SUCCESS;
-      
+
       fh = open(file_name, O_RDWR | O_BINARY | O_LARGEFILE, 0644);
-      
+
       if (fh < 0) {
          if (errno == ENOENT) { // file does not exist
             fh = open(file_name, O_CREAT | O_RDWR | O_BINARY | O_LARGEFILE, 0644);
          }
-         
+
          if (fh < 0) {
             cm_msg(MERROR, "ss_shm_open",
                    "Cannot create shared memory file \'%s\', errno %d (%s)", file_name, errno, strerror(errno));
             return SS_FILE_ERROR;
          }
-         
+
          ret = lseek(fh, size - 1, SEEK_SET);
-         
+
          if (ret == (off_t) - 1) {
             cm_msg(MERROR, "ss_shm_open",
                    "Cannot create shared memory file \'%s\', size %d, lseek() errno %d (%s)",
                    file_name, size, errno, strerror(errno));
             return SS_FILE_ERROR;
          }
-         
+
          ret = 0;
          ret = write(fh, &ret, 1);
          assert(ret == 1);
-         
+
          ret = lseek(fh, 0, SEEK_SET);
          assert(ret == 0);
-         
+
          //cm_msg(MINFO, "ss_shm_open", "Created shared memory file \'%s\', size %d", file_name, size);
-         
+
          status = SS_CREATED;
       }
-      
+
       /* if file exists, retrieve its size */
       file_size = (INT) ss_file_size(file_name);
       if (file_size < size) {
@@ -642,16 +642,16 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
                 file_name, file_size, size);
          return SS_NO_MEMORY;
       }
-      
+
       size = file_size;
-      
+
       *adr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fh, 0);
-      
+
       if ((*adr) == MAP_FAILED) {
          cm_msg(MERROR, "ss_shm_open", "mmap() failed, errno %d (%s)", errno, strerror(errno));
          return SS_NO_MEMORY;
       }
-      
+
       *handle = -1;
       for (i = 0; i < MAX_MMAP; i++)
          if (mmap_addr[i] == NULL) {
@@ -661,92 +661,92 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
             break;
          }
       assert((*handle) >= 0);
-      
+
       return status;
    }
-   
+
    if (use_posix_shm) {
-      
+
       int fh, sh, file_size;
       int created = 0;
       int i;
-      
+
       status = SS_SUCCESS;
-      
+
       fh = open(file_name, O_RDWR | O_BINARY | O_LARGEFILE, 0644);
-      
+
       if (fh < 0) {
          // if cannot open file, try to create it
          fh = open(file_name, O_CREAT | O_RDWR | O_BINARY | O_LARGEFILE, 0644);
-         
+
          if (fh < 0) {
             cm_msg(MERROR, "ss_shm_open", "Cannot create shared memory file \'%s\', errno %d (%s)", file_name, errno, strerror(errno));
             return SS_FILE_ERROR;
          }
-         
+
          status = ftruncate(fh, size);
          if (status < 0) {
             cm_msg(MERROR, "ss_shm_open", "Cannot resize shared memory file \'%s\', size %d, errno %d (%s)", file_name, size, errno, strerror(errno));
             close(fh);
             return SS_FILE_ERROR;
          }
-         
+
          //cm_msg(MINFO, "ss_shm_open", "Created shared memory file \'%s\', size %d", file_name, size);
-         
+
          /* delete shared memory segment containing now stale data */
          ss_shm_delete(name);
-         
+
          status = SS_CREATED;
       }
-      
+
       /* if file exists, retrieve its size */
       file_size = (INT) ss_file_size(file_name);
       if (file_size < size) {
          cm_msg(MERROR, "ss_shm_open", "Shared memory file \'%s\' size %d is smaller than requested size %d. Please backup and remove this file and try again", file_name, file_size, size);
          return SS_NO_MEMORY;
       }
-      
+
       size = file_size;
 
       sh = shm_open(shm_name, O_RDWR, 0777);
-      
+
       if (sh < 0) {
          // cannot open, try to create new one
-         
+
          sh = shm_open(shm_name, O_RDWR | O_CREAT, 0777);
-         
+
          if (sh < 0) {
             cm_msg(MERROR, "ss_shm_open", "Cannot create shared memory segment \'%s\', shm_open() errno %d (%s)", shm_name, errno, strerror(errno));
             return SS_NO_MEMORY;
          }
-         
+
          status = ftruncate(sh, size);
          if (status < 0) {
             cm_msg(MERROR, "ss_shm_open", "Cannot resize shared memory segment \'%s\', ftruncate(%d) errno %d (%s)", shm_name, size, errno, strerror(errno));
             return SS_NO_MEMORY;
          }
-         
+
          //cm_msg(MINFO, "ss_shm_open", "Created shared memory segment \'%s\', size %d", shm_name, size);
-         
+
          created = 1;
       }
-      
+
       *adr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, sh, 0);
-      
+
       if ((*adr) == MAP_FAILED) {
          cm_msg(MERROR, "ss_shm_open", "Cannot mmap() shared memory \'%s\', errno %d (%s)", shm_name, errno, strerror(errno));
          close(fh);
          close(sh);
          return SS_NO_MEMORY;
       }
-      
+
       close(sh);
-      
+
       /* if shared memory was created, try to load it from file */
       if (created) {
          if (debug)
             printf("ss_shm_open(%s), loading contents of %s, size %d\n", name, file_name, size);
-         
+
          status = read(fh, *adr, size);
          if (status != size) {
             cm_msg(MERROR, "ss_shm_open", "Cannot read \'%s\', read() returned %d instead of %d, errno %d (%s)", file_name, status, size, errno, strerror(errno));
@@ -754,9 +754,9 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
             return SS_NO_MEMORY;
          }
       }
-      
+
       close(fh);
-      
+
       *handle = -1;
       for (i = 0; i < MAX_MMAP; i++)
          if (mmap_addr[i] == NULL) {
@@ -766,7 +766,7 @@ INT ss_shm_open(const char *name, INT size, void **adr, HNDLE * handle, BOOL get
             break;
          }
       assert((*handle) >= 0);
-      
+
       if (created)
          return SS_CREATED;
       else
@@ -992,22 +992,22 @@ INT ss_shm_delete(const char *name)
    if (use_sysv_shm) {
       int shmid;
       struct shmid_ds buf;
-      
+
       status = ss_shm_file_name_to_shmid(file_name, &shmid);
-      
+
       if (status != SS_SUCCESS)
          return status;
-      
+
       status = shmctl(shmid, IPC_RMID, &buf);
-      
+
       if (status == -1) {
          cm_msg(MERROR, "ss_shm_delete", "Cannot delete shared memory \'%s\', shmctl(IPC_RMID) failed, errno %d (%s)", name, errno, strerror(errno));
          return SS_FILE_ERROR;
       }
-      
+
       return SS_SUCCESS;
    }
-   
+
    if (use_mmap_shm) {
       /* no shared memory segments to delete */
       return SS_SUCCESS;
@@ -1064,7 +1064,7 @@ INT ss_shm_protect(HNDLE handle, void *adr)
 
       int i;
       i = handle;                  /* avoid compiler warning */
-      
+
       if (shmdt(adr) < 0) {
          cm_msg(MERROR, "ss_shm_protect", "shmdt() failed");
          return SS_INVALID_ADDRESS;
@@ -1077,7 +1077,7 @@ INT ss_shm_protect(HNDLE handle, void *adr)
 
       assert(handle>=0 && handle<MAX_MMAP);
       assert(adr == mmap_addr[handle]);
-      
+
       ret = mprotect(mmap_addr[handle], mmap_size[handle], PROT_NONE);
       if (ret != 0) {
          cm_msg(MERROR, "ss_shm_protect",
@@ -1127,7 +1127,7 @@ INT ss_shm_unprotect(HNDLE handle, void **adr)
    if (use_sysv_shm) {
 
       *adr = shmat(handle, 0, 0);
-      
+
       if ((*adr) == (void *) (-1)) {
          cm_msg(MERROR, "ss_shm_unprotect", "shmat() failed, errno = %d", errno);
          return SS_NO_MEMORY;
@@ -1202,7 +1202,7 @@ INT ss_shm_flush(const char *name, const void *adr, INT size, HNDLE handle)
       if (use_posix_shm) {
          if (debug)
             printf("ss_shm_flush(%s) size %d\n", file_name, size);
-         
+
          assert(handle>=0 && handle<MAX_MMAP);
          assert(adr == mmap_addr[handle]);
          assert(size == mmap_size[handle]);
@@ -1287,24 +1287,24 @@ INT ss_get_struct_align()
 
 INT ss_get_struct_padding()
 /********************************************************************\
- 
+
  Routine: ss_get_struct_padding
- 
+
  Purpose: Returns compiler padding of structures. Under some C
     compilers and architectures, C structures can be padded at the
     end to have a size of muliples of 4 or 8. This routine returns
     this number, like 8 if all structures are padded with 0-7 bytes
     to lie on an 8 byte boundary.
- 
+
  Input:
  <none>
- 
+
  Output:
  <none>
- 
+
  Function value:
  INT    Structure alignment
- 
+
  \********************************************************************/
 {
    return (INT) sizeof(test_padding) - 8;
@@ -1993,7 +1993,7 @@ INT ss_exec(const char *command, INT * pid)
 
 /********************************************************************/
 /**
-Creates and returns a new thread of execution. 
+Creates and returns a new thread of execution.
 
 Note the difference when calling from vxWorks versus Linux and Windows.
 The parameter pointer for a vxWorks call is a VX_TASK_SPAWN structure, whereas
@@ -2019,7 +2019,7 @@ if (thread_id == 0) {
 }
 ...
 \endcode
-@param (*thread_func) Thread function to create.  
+@param (*thread_func) Thread function to create.
 @param param a pointer to a VX_TASK_SPAWN structure for vxWorks and a void pointer
                 for Unix and Windows
 @return the new thread id or zero on error
@@ -2080,8 +2080,8 @@ midas_thread_t ss_thread_create(INT(*thread_func) (void *), void *param)
 }
 
 /********************************************************************/
-/** 
-Destroys the thread identified by the passed thread id. 
+/**
+Destroys the thread identified by the passed thread id.
 The thread id is returned by ss_thread_create() on creation.
 
 \code
@@ -2408,7 +2408,7 @@ INT ss_semaphore_wait_for(HNDLE semaphore_handle, INT timeout)
          struct timespec ts;
          ts.tv_sec  = 1;
          ts.tv_nsec = 0;
-         
+
          status = semtimedop(semaphore_handle, &sb, 1, &ts);
 #else
          status = semop(semaphore_handle, &sb, 1);
@@ -2722,7 +2722,7 @@ INT ss_mutex_wait_for(MUTEX_T *mutex, INT timeout)
 #if defined(OS_UNIX)
 
 #if defined(OS_DARWIN)
-   
+
    if (timeout > 0) {
       // emulate pthread_mutex_timedlock under OS_DARWIN
       DWORD wait = 0;
@@ -2733,9 +2733,9 @@ INT ss_mutex_wait_for(MUTEX_T *mutex, INT timeout)
             wait += 10;
          } else
             break;
-         
+
       } while (timeout == 0 || wait < timeout);
-      
+
    } else {
       status = pthread_mutex_lock(mutex);
    }
@@ -2744,7 +2744,7 @@ INT ss_mutex_wait_for(MUTEX_T *mutex, INT timeout)
       fprintf(stderr, "ss_mutex_wait_for: pthread_mutex_lock() returned errno %d (%s), aborting...\n", status, strerror(status));
       abort(); // does not return
    }
-   
+
    return SS_SUCCESS;
 
 #else // OS_DARWIN
@@ -2769,7 +2769,7 @@ INT ss_mutex_wait_for(MUTEX_T *mutex, INT timeout)
       fprintf(stderr, "ss_mutex_wait_for: pthread_mutex_lock() returned errno %d (%s), aborting...\n", status, strerror(status));
       abort();
    }
-   
+
    return SS_SUCCESS;
 #endif
 
@@ -2872,9 +2872,9 @@ INT ss_mutex_delete(MUTEX_T *mutex)
 #endif                          /* OS_VXWORKS */
 
 #ifdef OS_UNIX
-   { 
+   {
       int status;
-      
+
       status = pthread_mutex_destroy(mutex);
       if (status != 0) {
          fprintf(stderr, "ss_mutex_delete: pthread_mutex_destroy() returned errno %d (%s), aborting...\n", status, strerror(status));
@@ -3174,7 +3174,7 @@ INT ss_sleep(INT millisec)
 
    do {
       status = nanosleep(&ts, &ts);
-      if ((int)ts.tv_sec < 0) 
+      if ((int)ts.tv_sec < 0)
          break; // can be negative under OSX
    } while (status == -1 && errno == EINTR);
 #endif
@@ -4202,6 +4202,8 @@ int ss_socket_wait(int sock, INT millisec)
    while (1) {
       status = select(sock+1, &readfds, NULL, NULL, &timeout);
       //printf("ss_socket_wait: millisec %d, tv_sec %d, tv_usec %d, isset %d, status %d, errno %d (%s)\n", millisec, timeout.tv_sec, timeout.tv_usec, FD_ISSET(sock, &readfds), status, errno, strerror(errno));
+
+#ifndef OS_WINNT
       if (status<0 && errno==EINTR) { /* watchdog alarm signal */
          /* need to determine if select() updates "timeout" (Linux) or keeps original value (BSD) */
          if (timeout.tv_sec == timeout0.tv_sec) {
@@ -4216,6 +4218,7 @@ int ss_socket_wait(int sock, INT millisec)
          }
          continue;
       }
+#endif
       if (status < 0) { /* select() syscall error */
          cm_msg(MERROR, "ss_socket_wait", "unexpected error, select() returned %d, errno: %d (%s)", status, errno, strerror(errno));
          return SS_SOCKET_ERROR;
@@ -5893,28 +5896,28 @@ INT ss_file_find(char *path, char *pattern, char **plist)
 
 INT ss_dir_find(char *path, char *pattern, char **plist)
 /********************************************************************\
- 
+
  Routine: ss_dir_find
- 
+
  Purpose: Return list of direcories matching 'pattern' from the 'path' location
- 
+
  Input:
  char  *path             Name of a file in file system to check
  char  *pattern          pattern string (wildcard allowed)
- 
+
  Output:
  char  **plist           pointer to the lfile list
- 
+
  Function value:
  int                     Number of files matching request
- 
+
  \********************************************************************/
 {
    int i;
 #ifdef OS_UNIX
    DIR *dir_pointer;
    struct dirent *dp;
-   
+
    if ((dir_pointer = opendir(path)) == NULL)
       return 0;
    *plist = (char *) malloc(MAX_STRING_LENGTH);
@@ -5933,7 +5936,7 @@ INT ss_dir_find(char *path, char *pattern, char **plist)
 #ifdef OS_WINNT
    char str[255];
    int first;
-   
+
    strcpy(str, path);
    strcat(str, "\\");
    strcat(str, pattern);

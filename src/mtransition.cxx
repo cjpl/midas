@@ -72,7 +72,9 @@ int main(int argc, char *argv[])
    setbuf(stdout, NULL);
    setbuf(stderr, NULL);
 
+#ifndef OS_WINNT
    signal(SIGPIPE, SIG_IGN);
+#endif
 
    /* get default from environment */
    cm_get_environment(host_name, sizeof(host_name), exp_name, sizeof(exp_name));
@@ -139,7 +141,7 @@ int main(int argc, char *argv[])
    for (int i=1; i<argc; i++) {
 
       if (argv[i][0] == '-') {
-        
+
          // skip command line switches
 
          if (argv[i][1] == 'd')
@@ -330,7 +332,7 @@ int main(int argc, char *argv[])
          }
 
       } else {
-        
+
          fprintf(stderr,"Unknown command \'%s\'\n", argv[i]);
          usage(); // does not return
 

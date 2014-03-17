@@ -60,7 +60,7 @@ INT thread(void *p)
       sprintf(str, "%d", ss_gettid());
       status = db_set_value(hDB, 0, "/Experiment/Name", str, sizeof(str), 1, TID_STRING);
    } while (1);
-   
+
    return 0;
 }
 
@@ -715,7 +715,7 @@ INT cmd_dir(char *line, INT * cursor)
          db_get_link(hDB, hSubkey, &key);
          size = sizeof(data);
          db_get_link_data(hDB, hSubkey, data, &size, key.type);
-         
+
          if (key.type == TID_STRING || key.type == TID_LINK)
             sprintf(str, "\"%s\"", data);
          else
@@ -1548,7 +1548,7 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
                      key.item_size = NAME_LENGTH;
                } else if (k == -1)
                   key.item_size = NAME_LENGTH;
-               else 
+               else
                   key.item_size = k;
 
                db_set_link_data(hDB, hKey, data, key.item_size, 1, key.type);
@@ -1670,7 +1670,7 @@ int command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
             if (strchr(str, '[')) {
                if (*(strchr(str, '[') + 1) == '*')
                   index1 = -1;
-               else if (strchr((strchr(str, '[') + 1), '.') || 
+               else if (strchr((strchr(str, '[') + 1), '.') ||
                         strchr((strchr(str, '[') + 1), '-')) {
                   index1 = atoi(strchr(str, '[') + 1);
                   pc = strchr(str, '[') + 1;
