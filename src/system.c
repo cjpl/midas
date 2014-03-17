@@ -5732,7 +5732,7 @@ blockn:  >0 = block number, =0 option not available, <0 errno
 \********************************************************************/
 
 /*------------------------------------------------------------------*/
-double ss_disk_free(char *path)
+double ss_disk_free(const char *path)
 /********************************************************************\
 
   Routine: ss_disk_free
@@ -5825,7 +5825,7 @@ HANDLE pffile;
 LPWIN32_FIND_DATA lpfdata;
 #endif
 
-INT ss_file_find(char *path, char *pattern, char **plist)
+INT ss_file_find(const char *path, const char *pattern, char **plist)
 /********************************************************************\
 
   Routine: ss_file_find
@@ -5894,7 +5894,7 @@ INT ss_file_find(char *path, char *pattern, char **plist)
    return i;
 }
 
-INT ss_dir_find(char *path, char *pattern, char **plist)
+INT ss_dir_find(const char *path, const char *pattern, char **plist)
 /********************************************************************\
 
  Routine: ss_dir_find
@@ -5963,7 +5963,7 @@ INT ss_dir_find(char *path, char *pattern, char **plist)
    return i;
 }
 
-INT ss_file_remove(char *path)
+INT ss_file_remove(const char *path)
 /********************************************************************\
 
   Routine: ss_file_remove
@@ -5983,7 +5983,7 @@ INT ss_file_remove(char *path)
    return remove(path);
 }
 
-double ss_file_size(char *path)
+double ss_file_size(const char *path)
 /********************************************************************\
 
   Routine: ss_file_size
@@ -6021,7 +6021,7 @@ double ss_file_size(char *path)
 #endif
 }
 
-double ss_disk_size(char *path)
+double ss_disk_size(const char *path)
 /********************************************************************\
 
   Routine: ss_disk_size
