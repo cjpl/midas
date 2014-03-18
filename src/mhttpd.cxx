@@ -5077,7 +5077,7 @@ void show_sc_page(const char *path, int refresh)
 
                      if (strcmp(data_str, hex_str) != 0 && hex_str[0])
                         rsprintf
-                            ("<tr class=\"%s\" ><tdcolspan=9>%s<td align=center>%s (%s)<br></tr>\n",
+                            ("<tr class=\"%s\" ><td colspan=9>%s<td align=center>%s (%s)<br></tr>\n",
                              style, key.name, data_str, hex_str);
                      else
                         rsprintf("<tr class=\"%s\"><td colspan=9>%s<td align=center>%s<br></tr>\n",
