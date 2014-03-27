@@ -146,7 +146,9 @@ EQUIPMENT equipment[] = {
 
   resume_run:     When a run is resumed. Should enable trigger events.
 \********************************************************************/
-
+// 
+//----------------------------------------------------------------
+// callback when the key in ODB is touched (see db_open_record below)
 void seq_callback(INT hDB, INT hseq, void *info)
 {
   KEY key;
@@ -156,6 +158,7 @@ void seq_callback(INT hDB, INT hseq, void *info)
 
 //
 //----------------------------------------------------------------
+//
 int ccUsbFlush(void) {
   short IntArray [10000];  //for FIFOREAD
   
@@ -173,6 +176,7 @@ int ccUsbFlush(void) {
 }
 
 /*-- Frontend Init -------------------------------------------------*/
+// Executed once at the start of the applicatoin
 INT frontend_init() {
 
   int size, status;
@@ -184,16 +188,19 @@ INT frontend_init() {
   // Map /equipment/<eq_name>/settings 
   sprintf(set_str, "/Equipment/Trigger/Settings");
   
-  // create Settings if not existing 
+  // create the ODB Settings if not existing under Equipment/<eqname>/
+  // If already existing, don't change anything 
   status = db_create_record(hDB, 0, set_str, strcomb(ccusb_settings_str));
   if (status != DB_SUCCESS) {
     cm_msg(MERROR, "ccusb", "cannot create record (%s)", set_str);
     return FE_ERR_ODB;
   }
   
+  // Get the equipment/<eqname>/Settings key
   status = db_find_key(hDB, 0, set_str, &hSetCC);
   
   // Enable hot-link on /Settings of the equipment
+  // Anything changed under /Settings will be triggering the callback (above)
   size = sizeof(CCUSB_SETTINGS);
   if ((status = db_open_record(hDB, hSetCC, &tscc, size, MODE_READ
 			       , seq_callback, NULL)) != DB_SUCCESS) {
@@ -232,6 +239,7 @@ INT frontend_exit()
 }
 
 /*-- Begin of Run --------------------------------------------------*/
+// Done on every begin of run 
 INT begin_of_run(INT run_number, char *error) {
 
   //
@@ -242,14 +250,16 @@ INT begin_of_run(INT run_number, char *error) {
   long d24;
 
   // Create the CAMAC list to be performed on each LAM
-
   StackCreate(stack);
+
+  // StackXxx(), MRAD16, WMARKER, etc and macros are defined in 
+  // in ccusb.h
   //                   n      a   f  inc_A_counter
   StackFill(MRAD16, SLOT_ADC, 0 , 2, 12, stack);  
   StackFill(WMARKER, 0, 0, 0, 0xFEED, stack);
   StackClose(stack);
 
-  // Check stack before writing
+  // Debugging Check stack before writing
   printf("stack[0]:%ld\n", stack[0]);
   for (i = 0; i < stack[0]+1; i++) {
     printf("stack[%i]=0x%lx\n", i, stack[i]);
@@ -266,7 +276,7 @@ INT begin_of_run(INT run_number, char *error) {
     }
   }
   
-  // Read stack 
+  // Debuggung Read stack 
   ret = xxusb_stack_read(udev, 2, stack);
   if (ret<0) {
     printf("err on stack_read:%d\n", ret);
