@@ -435,7 +435,7 @@ BOOL PHvEdit::UpdateChannelDefinitions()
   for (i=0; i<f_nChannels; i++) {
     if (strchr((const char *) fName+i*f_nNameLength, '%')) {
       strcpy(str, (const char *) fName+i*f_nNameLength);
-      *strchr((const char *) str, '%') = 0;
+      *const_cast<char*>(strchr((const char *) str, '%')) = 0;
       if ((lBI = fDevice_listBox->findItem(str, Qt::ExactMatch))==0) { // device item new
         fDevice_listBox->insertItem(str);
         fGroup[i] = f_nGroups;
