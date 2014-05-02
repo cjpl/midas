@@ -506,6 +506,10 @@ INT mscbhvr(INT cmd, ...)
       *pivalue = 0; // not implemented for the moment...
       status = FE_SUCCESS;
       break;
+         
+   case CMD_GET_STATUS:
+   case CMD_GET_TEMPERATURE:
+      breeak;
 
    case CMD_START:
    case CMD_STOP:
