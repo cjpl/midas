@@ -68,5 +68,5 @@ INCLUDEPATH += $${BaseForms}
 #
 # linux standard libs
 #
-unix:LIBS += -lbsd -lm -lutil -lmidas
+unix:LIBS += -lbsd -lm -lutil -lmidas -lrt
 #

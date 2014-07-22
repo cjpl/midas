@@ -777,7 +777,7 @@ Commands for interrupt events */
 /**
 macros for bus driver access */
 #define BD_GETS(s,z,p,t)   info->bd(CMD_GETS, info->bd_info, s, z, p, t)
-#define BD_READS(s,z,p,t)  info->bd(CMD_READ, info->bd_info, s, z, p, t)
+#define BD_READS(s,z,t)    info->bd(CMD_READ, info->bd_info, s, z, t)
 #define BD_PUTS(s)         info->bd(CMD_PUTS, info->bd_info, s)
 #define BD_WRITES(s)       info->bd(CMD_WRITE, info->bd_info, s)
 

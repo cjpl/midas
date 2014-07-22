@@ -500,6 +500,8 @@ INT mscbhvr(INT cmd, ...)
       break;
 
    case CMD_GET_TRIP:
+   case CMD_GET_STATUS:
+   case CMD_GET_TEMPERATURE:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       pivalue = va_arg(argptr, INT *);

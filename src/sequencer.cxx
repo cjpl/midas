@@ -455,6 +455,8 @@ BOOL msl_parse(char *filename, char *error, int error_size, int *error_line)
             else
                fprintf(fout, "<ODBSet l=\"%d\" path=\"%s\">%s</ODBSet>\n", line+1, list[1], list[2]);
             
+         } else if (equal_ustring(list[0], "odbget")) {
+               fprintf(fout, "<ODBGet l=\"%d\" path=\"%s\">%s</ODBGet>\n", line+1, list[1], list[2]);
          } else if (equal_ustring(list[0], "odbsubdir")) {
             if (list[2][0])
                fprintf(fout, "<ODBSubdir l=\"%d\" notify=\"%s\" path=\"%s\">\n", line+1, list[2], list[1]);
@@ -2106,6 +2108,47 @@ void sequencer()
       }
    }
    
+   /*---- ODBGet ----*/
+   else if (equal_ustring(mxml_get_name(pn), "ODBGet")) {
+      if (!mxml_get_attribute(pn, "path")) {
+         seq_error("Missing attribute \"path\"");
+      } else {
+         strlcpy(odbpath, seq.subdir, sizeof(odbpath));
+         if (strlen(odbpath) > 0 && odbpath[strlen(odbpath)-1] != '/')
+            strlcat(odbpath, "/", sizeof(odbpath));
+         strlcat(odbpath, mxml_get_attribute(pn, "path"), sizeof(odbpath));
+         
+         /* check if index is supplied */
+         index1 = 0;
+         if (odbpath[strlen(odbpath) - 1] == ']') {
+            if (strchr(odbpath, '['))
+               index1 = atoi(strchr(odbpath, '[') + 1);
+            *strchr(odbpath, '[') = 0;
+         }
+         
+         strlcpy(name, mxml_get_value(pn), sizeof(name));
+         status = db_find_key(hDB, 0, odbpath, &hKey);
+         if (status != DB_SUCCESS) {
+            sprintf(str, "Cannot find ODB key \"%s\"", odbpath);
+            seq_error(str);
+            return;
+         } else {
+            db_get_key(hDB, hKey, &key);
+            size = sizeof(data);
+
+            status = db_get_data_index(hDB, hKey, data, &size, index1, key.type);
+            db_sprintf(value, data, size, 0, key.type);
+            
+            sprintf(str, "/Sequencer/Variables/%s", name);
+            db_set_value(hDB, 0, str, value, strlen(value)+1, 1, TID_STRING);
+            
+            size = sizeof(seq);
+            db_get_record(hDB, hKeySeq, &seq, &size, 0); // could have changed seq tree
+            seq.current_line_number = mxml_get_line_number_end(pn)+1;
+         }
+      }
+   }
+
    /*---- ODBInc ----*/
    else if (equal_ustring(mxml_get_name(pn), "ODBInc")) {
       if (!mxml_get_attribute(pn, "path")) {

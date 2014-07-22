@@ -63,6 +63,9 @@ typedef struct {
 
 class PHvEdit;
 
+void NamesChanged(int, int, void *info);
+void HVChanged(HNDLE, HNDLE, void *info);
+
 //-----------------------------------------------------------------------------
 class PHvEditXMLParser : public QXmlDefaultHandler
 {
