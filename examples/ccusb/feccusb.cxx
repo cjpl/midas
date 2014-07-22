@@ -52,7 +52,7 @@ INT event_buffer_size = 100 * 10000;
 
 /* CAMAC crate and slots */
 #define SLOT_IO   23
-#define SLOT_ADC  16
+#define SLOT_ADC  10
 #define SLOT_TDC  15
 #define SLOT_SCLR  3
 
@@ -220,13 +220,23 @@ INT frontend_init() {
     return FE_ERR_HW;
   } 
 
+  //  Stop DAQ mode in case it ws left running (after crash)
+  int ret = xxusb_register_write(udev, 1, 0x0);
+  printf("stop DAQ return:%d\n", ret);
+
+  // Flush old data first
+  ret = ccUsbFlush();
+  printf("Flush return:%d\n", ret);
+
   // CAMAC CLEAR
-  CAMAC_C(udev);
+  ret = CAMAC_C(udev);
+  printf("CAMAC_C return:%d\n", ret);
   // CAMAC Z
-  CAMAC_Z(udev);
+  ret = CAMAC_Z(udev);
+  printf("CAMAC_Z return:%d\n", ret);
   
   /* print message and return FE_ERR_HW if frontend should not be started */
-  cm_msg(MINFO, "ccusb", "CC-SUB ready");
+  cm_msg(MINFO, "ccusb", "CC-USB ready");
   return SUCCESS;
 }
 
@@ -267,6 +277,7 @@ INT begin_of_run(INT run_number, char *error) {
 
   // Load stack into CC-USB
   ret = xxusb_stack_write(udev, 2, stack);
+  ret -= 2;
   if (ret<0) {
     printf("err on stack_write:%d\n", ret);
   } else {
@@ -276,12 +287,12 @@ INT begin_of_run(INT run_number, char *error) {
     }
   }
   
-  // Debuggung Read stack 
+  // Debugging Read stack 
   ret = xxusb_stack_read(udev, 2, stack);
   if (ret<0) {
     printf("err on stack_read:%d\n", ret);
   } else {
-    printf("ret from stack_read:%d\n", ret);
+    printf("Nbytes(ret) from stack_read:%d\n", ret);
     for (i = 0; i < (ret/2); i++) {
       printf("Rstack[%i]=0x%lx\n", i, stack[i]);
     }
@@ -292,20 +303,26 @@ INT begin_of_run(INT run_number, char *error) {
   
   //  Define LAM time out to 100us for external LAM;
   // bits 0 to 15 in Delay Register N(25) A(2) F(16) 
-  ret = CAMAC_write(udev, 25, 2, 16, 0x6400000, &q, &x);
+  ret = CAMAC_write(udev, 25, 2, 16, 0xFFFFFF, &q, &x);
 
   //  Enable LAM
   ret = CAMAC_read(udev, SLOT_ADC, 0, 26, &d24, &q, &x);
 
-  // Set buffer size to 1 event at the time Buff
+  // Set buffer size to (0:4kD16) 6:64D16) (7:one event)
   // Opt in Global Mode register N(25) A(1) F(16)    
-  ret = CAMAC_write(udev, 25, 1, 16, 0x7, &q, &x);
+  ret = CAMAC_write(udev, 25, 1, 16, 0x6, &q, &x);
+
+  // Set DGG to create gate for ADC (500==5us, 50==500ns
+  //                             500us      
+  ret = CAMAC_DGG(udev, 1, 7, 1, 50000, 500, 0, 0);
+
+  //  Clear module
+  ret = CAMAC_read(udev, SLOT_ADC, 0, 9, &d24, &q, &x);
 
   //  Start DAQ mode
   ret = xxusb_register_write(udev, 1, 0x1);
-  
-  //  Clear module
-  ret = CAMAC_read(udev, SLOT_ADC, 0, 9, &d24, &q, &x);
+  //
+  // NO MORE CAMAC calls as the Module is in acquisition
 
   return SUCCESS;
 }
@@ -317,6 +334,7 @@ INT end_of_run(INT run_number, char *error)
 
   //  Stop DAQ mode
   ret = xxusb_register_write(udev, 1, 0x0);
+  printf("End of run Stop DAQ return:%d\n", ret);
 
   // -PAA-
   // flush data, these data are lost as the run is already closed.
@@ -329,13 +347,30 @@ INT end_of_run(INT run_number, char *error)
 /*-- Pause Run -----------------------------------------------------*/
 INT pause_run(INT run_number, char *error)
 {
+  int ret;
+  //  Stop DAQ mode
+  ret = xxusb_register_write(udev, 1, 0x0);
+
+  // -PAA-
+  // flush data, these data are lost as the run is already closed.
+  // will implement deferred transition later to fix this issue
+  ret = ccUsbFlush();
    return SUCCESS;
 }
 
 /*-- Resume Run ----------------------------------------------------*/
 INT resume_run(INT run_number, char *error)
 {
-   return SUCCESS;
+  int ret, q, x;
+  long d24;
+
+  //  Clear module
+  ret = CAMAC_read(udev, SLOT_ADC, 0, 9, &d24, &q, &x);
+
+  //  Start DAQ mode
+  ret = xxusb_register_write(udev, 1, 0x1);
+
+  return SUCCESS;
 }
 
 /*-- Frontend Loop -------------------------------------------------*/

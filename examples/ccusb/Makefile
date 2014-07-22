@@ -103,6 +103,6 @@ analyzer: $(LIB) $(LIB_DIR)/rmana.o analyzer.o $(MODULES)
 	$(CXX) $(USERFLAGS) $(ROOTCFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
 
 clean::
-	rm -f *.o *~ \#*
+	rm -f $(UFE) *.o *~ \#*
 
 #end file
