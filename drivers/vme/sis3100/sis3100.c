@@ -448,6 +448,8 @@ unsigned int mvme_read_value(MVME_INTERFACE *vme, mvme_addr_t vme_addr)
          status = vme_A32D32_read(hvme, (u_int32_t) vme_addr, (u_int32_t *) &data);
    }
 
+   if (status);
+
    return data;
 }
 
