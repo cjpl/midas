@@ -415,11 +415,11 @@ HsSchema::~HsSchema() // dtor
    // only report if undersize/oversize happens more than once -
    // the first occurence is already reported by hs_write_event()
    if (count_write_undersize > 1) {
-      cm_msg(MERROR, "hs_write_event", "Event \'%s\' data size mismatch count: %d, expected %d bytes, hs_write_event() called with is a few as %d bytes", event_name.c_str(), count_write_undersize, n_bytes, write_min_size);
+      cm_msg(MERROR, "hs_write_event", "Event \'%s\' data size mismatch count: %d, expected %d bytes, hs_write_event() called with as few as %d bytes", event_name.c_str(), count_write_undersize, n_bytes, write_min_size);
    }
 
    if (count_write_oversize > 1) {
-      cm_msg(MERROR, "hs_write_event", "Event \'%s\' data size mismatch count: %d, expected %d bytes, hs_write_event() called with is as much as %d bytes", event_name.c_str(), count_write_oversize, n_bytes, write_max_size);
+      cm_msg(MERROR, "hs_write_event", "Event \'%s\' data size mismatch count: %d, expected %d bytes, hs_write_event() called with as much as %d bytes", event_name.c_str(), count_write_oversize, n_bytes, write_max_size);
    }
 };
 
