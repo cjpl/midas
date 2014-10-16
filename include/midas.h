@@ -1705,6 +1705,7 @@ extern "C" {
    INT EXPRT cm_msg_register(void (*func)
                               (HNDLE, HNDLE, EVENT_HEADER *, void *));
    INT EXPRT cm_msg_retrieve(INT n_message, char *message, INT buf_size);
+   void EXPRT cm_msg_get_logfile(const char *facility, char *str, int size);
 
    BOOL EXPRT equal_ustring(const char *str1, const char *str2);
 

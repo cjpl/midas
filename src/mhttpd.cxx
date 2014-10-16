@@ -1056,7 +1056,7 @@ void show_help_page()
 
    rsprintf("        <tr>\n");
    rsprintf("          <td style=\"text-align:right;\">midas.log:</td>\n");
-   strlcpy(str, "???", sizeof(str)); // how do we get the location of midas.log?!?
+   cm_msg_get_logfile(NULL, str, sizeof(str));
    rsprintf("          <td style=\"text-align:left;\">%s</td>\n", str);
    rsprintf("        </tr>\n");
 
