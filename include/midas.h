@@ -1995,9 +1995,13 @@ extern "C" {
    void mfe_error(const char *error);
    void mfe_set_error(void (*dispatcher) (const char *));
    int set_equipment_status(const char *name, const char *eq_status, const char *status_color);
-   INT get_event_rb();
-   INT stop_readout_threads();
-   void signal_readout_thread_active(int flag);
+   INT create_event_rb(int i);
+   INT get_event_rbh(int i);
+   INT create_event_rb(int i);
+   void stop_readout_threads();
+   int is_readout_thread_enabled();
+   int is_readout_thread_active();
+   void signal_readout_thread_active(int index, int flag);
 
    /*---- analyzer functions ----*/
    void EXPRT test_register(ANA_TEST * t);

@@ -115,7 +115,16 @@ EQUIPMENT equipment[] = {
 
 INT frontend_init()
 {
-   ss_thread_create(trigger_thread, NULL);
+   /* for this demo, use two readout threads */
+   for (int i=0 ; i<2 ; i++) {
+      
+      /* create a ring buffer for each thread */
+      create_event_rb(i);
+      
+      /* create readout thread */
+      ss_thread_create(trigger_thread, (void*)(PTYPE)i);
+   }
+   
    return SUCCESS;
 }
 
@@ -182,6 +191,7 @@ INT poll_event(INT source, INT count, BOOL test)
 /*-- Interrupt configuration ---------------------------------------*/
 
 INT interrupt_configure(INT cmd, INT source, POINTER_T adr)
+/* Interrupts are not used in this example */
 {
    return SUCCESS;
 }
@@ -192,21 +202,26 @@ INT trigger_thread(void *param)
 {
    EVENT_HEADER *pevent;
    WORD *pdata, *padc;
-   int i, status;
+   int  index, i, status;
    INT rbh;
    
+   /* index of this thread */
+   index = (int)(PTYPE)param;
+   
    /* tell framework that we are alive */
-   signal_readout_thread_active(1);
+   signal_readout_thread_active(index, TRUE);
    
    /* Initialize hardware here ... */
+   printf("Start readout thread %d\n", index);
    
    /* Obtain ring buffer for inter-thread data exchange */
-   rbh = get_event_rb();
+   rbh = get_event_rbh(index);
    
-   while (!stop_readout_threads()) {
+   while (is_readout_thread_enabled()) {
+      
       /* obtain buffer space */
       status = rb_get_wp(rbh, (void **)&pevent, 0);
-      if (stop_readout_threads())
+      if (!is_readout_thread_enabled())
          break;
       if (status == DB_TIMEOUT) {
          ss_sleep(10);
@@ -220,11 +235,10 @@ INT trigger_thread(void *param)
       
       if (status) { // if event available, read it out
          
-         if (stop_readout_threads())
+         if (!is_readout_thread_enabled())
             break;
          
          bm_compose_event(pevent, 1, 0, 0, equipment[0].serial_number++);
-         //            printf("%d ", equipment[0].serial_number);
          pdata = (WORD *)(pevent + 1);
          
          /* init bank structure */
@@ -233,7 +247,7 @@ INT trigger_thread(void *param)
          /* create ADC0 bank */
          bk_create(pdata, "ADC0", TID_WORD, &padc);
          
-         /* just put in some random numbers */
+         /* just put in some random numbers in this demo */
          for (i=0 ; i<10 ; i++)
             *padc++ = rand() % 1024;
          
@@ -247,6 +261,9 @@ INT trigger_thread(void *param)
    }
    
    /* tell framework that we are finished */
-   signal_readout_thread_active(1);
+   signal_readout_thread_active(index, FALSE);
+   
+   printf("Stop readout thread %d\n", index);
+
    return 0;
 }

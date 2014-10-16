@@ -52,6 +52,8 @@ INT rpc_mode = 1; // 0 for RPC socket, 1 for event socket
 
 #define DEFAULT_FE_TIMEOUT  60000       /* 60 seconds for watchdog timeout */
 
+#define MAX_N_THREADS          32       /* maximum number of readout threads */
+
 INT run_state;                  /* STATE_RUNNING, STATE_STOPPED, STATE_PAUSED */
 INT run_number;
 DWORD actual_time;              /* current time in seconds since 1970 */
@@ -84,10 +86,10 @@ void *frag_buffer = NULL;
 int *n_events;
 
 /* inter-thread communication */
-int rbh = 0;
+int rbh[MAX_N_THREADS];
 volatile int stop_all_threads = 0;
 int _readout_thread(void *param);
-volatile int readout_thread_active = 0;
+volatile int readout_thread_active[MAX_N_THREADS];
 void mfe_error_check(void);
 
 int send_event(INT idx, BOOL manual_trig);
@@ -791,9 +793,7 @@ INT initialize_equipment(void)
                interrupt_eq = &equipment[idx];
                
                /* create ring buffer for inter-thread data transfer */
-               if (!rbh) {
-                  rb_create(event_buffer_size, max_event_size, &rbh);
-               }
+               create_event_rb(0);
                
                /* establish interrupt handler */
                interrupt_configure(CMD_INTERRUPT_ATTACH, idx,
@@ -874,9 +874,7 @@ INT initialize_equipment(void)
                   multithread_eq = &equipment[idx];
 
                   /* create ring buffer for inter-thread data transfer */
-                  if (!rbh) {
-                     rb_create(event_buffer_size, max_event_size, &rbh);
-                  }
+                  create_event_rb(0);
 
                   /* create hardware reading thread */
                   readout_enable(FALSE);
@@ -895,11 +893,7 @@ INT initialize_equipment(void)
       
       if (eq_info->eq_type & EQ_USER) {
          if (equipment[idx].status != FE_ERR_DISABLED) {
-            if (eq_info->enabled) {
-               /* create ring buffer for inter-thread data transfer */
-               if (!rbh)
-                  rb_create(event_buffer_size, max_event_size, &rbh);
-            } else {
+            if (!eq_info->enabled) {
                equipment[idx].status = FE_ERR_DISABLED;
                cm_msg(MINFO, "initialize_equipment",
                       "Equipment %s disabled in frontend",
@@ -1305,13 +1299,6 @@ void readout_enable(BOOL flag)
       else
          interrupt_configure(CMD_INTERRUPT_DISABLE, 0, 0);
    }
-
-   if (multithread_eq) {
-      /* readout thread might still be in readout, so wait until finished */
-      if (flag == 0)
-         while (readout_thread_active)
-            ss_sleep(10);
-   }
 }
 
 /*------------------------------------------------------------------*/
@@ -1324,7 +1311,7 @@ void interrupt_routine(void)
 
    /* get pointer for upcoming event.
       This is a blocking call if no space available */
-   status = rb_get_wp(rbh, &p, 100000);
+   status = rb_get_wp(get_event_rbh(0), &p, 100000);
 
    if (status == DB_SUCCESS) {
       pevent = (EVENT_HEADER *)p;
@@ -1343,7 +1330,7 @@ void interrupt_routine(void)
       if (pevent->data_size) {
 
          /* put event into ring buffer */
-         rb_increment_wp(rbh, sizeof(EVENT_HEADER) + pevent->data_size);
+         rb_increment_wp(get_event_rbh(0), sizeof(EVENT_HEADER) + pevent->data_size);
 
       } else
          interrupt_eq->serial_number--;
@@ -1354,19 +1341,43 @@ void interrupt_routine(void)
 
 /* routines to be called from user code */
 
-int get_event_rb()
+int create_event_rb(int i)
 {
-   return rbh;
+   int status;
+   
+   assert(i < MAX_N_THREADS);
+   assert(rbh[i] == 0);
+   status = rb_create(event_buffer_size, max_event_size, &rbh[i]);
+   assert(status == DB_SUCCESS);
+   return rbh[i];
 }
 
-int stop_readout_threads()
+int get_event_rbh(int i)
 {
-   return stop_all_threads;
+   return rbh[i];
 }
 
-void signal_readout_thread_active(int flag)
+void stop_readout_threads()
 {
-   readout_thread_active = 0;
+   stop_all_threads = 1;
+}
+
+int is_readout_thread_enabled()
+{
+   return !stop_all_threads;
+}
+
+int is_readout_thread_active()
+{
+   for (int i =0 ; i<MAX_N_THREADS ; i++)
+      if (readout_thread_active[i])
+         return TRUE;
+   return FALSE;
+}
+
+void signal_readout_thread_active(int index, int flag)
+{
+   readout_thread_active[index] = flag;
 }
 
 /*------------------------------------------------------------------*/
@@ -1377,11 +1388,14 @@ int _readout_thread(void *param)
    EVENT_HEADER *pevent;
    void *p;
 
+   /* indicate activity to framework */
+   signal_readout_thread_active(0, 1);
+
    p = param; /* avoid compiler warning */
    while (!stop_all_threads) {
       /* obtain buffer space */
 
-      status = rb_get_wp(rbh, &p, 0);
+      status = rb_get_wp(get_event_rbh(0), &p, 0);
       if (stop_all_threads)
          break;
       if (status == DB_TIMEOUT) {
@@ -1394,9 +1408,6 @@ int _readout_thread(void *param)
 
       if (readout_enabled()) {
         
-         /* indicate activity for readout_enable() */
-         readout_thread_active = 1;
-
          /* check for new event */
          source = poll_event(multithread_eq->info.source, multithread_eq->poll_count, FALSE);
 
@@ -1432,19 +1443,17 @@ int _readout_thread(void *param)
 
             if (pevent->data_size > 0) {
                /* put event into ring buffer */
-               rb_increment_wp(rbh, sizeof(EVENT_HEADER) + pevent->data_size);
+               rb_increment_wp(get_event_rbh(0), sizeof(EVENT_HEADER) + pevent->data_size);
             } else
                multithread_eq->serial_number--;
          }
-
-         readout_thread_active = 0;
 
       } else // readout_enabled
         ss_sleep(10);
 
    }
 
-   readout_thread_active = 0;
+   signal_readout_thread_active(0, 0);
 
    return 0;
 }
@@ -1453,7 +1462,7 @@ int _readout_thread(void *param)
 
 int receive_trigger_event(EQUIPMENT *eq)
 {
-   int i, status;
+   int status;
    EVENT_HEADER *prb = NULL, *pevent;
    void *p;
 
@@ -1467,9 +1476,8 @@ int receive_trigger_event(EQUIPMENT *eq)
    }
 #endif
    
-   i=0;
-   while(rbh) {
-      status = rb_get_rp(rbh, &p, 10);
+   for (int i=0 ; get_event_rbh(i) ; i++) {
+      status = rb_get_rp(get_event_rbh(i), &p, 10);
       prb = (EVENT_HEADER *)p;
       if (status == DB_TIMEOUT)
          return 0;
@@ -1509,8 +1517,7 @@ int receive_trigger_event(EQUIPMENT *eq)
          }
       }
       
-      rb_increment_rp(rbh, sizeof(EVENT_HEADER) + prb->data_size);
-      i++;
+      rb_increment_rp(get_event_rbh(i), sizeof(EVENT_HEADER) + prb->data_size);
    } // for rbh[]
 
    if (prb == NULL)
@@ -1563,7 +1570,7 @@ void display(BOOL bInit)
       ss_printf(0, 3,
                 "================================================================================");
       ss_printf(0, 4,
-                "Equipment     Status     Events     Events/sec Rate[kB/s] ODB->FE    FE->ODB");
+                "Equipment     Status     Events     Events/sec Rate[B/s]  ODB->FE    FE->ODB");
       ss_printf(0, 5,
                 "--------------------------------------------------------------------------------");
       for (i = 0; equipment[i].name[0]; i++)
@@ -1600,8 +1607,21 @@ void display(BOOL bInit)
          ss_printf(25, i + 6, "%1.3lfM     ", equipment[i].stats.events_sent / 1E6);
       else
          ss_printf(25, i + 6, "%1.0lf      ", equipment[i].stats.events_sent);
-      ss_printf(36, i + 6, "%1.1lf      ", equipment[i].stats.events_per_sec);
-      ss_printf(47, i + 6, "%1.1lf      ", equipment[i].stats.kbytes_per_sec);
+      
+      if (equipment[i].stats.events_per_sec > 1E6)
+         ss_printf(36, i + 6, "%1.3lfM      ", equipment[i].stats.events_per_sec / 1E6);
+      else if (equipment[i].stats.events_per_sec > 1E3)
+         ss_printf(36, i + 6, "%1.3lfk      ", equipment[i].stats.events_per_sec / 1E3);
+      else
+         ss_printf(36, i + 6, "%1.1lf      ", equipment[i].stats.events_per_sec);
+      
+      if (equipment[i].stats.kbytes_per_sec > 1E3)
+         ss_printf(47, i + 6, "%1.3lfM      ", equipment[i].stats.kbytes_per_sec / 1E3);
+      else if (equipment[i].stats.kbytes_per_sec < 1E3)
+         ss_printf(47, i + 6, "%1.1lf      ", equipment[i].stats.kbytes_per_sec * 1E3);
+      else
+         ss_printf(47, i + 6, "%1.3lfk      ", equipment[i].stats.kbytes_per_sec);
+      
       ss_printf(58, i + 6, "%ld       ", equipment[i].odb_in);
       ss_printf(69, i + 6, "%ld       ", equipment[i].odb_out);
    }
@@ -2767,9 +2787,9 @@ int main(int argc, char *argv[])
    status = scheduler();
 
    /* stop readout thread */
-   stop_all_threads = 1;
+   stop_readout_threads();
    rb_set_nonblocking();
-   while (readout_thread_active)
+   while (is_readout_thread_active())
       ss_sleep(100);
 
    /* reset terminal */
