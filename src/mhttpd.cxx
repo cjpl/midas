@@ -7,8 +7,6 @@
 
 \********************************************************************/
 
-const char *mhttpd_svn_revision = "$Rev$";
-
 #include <math.h>
 #include <assert.h>
 #include <float.h>
@@ -564,9 +562,9 @@ char *get_dec_path()
 
 /*------------------------------------------------------------------*/
 
-int mhttpd_revision()
+char *mhttpd_revision()
 {
-   return atoi(mhttpd_svn_revision+6);
+   return cm_get_revision();
 }
 
 /*------------------------------------------------------------------*/
@@ -774,7 +772,7 @@ INT sendmail(const char *smtp_host, const char *from, const char *to, const char
    if (verbose)
       puts(str);
 
-   sprintf(str, "X-Mailer: mhttpd revision %d\r\n", mhttpd_revision());
+   sprintf(str, "X-Mailer: mhttpd revision %s\r\n", mhttpd_revision());
    send(s, str, strlen(str), 0);
    if (verbose)
       puts(str);
@@ -8636,7 +8634,7 @@ void show_mscb_page(const char *path, int refresh)
    strncpy(str, info.node_name, sizeof(info.node_name));
    str[16] = 0;
    rsprintf("<tr><td class=\"v1\">Node name<td colspan=2 class=\"v2\">%s</tr>\n", str);
-   rsprintf("<tr><td class=\"v1\">SVN revision<td colspan=2 class=\"v2\">%d</tr>\n", info.svn_revision);
+   rsprintf("<tr><td class=\"v1\">GIT revision<td colspan=2 class=\"v2\">%d</tr>\n", info.revision);
 
    if (info.rtc[0] && info.rtc[0] != 0xFF) {
       for (i=0 ; i<6 ; i++)
