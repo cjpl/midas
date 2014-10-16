@@ -4672,7 +4672,6 @@ static int bm_validate_client_index(const BUFFER * buf, BOOL abort_if_invalid)
       }
 
       abort();
-      exit(1);
    }
 
    return buf->client_index;
@@ -5332,13 +5331,13 @@ void cm_watchdog(int dummy)
    }
 
    /* extra check on watchdog interval */
-   if (0) {
-      static time_t last = 0;
-      time_t now = time(NULL);
-      fprintf(stderr, "cm_watchdog interval %d\n", (int)(now - last));
-      last = now;
-   }
-
+#if 0
+   static time_t last = 0;
+   time_t now = time(NULL);
+   fprintf(stderr, "cm_watchdog interval %d\n", (int)(now - last));
+   last = now;
+#endif
+   
    /* tell system services that we are in async mode ... */
    ss_set_async_flag(TRUE);
 
@@ -9016,11 +9015,12 @@ INT rpc_client_connect(const char *host_name, INT port, const char *client_name,
 
    ss_mutex_wait_for(mtx, 10000);
 
-   if (0)
-      for (i = 0; i < MAX_RPC_CONNECTION; i++)
-         if (_client_connection[i].send_sock != 0)
-            printf("connection %d: client \"%s\" on host \"%s\" port %d, socket %d, connected %d\n", i, _client_connection[i].client_name, _client_connection[i].host_name, _client_connection[i].port, _client_connection[i].send_sock, _client_connection[i].connected);
-
+#if 0
+   for (i = 0; i < MAX_RPC_CONNECTION; i++)
+      if (_client_connection[i].send_sock != 0)
+         printf("connection %d: client \"%s\" on host \"%s\" port %d, socket %d, connected %d\n", i, _client_connection[i].client_name, _client_connection[i].host_name, _client_connection[i].port, _client_connection[i].send_sock, _client_connection[i].connected);
+#endif
+   
    /* check if connection already exists */
    for (i = 0; i < MAX_RPC_CONNECTION; i++)
       if (_client_connection[i].send_sock != 0 &&
@@ -9171,13 +9171,12 @@ void rpc_client_check()
 {
    INT i, status;
 
-   if (0) {
-      for (i = 0; i < MAX_RPC_CONNECTION; i++)
-         if (_client_connection[i].send_sock != 0) {
-            printf("slot %d, checking client %s socket %d, connected %d\n", i, _client_connection[i].client_name, _client_connection[i].send_sock, _client_connection[i].connected);
-         }
-   }
-
+#if 0
+   for (i = 0; i < MAX_RPC_CONNECTION; i++)
+      if (_client_connection[i].send_sock != 0)
+         printf("slot %d, checking client %s socket %d, connected %d\n", i, _client_connection[i].client_name, _client_connection[i].send_sock, _client_connection[i].connected);
+#endif
+   
    /* check for broken connections */
    for (i = 0; i < MAX_RPC_CONNECTION; i++)
       if (_client_connection[i].send_sock != 0 && _client_connection[i].connected) {
@@ -11934,11 +11933,12 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
             int itls;
             int new_size = (POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size + 1024;
 
-            if (0)
-               cm_msg(MINFO, "rpc_execute",
+#if 0
+            cm_msg(MINFO, "rpc_execute",
                       "rpc_execute: return parameters (%d) too large for network buffer (%d), new buffer size (%d)",
                       (int)((POINTER_T) out_param_ptr - (POINTER_T) nc_out + param_size), return_buffer_size, new_size);
-
+#endif
+            
             itls = return_buffer_tls;
 
             tls_buffer[itls].buffer_size = new_size;
@@ -12897,10 +12897,11 @@ INT rpc_client_accept(int lsock)
       p = strtok(NULL, " ");
    }
 
-   if (0)
-      printf("rpc_client_accept: client_hw_type %d, version %d, client_name \'%s\', hostname \'%s\'\n",
+#if 0
+   printf("rpc_client_accept: client_hw_type %d, version %d, client_name \'%s\', hostname \'%s\'\n",
              client_hw_type, version, client_program, host_name);
-
+#endif
+   
    /* save information in _server_acception structure */
    _server_acception[idx].recv_sock = sock;
    _server_acception[idx].send_sock = 0;

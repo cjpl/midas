@@ -1458,15 +1458,15 @@ int receive_trigger_event(EQUIPMENT *eq)
    EVENT_HEADER *prb = NULL, *pevent;
    void *p;
 
-   if (0) {
-      int nbytes;
-      static int count = 0;
-      if (((count++) % 100) == 0) {
-         rb_get_buffer_level(rbh, &nbytes);
-         if (nbytes != 0)
-            printf("mfe: ring buffer contains %d bytes\n", nbytes);
-      }
+#if 0
+   int nbytes;
+   static int count = 0;
+   if (((count++) % 100) == 0) {
+      rb_get_buffer_level(rbh, &nbytes);
+      if (nbytes != 0)
+         printf("mfe: ring buffer contains %d bytes\n", nbytes);
    }
+#endif
    
    i=0;
    while(rbh) {

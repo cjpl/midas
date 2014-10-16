@@ -675,16 +675,16 @@ static void db_validate_sizes()
 #undef S
    }
 
-   if (0) {
-      EQUIPMENT_INFO eq;
-      printf("EQUIPMENT_INFO offset of event_id: %d\n", (int)((char*)&eq.event_id - (char*)&eq));
-      printf("EQUIPMENT_INFO offset of eq_type: %d\n", (int)((char*)&eq.eq_type - (char*)&eq));
-      printf("EQUIPMENT_INFO offset of event_limit: %d\n", (int)((char*)&eq.event_limit - (char*)&eq));
-      printf("EQUIPMENT_INFO offset of num_subevents: %d\n", (int)((char*)&eq.num_subevents - (char*)&eq));
-      printf("EQUIPMENT_INFO offset of status: %d\n", (int)((char*)&eq.status - (char*)&eq));
-      printf("EQUIPMENT_INFO offset of hidden: %d\n", (int)((char*)&eq.hidden - (char*)&eq));
-   }
-
+#if 0
+   EQUIPMENT_INFO eq;
+   printf("EQUIPMENT_INFO offset of event_id: %d\n", (int)((char*)&eq.event_id - (char*)&eq));
+   printf("EQUIPMENT_INFO offset of eq_type: %d\n", (int)((char*)&eq.eq_type - (char*)&eq));
+   printf("EQUIPMENT_INFO offset of event_limit: %d\n", (int)((char*)&eq.event_limit - (char*)&eq));
+   printf("EQUIPMENT_INFO offset of num_subevents: %d\n", (int)((char*)&eq.num_subevents - (char*)&eq));
+   printf("EQUIPMENT_INFO offset of status: %d\n", (int)((char*)&eq.status - (char*)&eq));
+   printf("EQUIPMENT_INFO offset of hidden: %d\n", (int)((char*)&eq.hidden - (char*)&eq));
+#endif
+   
 #ifdef OS_LINUX
    assert(sizeof(EVENT_REQUEST) == 16); // ODB v3
    assert(sizeof(BUFFER_CLIENT) == 256);
@@ -752,9 +752,10 @@ static void db_update_open_record(HNDLE hDB, HNDLE hKey, KEY* xkey, INT level, v
    // extra check: are we looking at the same key?
    assert(xkey->notify_count == pkey->notify_count);
 
-   if (0)
-      printf("%s, notify_count %d, found %d, our count %d\n", path, pkey->notify_count, found, count);
-
+#if 0
+   printf("%s, notify_count %d, found %d, our count %d\n", path, pkey->notify_count, found, count);
+#endif
+   
    if (pkey->notify_count==0 && found) {
       cm_msg(MINFO, "db_update_open_record", "Added missing open record flag to \"%s\"", path);
       pkey->notify_count = count;
@@ -835,12 +836,11 @@ static int db_validate_open_records(HNDLE hDB)
          }
    }
 
-   if (0) {
-      for (i=0; i<uor.num_keys; i++) {
-         printf("index %d, handle %d, count %d, access mode %d\n", i, uor.hkeys[i], uor.counts[i], uor.modes[i]);
-      }
-   }
-
+#if 0
+   for (i=0; i<uor.num_keys; i++)
+      printf("index %d, handle %d, count %d, access mode %d\n", i, uor.hkeys[i], uor.counts[i], uor.modes[i]);
+#endif
+   
    db_scan_tree_link(hDB, 0, 0, db_update_open_record, &uor);
 
    if (uor.num_modified) {
