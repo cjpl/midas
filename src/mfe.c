@@ -14,7 +14,6 @@
 #include <assert.h>
 #include "midas.h"
 #include "msystem.h"
-#include "mcstd.h"
 
 #ifndef HAVE_STRLCPY
 #include "strlcpy.h"

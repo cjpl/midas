@@ -20,7 +20,6 @@
 		D5C1C9FA13A6D2CC009B92EC /* mtfe.c in Sources */ = {isa = PBXBuildFile; fileRef = D5C1C9F913A6D2CC009B92EC /* mtfe.c */; };
 		D5C1C9FC13A6D382009B92EC /* mfe.c in Sources */ = {isa = PBXBuildFile; fileRef = D5C1C9FB13A6D382009B92EC /* mfe.c */; };
 		D5C1C9FE13A6D3FD009B92EC /* camacnul.c in Sources */ = {isa = PBXBuildFile; fileRef = D5C1C9FD13A6D3FD009B92EC /* camacnul.c */; };
-		D5C1CA0313A6D5FD009B92EC /* cnaf_callback.c in Sources */ = {isa = PBXBuildFile; fileRef = D5C1CA0213A6D5FD009B92EC /* cnaf_callback.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -47,15 +46,14 @@
 		D5C1C9E813A6D2BB009B92EC /* strlcpy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = strlcpy.c; path = /mxml/strlcpy.c; sourceTree = "<absolute>"; };
 		D5C1C9E913A6D2BB009B92EC /* alarm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = alarm.c; path = /midas/src/alarm.c; sourceTree = "<absolute>"; };
 		D5C1C9EA13A6D2BB009B92EC /* elog.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = elog.c; path = /midas/src/elog.c; sourceTree = "<absolute>"; };
-		D5C1C9EB13A6D2BB009B92EC /* midas.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = midas.c; path = /midas//src/midas.c; sourceTree = "<absolute>"; };
+		D5C1C9EB13A6D2BB009B92EC /* midas.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = midas.c; path = "/midas//src/midas.c"; sourceTree = "<absolute>"; };
 		D5C1C9EC13A6D2BB009B92EC /* mrpc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mrpc.c; path = /midas/src/mrpc.c; sourceTree = "<absolute>"; };
 		D5C1C9ED13A6D2BB009B92EC /* odb.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = odb.c; path = /midas/src/odb.c; sourceTree = "<absolute>"; };
 		D5C1C9EE13A6D2BB009B92EC /* system.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = system.c; path = /midas/src/system.c; sourceTree = "<absolute>"; };
 		D5C1C9F913A6D2CC009B92EC /* mtfe.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mtfe.c; path = /midas/examples/mtfe/mtfe.c; sourceTree = "<absolute>"; };
 		D5C1C9FB13A6D382009B92EC /* mfe.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mfe.c; path = /midas/src/mfe.c; sourceTree = "<absolute>"; };
 		D5C1C9FD13A6D3FD009B92EC /* camacnul.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = camacnul.c; path = /midas/drivers/camac/camacnul.c; sourceTree = "<absolute>"; };
-		D5C1C9FF13A6D4AF009B92EC /* mcstd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mcstd.h; path = /midas//include/mcstd.h; sourceTree = "<absolute>"; };
-		D5C1CA0213A6D5FD009B92EC /* cnaf_callback.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = cnaf_callback.c; path = /midas/src/cnaf_callback.c; sourceTree = "<absolute>"; };
+		D5C1C9FF13A6D4AF009B92EC /* mcstd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mcstd.h; path = "/midas//include/mcstd.h"; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,7 +89,6 @@
 			children = (
 				D5C1C9FB13A6D382009B92EC /* mfe.c */,
 				D5C1C9F913A6D2CC009B92EC /* mtfe.c */,
-				D5C1CA0213A6D5FD009B92EC /* cnaf_callback.c */,
 				D5C1C9FD13A6D3FD009B92EC /* camacnul.c */,
 				D5C1C9E513A6D2BB009B92EC /* history.c */,
 				D5C1C9E613A6D2BB009B92EC /* mgd.c */,
@@ -147,7 +144,7 @@
 		D52CDD8D13A6D1FF0006630C /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0420;
+				LastUpgradeCheck = 0600;
 				ORGANIZATIONNAME = PSI;
 			};
 			buildConfigurationList = D52CDD9013A6D1FF0006630C /* Build configuration list for PBXProject "mtfe" */;
@@ -185,7 +182,6 @@
 				D5C1C9FA13A6D2CC009B92EC /* mtfe.c in Sources */,
 				D5C1C9FC13A6D382009B92EC /* mfe.c in Sources */,
 				D5C1C9FE13A6D3FD009B92EC /* camacnul.c in Sources */,
-				D5C1CA0313A6D5FD009B92EC /* cnaf_callback.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -195,7 +191,14 @@
 		D52CDD9D13A6D1FF0006630C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -208,6 +211,9 @@
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				ONLY_ACTIVE_ARCH = YES;
@@ -218,7 +224,14 @@
 		D52CDD9E13A6D1FF0006630C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					DEBUG,
@@ -229,6 +242,9 @@
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				SDKROOT = macosx;

@@ -13,7 +13,6 @@
 #include <stdlib.h>
 #include "midas.h"
 #include "msystem.h"
-#include "mcstd.h"
 
 /* make frontend functions callable from the C framework */
 #ifdef __cplusplus
