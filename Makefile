@@ -359,7 +359,6 @@ all: check-mxml \
 	$(OS_DIR) $(LIB_DIR) $(BIN_DIR) \
 	$(LIBNAME) $(SHLIB) \
 	$(ANALYZER) \
-	$(LIB_DIR)/cnaf_callback.o \
 	$(LIB_DIR)/mfe.o \
 	$(LIB_DIR)/fal.o $(PROGS)
 
