@@ -1596,7 +1596,7 @@ public:
             if (fConnectRetry == 0)
                fConnectRetry = 5;
 
-            fNextConnect = now + fConnectRetry;
+            fNextConnect = (int)(now + fConnectRetry);
 
             // exponential backoff
             fConnectRetry *= 2;
@@ -2061,7 +2061,7 @@ public:
             continue;
          }
 
-         st[i] = hs_read(start_time, end_time, interval,
+         st[i] = hs_read((double)start_time, (double)end_time, (double)interval,
                          event_name[i], tag_name[i], tag_index[i],
                          &num_entries[i],
                          &time_buffer[i], &data_buffer[i]);

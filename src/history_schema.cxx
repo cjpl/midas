@@ -2219,11 +2219,11 @@ public:
 
          fNumEntries++;
 
-         double a = t - fFirstTime;
-         double b = fLastTime - fFirstTime;
+         double a = (double)(t - fFirstTime);
+         double b = (double)(fLastTime - fFirstTime);
          double fbin = fNumBins*a/b;
 
-         int ibin = fbin;
+         int ibin = (int)fbin;
 
          if (ibin < 0)
             ibin = 0;
@@ -2272,7 +2272,7 @@ public:
                rms = sqrt(variance);
 
             if (fCount)
-               fCount[i] = num;
+               fCount[i] = (int)num;
 
             if (fMean)
                fMean[i] = mean;

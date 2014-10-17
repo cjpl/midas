@@ -142,7 +142,7 @@ int main()
       else {
          /* receive event "manually" and call receive_event */
          size = sizeof(event_buffer);
-         status = bm_receive_event(hBufEvent, event_buffer, &size, ASYNC);
+         status = bm_receive_event(hBufEvent, event_buffer, &size, BM_NO_WAIT);
          if (status == BM_SUCCESS)
             process_event(hBufEvent, request_id, (EVENT_HEADER *) event_buffer,
                           (void *) (((EVENT_HEADER *) event_buffer) + 1));

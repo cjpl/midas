@@ -562,7 +562,7 @@ char *get_dec_path()
 
 /*------------------------------------------------------------------*/
 
-char *mhttpd_revision()
+char *mhttpd_revision(void)
 {
    return cm_get_revision();
 }
@@ -6752,9 +6752,9 @@ void javascript_commands(const char *cookie_cpwd)
       }
 
       if (fmt) {
-         fmt_odb = equal_ustring(fmt, "odb");
-         fmt_xml = equal_ustring(fmt, "xml");
-         fmt_json = strstr(fmt, "json");
+         fmt_odb = equal_ustring(fmt, "odb") > 0;
+         fmt_xml = equal_ustring(fmt, "xml") > 0;
+         fmt_json = strstr(fmt, "json") > 0;
 
          if (fmt_odb)
             fmt_xml = fmt_json = false;
@@ -6764,7 +6764,7 @@ void javascript_commands(const char *cookie_cpwd)
             fmt_odb = fmt_xml = false;
 
          if (fmt_json)
-            fmt_jsonp = strstr(fmt, "-p");
+            fmt_jsonp = strstr(fmt, "-p") > 0;
          if (fmt_jsonp && isparam("callback"))
             jsonp_callback = getparam("callback");
          if (fmt_json && strstr(fmt, "-nofollowlinks"))
@@ -11744,7 +11744,7 @@ void generate_hist_graph(const char *path, char *buffer, int *buffer_size,
    gdImageFilledRectangle(im, x1, y2, x2, y1, bgcol);
 
    /* draw axis frame */
-   taxis(im, gdFontSmall, fgcol, gridcol, x1, y1, x2 - x1, width, 3, 5, 9, 10, 0, starttime, endtime);
+   taxis(im, gdFontSmall, fgcol, gridcol, x1, y1, x2 - x1, width, 3, 5, 9, 10, 0, (double)starttime, (double)endtime);
 
    vaxis(im, gdFontSmall, fgcol, gridcol, x1, y1, y1 - y2, -3, -5, -7, -8, x2 - x1, ymin, ymax, logaxis);
    gdImageLine(im, x1, y2, x2, y2, fgcol);

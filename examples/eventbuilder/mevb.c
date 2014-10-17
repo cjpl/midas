@@ -431,7 +431,7 @@ INT scan_fragment(void)
 	    }
 #endif
 	    for (ch=0; ch<5; ch++) {
-	       if (cm_transition(TR_STOP, 0, NULL, 0, SYNC, 0) == CM_SUCCESS)
+	       if (cm_transition(TR_STOP, 0, NULL, 0, TR_SYNC, 0) == CM_SUCCESS)
 		  break;
 	       cm_msg(MERROR, "scan_fragment", "%s: Stop Transition request failed, trying again!", frontend_name);
             }
@@ -454,7 +454,7 @@ INT scan_fragment(void)
          /* Force event to appear at the destination if Ebuilder is remote */
          rpc_flush_event();
          /* Force event ot appear at the destination if Ebuilder is local */
-         bm_flush_cache(equipment[0].buffer_handle, ASYNC);
+         bm_flush_cache(equipment[0].buffer_handle, BM_NO_WAIT);
 
          status = cm_yield(10);
 
@@ -810,7 +810,7 @@ INT handFlush()
          status = 0;
          if (ebset.preqfrag[i]) {
             size = max_event_size;
-            status = bm_receive_event(ebch[i].hBuf, ebch[i].pfragment, &size, ASYNC);
+            status = bm_receive_event(ebch[i].hBuf, ebch[i].pfragment, &size, BM_NO_WAIT);
             if (debug1) {
                sprintf(strout,
                        "booking:Hand flush bm_receive_event[%d] hndle:%d stat:%d  Last Ser:%d",
@@ -955,7 +955,7 @@ INT close_buffers(void)
    eq = &equipment[0];
 
    /* Flush local destination cache */
-   bm_flush_cache(equipment[0].buffer_handle, SYNC);
+   bm_flush_cache(equipment[0].buffer_handle, BM_WAIT);
    /* Call user function */
    eb_end_of_run(run_number, error);
    /* Cleanup buffers */
@@ -998,7 +998,6 @@ if different then SUCCESS (bm_compose, rpc_sent error)
 INT source_scan(INT fmt, EQUIPMENT_INFO * eq_info)
 {
    static DWORD serial;
-   DWORD *plrl;
    BOOL complete;
    INT i, status, size;
    INT act_size;
@@ -1013,7 +1012,7 @@ INT source_scan(INT fmt, EQUIPMENT_INFO * eq_info)
       if (ebset.preqfrag[i] && !ebset.received[i]) {
          /* Get fragment and store it in ebch[i].pfragment */
          size = max_event_size;
-         status = bm_receive_event(ebch[i].hBuf, ebch[i].pfragment, &size, ASYNC);
+         status = bm_receive_event(ebch[i].hBuf, ebch[i].pfragment, &size, BM_NO_WAIT);
 	 //printf("call bm_receive_event from %s, serial %d, status %d\n", ebch[i].buffer, serial, status);
          switch (status) {
          case BM_SUCCESS:      /* event received */
@@ -1130,7 +1129,7 @@ INT source_scan(INT fmt, EQUIPMENT_INFO * eq_info)
       act_size = ((EVENT_HEADER *) dest_event)->data_size + sizeof(EVENT_HEADER);
 
       /* Send event and wait for completion */
-      status = rpc_send_event(equipment[0].buffer_handle, dest_event, act_size, SYNC, 0);
+      status = rpc_send_event(equipment[0].buffer_handle, dest_event, act_size, BM_WAIT, 0);
       if (status != BM_SUCCESS) {
          if (debug)
             printf("rpc_send_event returned error %d, event_size %d\n", status, act_size);
@@ -1302,7 +1301,7 @@ int main(int argc, char **argv)
 
        cm_msg(MINFO, frontend_name, "Restart the run!");
 
-       cm_transition(TR_START, run_number+1, NULL, 0, SYNC, 0);
+       cm_transition(TR_START, run_number+1, NULL, 0, TR_SYNC, 0);
      }
      
    /* initialize ss_getchar */

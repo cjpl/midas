@@ -102,7 +102,7 @@ int main()
                printf("Error: act_size = %d, size = %d\n", act_size, event_size);
 
             /* now send event */
-            status = rpc_send_event(hBuf, event, act_size + sizeof(EVENT_HEADER), SYNC, rpc_mode);
+            status = rpc_send_event(hBuf, event, act_size + sizeof(EVENT_HEADER), BM_WAIT, rpc_mode);
 
             if (status != BM_SUCCESS) {
                printf("rpc_send_event returned error %d, event_size %d\n",
@@ -135,7 +135,7 @@ int main()
       /* flush buffers every 10 seconds */
       if ((flush++) % 10 == 0) {
          rpc_flush_event();
-         bm_flush_cache(hBuf, SYNC);
+         bm_flush_cache(hBuf, BM_WAIT);
          printf("flush\n");
       }
 

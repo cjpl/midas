@@ -4595,7 +4595,7 @@ INT ss_recv_net_command(int sock, DWORD* routine_id, DWORD* param_size, char **p
       return SS_SUCCESS;
    }
 
-   *param_ptr = malloc(*param_size);
+   *param_ptr = (char *)malloc(*param_size);
 
    if (*param_ptr == NULL) {
       cm_msg(MERROR, "ss_recv_net_command", "error allocating %d bytes for network command data", *param_size);

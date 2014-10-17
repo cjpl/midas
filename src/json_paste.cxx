@@ -295,7 +295,7 @@ static int paste_value(HNDLE hDB, HNDLE hKey, const char* path, int index, const
    }
    case TID_WORD:
    case TID_SHORT: {
-      WORD v = GetDWORD(node, path);
+      WORD v = (WORD)GetDWORD(node, path);
       int size = sizeof(v);
       status = db_set_data_index(hDB, hKey, &v, size, index, tid);
       if (status != DB_SUCCESS) {
@@ -325,7 +325,7 @@ static int paste_value(HNDLE hDB, HNDLE hKey, const char* path, int index, const
       return DB_SUCCESS;
    }
    case TID_FLOAT: {
-      float v = node->GetNumber();
+      float v = (float)node->GetNumber();
       int size = sizeof(v);
       status = db_set_data_index(hDB, hKey, &v, size, index, TID_FLOAT);
       if (status != DB_SUCCESS) {

@@ -861,7 +861,7 @@ SS_FILE_ERROR       file access error
          dm_pointer_increment(eqp->buffer_handle, pevent->data_size + sizeof(EVENT_HEADER));
 #else
          rpc_flush_event();
-         bm_send_event(eqp->buffer_handle, pevent, pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+         bm_send_event(eqp->buffer_handle, pevent, pevent->data_size + sizeof(EVENT_HEADER), BM_WAIT);
 #endif
          eqp->odb_out++;
       }

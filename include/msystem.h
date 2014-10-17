@@ -248,6 +248,7 @@ extern char **environ;
 
 /* missing isnan() & co under Windows */
 #ifdef OS_WINNT
+#include <float.h>
 #define isnan(x) _isnan(x)
 #define isinf(x) (!_finite(x))
 #define strcasecmp _stricmp

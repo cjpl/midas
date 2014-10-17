@@ -157,10 +157,10 @@ INT mscbhvr_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
       return FE_ERR_HW;
    }
 
-   if (node_info.svn_revision < 3518 || node_info.svn_revision < 10) {
+   if (node_info.revision < 3518 || node_info.revision < 10) {
       cm_msg(MERROR, "mscbhvr_init",
             "Found node \"%d\" with old firmware %d (SVN revistion >= 3518 required)", 
-            info->settings.address[0], node_info.svn_revision);
+            info->settings.address[0], node_info.revision);
       return FE_ERR_HW;
    }
 

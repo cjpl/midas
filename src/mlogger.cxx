@@ -990,8 +990,10 @@ INT ftp_open(char *destination, FTP_CON ** con)
 INT midas_flush_buffer(LOG_CHN * log_chn)
 {
    INT size, written;
-   off_t n;
    MIDAS_INFO *info;
+#ifdef HAVE_ZLIB
+   off_t n;
+#endif
 
    info = (MIDAS_INFO *) log_chn->format_info;
    size = (POINTER_T) info->write_pointer - (POINTER_T) info->buffer;
@@ -1256,7 +1258,9 @@ INT midas_log_open(LOG_CHN * log_chn, INT run_number)
 INT midas_log_close(LOG_CHN * log_chn, INT run_number)
 {
    int written;
+#ifdef HAVE_ZLIB
    off_t n;
+#endif
 
    /* write ODB dump */
    if (log_chn->settings.odb_dump)

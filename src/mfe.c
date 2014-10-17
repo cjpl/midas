@@ -1369,7 +1369,8 @@ int is_readout_thread_enabled()
 
 int is_readout_thread_active()
 {
-   for (int i =0 ; i<MAX_N_THREADS ; i++)
+   int i;
+   for (i=0 ; i<MAX_N_THREADS ; i++)
       if (readout_thread_active[i])
          return TRUE;
    return FALSE;
@@ -1462,7 +1463,7 @@ int _readout_thread(void *param)
 
 int receive_trigger_event(EQUIPMENT *eq)
 {
-   int status;
+   int i, status;
    EVENT_HEADER *prb = NULL, *pevent;
    void *p;
 
@@ -1476,7 +1477,7 @@ int receive_trigger_event(EQUIPMENT *eq)
    }
 #endif
    
-   for (int i=0 ; get_event_rbh(i) ; i++) {
+   for (i=0 ; get_event_rbh(i) ; i++) {
       status = rb_get_rp(get_event_rbh(i), &p, 10);
       prb = (EVENT_HEADER *)p;
       if (status == DB_TIMEOUT)

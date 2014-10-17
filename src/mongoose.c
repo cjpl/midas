@@ -17,6 +17,7 @@
 
 #if defined(_WIN32)
 #undef _UNICODE
+#undef _MBCS
 #define _MBCS
 #if !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS // Disable deprecation warning in VS2005

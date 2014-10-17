@@ -565,7 +565,7 @@ DWORD convert_time(char *t)
 
    ltime = (DWORD) mktime(&tms);
 
-   return ltime;
+   return (DWORD)ltime;
 }
 
 int main(int argc, char *argv[])

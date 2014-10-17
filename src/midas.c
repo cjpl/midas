@@ -4055,9 +4055,9 @@ INT cm_transition2(INT transition, INT run_number, char *errstr, INT errstr_size
             if (tr_client[i].sequence_number < tr_client[idx].sequence_number) {
                if (i >= 0 && tr_client[i].sequence_number > 0) {
                   if (tr_client[idx].n_pred == 0)
-                     tr_client[idx].pred = malloc(sizeof(PTR_CLIENT));
+                     tr_client[idx].pred = (PTR_CLIENT *)malloc(sizeof(PTR_CLIENT));
                   else
-                     tr_client[idx].pred = realloc(tr_client[idx].pred, (tr_client[idx].n_pred+1)*sizeof(PTR_CLIENT));
+                     tr_client[idx].pred = (PTR_CLIENT *)realloc(tr_client[idx].pred, (tr_client[idx].n_pred+1)*sizeof(PTR_CLIENT));
                   tr_client[idx].pred[tr_client[idx].n_pred] = &tr_client[i];
                   tr_client[idx].n_pred ++;
                }
@@ -10172,7 +10172,7 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
    /* prepare output buffer */
 
    buf_size = sizeof(NET_COMMAND) + 1024;
-   buf = malloc(buf_size);
+   buf = (char *)malloc(buf_size);
    if (buf == NULL) {
       cm_msg(MERROR, "rpc_client_call", "call to \"%s\" on \"%s\" RPC \"%s\" cannot allocate %d bytes for transmit buffer", client_name, host_name, rpc_name, (int)buf_size);
       return RPC_NO_MEMORY;
@@ -10257,7 +10257,7 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
 
             if (param_offset + param_size + 16 > buf_size) {
                size_t new_size = param_offset + param_size + 1024;
-               buf = realloc(buf, new_size);
+               buf = (char *)realloc(buf, new_size);
                if (buf == NULL) {
                   cm_msg(MERROR, "rpc_client_call", "call to \"%s\" on \"%s\" RPC \"%s\" cannot resize the data buffer from %d bytes to %d bytes", client_name, host_name, rpc_name, (int)buf_size, (int)new_size);
                   free(nc); // "nc" still points to the old value of "buf"
@@ -10465,7 +10465,7 @@ INT rpc_call(const INT routine_id, ...)
    /* prepare output buffer */
 
    buf_size = sizeof(NET_COMMAND) + 4*1024;
-   buf = malloc(buf_size);
+   buf = (char *)malloc(buf_size);
    if (buf == NULL) {
       ss_mutex_release(_mutex_rpc);
       cm_msg(MERROR, "rpc_call", "rpc \"%s\" cannot allocate %d bytes for transmit buffer", rpc_name, (int)buf_size);
@@ -10551,7 +10551,7 @@ INT rpc_call(const INT routine_id, ...)
 
             if (param_offset + param_size + 16 > buf_size) {
                size_t new_size = param_offset + param_size + 1024;
-               buf = realloc(buf, new_size);
+               buf = (char *)realloc(buf, new_size);
                if (buf == NULL) {
                   ss_mutex_release(_mutex_rpc);
                   cm_msg(MERROR, "rpc_call", "rpc \"%s\" cannot resize the data buffer from %d bytes to %d bytes", rpc_name, (int)buf_size, (int)new_size);

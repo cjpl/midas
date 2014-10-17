@@ -730,7 +730,7 @@ static void db_update_open_record(HNDLE hDB, HNDLE hKey, KEY* xkey, INT level, v
    int count = 0;
    int status;
    int k;
-   UPDATE_OPEN_RECORDS *uorp = voidp;
+   UPDATE_OPEN_RECORDS *uorp = (UPDATE_OPEN_RECORDS *)voidp;
    char path[256];
 
    for (k=0; k<uorp->num_keys; k++)
@@ -6571,7 +6571,7 @@ int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
 
       if (tid == TID_STRING || tid == TID_LINK) {
          size = atoi(mxml_get_attribute(node, "size"));
-         buf = malloc(size);
+         buf = (char *)malloc(size);
          assert(buf);
          buf[0] = 0;
       }
@@ -7131,7 +7131,7 @@ static void json_write(char **buffer, int* buffer_size, int* buffer_end, int lev
       if (new_buffer_size < 4*1024)
          new_buffer_size = 4*1024;
       //printf("reallocate: len %d, size %d, remain %d, allocate %d\n", len, *buffer_size, remain, new_buffer_size);
-      *buffer = realloc(*buffer, new_buffer_size);
+      *buffer = (char *)realloc(*buffer, new_buffer_size);
       assert(*buffer);
       *buffer_size = new_buffer_size;
       remain = *buffer_size - *buffer_end;
@@ -8810,7 +8810,7 @@ void merge_records(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
             }
             if (status == DB_TRUNCATED) {
                size *= 2;
-               allocbuffer = realloc(allocbuffer, size);
+               allocbuffer = (char *)realloc(allocbuffer, size);
                assert(allocbuffer != NULL);
                buffer = allocbuffer;
                continue;

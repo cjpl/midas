@@ -14,7 +14,6 @@
 #include <assert.h>
 #include "midas.h"
 #include "ybos.h"
-#include <stdbool.h>
 
 typedef struct {
 
@@ -62,8 +61,8 @@ typedef struct {
 
 } HV_INFO;
 
-#ifndef abs
-#define abs(a) (((a) < 0)   ? -(a) : (a))
+#ifndef ABS
+#define ABS(a) (((a) < 0)   ? -(a) : (a))
 #endif
 
 /*------------------------------------------------------------------*/
@@ -192,11 +191,11 @@ INT hv_read(EQUIPMENT * pequipment, int channel)
    min_time = 60000;
    changed = FALSE;
    for (i = 0; i < hv_info->num_channels; i++) {
-      if (abs(hv_info->measured[i] - hv_info->measured_mirror[i]) > max_diff)
-         max_diff = abs(hv_info->measured[i] - hv_info->measured_mirror[i]);
+      if (ABS(hv_info->measured[i] - hv_info->measured_mirror[i]) > max_diff)
+         max_diff = ABS(hv_info->measured[i] - hv_info->measured_mirror[i]);
 
       /* indicate change if variation more than the threshold */
-      if (abs(hv_info->measured[i] - hv_info->measured_mirror[i]) >
+      if (ABS(hv_info->measured[i] - hv_info->measured_mirror[i]) >
           hv_info->update_threshold[i] && hv_info->measured[i] > hv_info->zero_threshold[i])
          changed = TRUE;
 
@@ -225,10 +224,10 @@ INT hv_read(EQUIPMENT * pequipment, int channel)
    min_time = 10000;
    changed = FALSE;
    for (i = 0; i < hv_info->num_channels; i++) {
-      if (abs(hv_info->current[i] - hv_info->current_mirror[i]) > max_diff)
-         max_diff = abs(hv_info->current[i] - hv_info->current_mirror[i]);
+      if (ABS(hv_info->current[i] - hv_info->current_mirror[i]) > max_diff)
+         max_diff = ABS(hv_info->current[i] - hv_info->current_mirror[i]);
 
-      if (abs(hv_info->current[i] - hv_info->current_mirror[i]) >
+      if (ABS(hv_info->current[i] - hv_info->current_mirror[i]) >
           hv_info->update_threshold_current[i])
          changed = TRUE;
 
@@ -254,12 +253,7 @@ INT hv_read(EQUIPMENT * pequipment, int channel)
    changed = FALSE;
    for (i = 0; i < hv_info->num_channels; i++) {
       if (hv_info->driver[i]->flags & DF_REPORT_STATUS){
-         if (abs(hv_info->chStatus[i] - hv_info->chStatus_mirror[i]) > max_diff)
-            max_diff = abs(hv_info->chStatus[i] - hv_info->chStatus_mirror[i]);
-
-         // indicate change if variation more than the threshold 
-         //if (abs(hv_info->chStatus[i] - hv_info->chStatus_mirror[i]) > hv_info->update_threshold[i] && hv_info->chStatus[i] > hv_info->zero_threshold[i])
-         if(hv_info->chStatus[i] != hv_info->chStatus_mirror[i])
+          if(hv_info->chStatus[i] != hv_info->chStatus_mirror[i])
             changed = TRUE;
                                  
          if (act_time - hv_info->last_change[i] < min_time)
@@ -288,8 +282,8 @@ INT hv_read(EQUIPMENT * pequipment, int channel)
    changed = FALSE;
    for (i = 0; i < hv_info->num_channels; i++) {
       if (hv_info->driver[i]->flags & DF_REPORT_TEMP){
-         if (abs(hv_info->temperature[i] - hv_info->temperature_mirror[i]) > max_diff)
-            max_diff = abs(hv_info->temperature[i] - hv_info->temperature_mirror[i]);
+         if (ABS(hv_info->temperature[i] - hv_info->temperature_mirror[i]) > max_diff)
+            max_diff = ABS(hv_info->temperature[i] - hv_info->temperature_mirror[i]);
    
          // indicate change if variation more than the threshold
          if(hv_info->temperature[i] != hv_info->temperature_mirror[i])
@@ -733,7 +727,7 @@ INT hv_init(EQUIPMENT * pequipment)
    /*---- Create/Read settings ----*/
    // Names
    for (i = 0; i < hv_info->num_channels; i++){
-      if(hv_info->driver[i]->flags & DF_LABELS_FROM_DEVICE == 0)
+      if((hv_info->driver[i]->flags & DF_LABELS_FROM_DEVICE) == 0)
          sprintf(hv_info->names + NAME_LENGTH * i, "Default%%CH %d", i);
    }
 
@@ -837,7 +831,7 @@ INT hv_init(EQUIPMENT * pequipment)
 
    /*---- set labels from midas SC names ----*/
    for (i = 0; i < hv_info->num_channels; i++) {
-      if (hv_info->driver[i]->flags & DF_LABELS_FROM_DEVICE == 0)
+      if ((hv_info->driver[i]->flags & DF_LABELS_FROM_DEVICE) == 0)
       status = device_driver(hv_info->driver[i], CMD_SET_LABEL, 
                              i - hv_info->channel_offset[i], hv_info->names + NAME_LENGTH * i);
    }

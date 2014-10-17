@@ -18,10 +18,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v110</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v110</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -96,6 +98,7 @@
     <ClCompile Include="..\src\elog.c" />
     <ClCompile Include="..\src\history.c" />
     <ClCompile Include="..\examples\eventbuilder\mevb.c" />
+    <ClCompile Include="..\src\mdsupport.cxx" />
     <ClCompile Include="..\src\midas.c" />
     <ClCompile Include="..\src\mrpc.c" />
     <ClCompile Include="..\..\mxml\mxml.c" />

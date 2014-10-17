@@ -21,7 +21,7 @@ extern const char *getparam(const char *param);
 extern void redirect(const char *path);
 extern void show_start_page(int script);
 extern void rsprintf(const char *format, ...);
-extern int mhttpd_revision();
+extern char *mhttpd_revision();
 extern void strencode(char *text);
 extern void strencode4(char *text);
 extern void show_header(const char *title, const char *method, const char *path, int refresh);
@@ -2276,22 +2276,22 @@ void sequencer()
          if (!eval_var(mxml_get_value(pn), str, sizeof(str)))
             return;
          n = atoi(str);
-         seq.wait_limit = n;
+         seq.wait_limit = (float)n;
          strcpy(seq.wait_type, "Events");
          size = sizeof(d);
          db_get_value(hDB, 0, "/Equipment/Trigger/Statistics/Events sent", &d, &size, TID_DOUBLE, FALSE);
-         seq.wait_value = d;
+         seq.wait_value = (float)d;
          if (d >= n) {
             seq.current_line_number = mxml_get_line_number_end(pn) + 1;
             seq.wait_limit = 0;
             seq.wait_value = 0;
             seq.wait_type[0] = 0;
          }
-         seq.wait_value = d;
+         seq.wait_value = (float)d;
       } else  if (equal_ustring(mxml_get_attribute(pn, "for"), "ODBValue")) {
          if (!eval_var(mxml_get_value(pn), str, sizeof(str)))
             return;
-         v = atof(str);
+         v = (float)atof(str);
          seq.wait_limit = v;
          strcpy(seq.wait_type, "ODB");
          if (!mxml_get_attribute(pn, "path")) {
@@ -2314,7 +2314,7 @@ void sequencer()
                size = sizeof(data);
                db_get_data_index(hDB, hKey, data, &size, index, key.type);
                db_sprintf(str, data, size, 0, key.type);
-               seq.wait_value = atof(str);
+               seq.wait_value = (float)atof(str);
                if (mxml_get_attribute(pn, "op"))
                   strlcpy(op, mxml_get_attribute(pn, "op"), sizeof(op));
                else
@@ -2352,13 +2352,13 @@ void sequencer()
          if (!eval_var(mxml_get_value(pn), str, sizeof(str)))
             return;
          n = atoi(str);
-         seq.wait_limit = n;
+         seq.wait_limit = (float)n;
          strcpy(seq.wait_type, "Seconds");
          if (seq.start_time == 0) {
             seq.start_time = ss_time();
             seq.wait_value = 0;
          } else {
-            seq.wait_value = ss_time() - seq.start_time;
+            seq.wait_value = (float)(ss_time() - seq.start_time);
             if (seq.wait_value > seq.wait_limit)
                seq.wait_value = seq.wait_limit;
          }
