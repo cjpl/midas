@@ -276,7 +276,7 @@ INT read_trigger_event(char *pevent, INT off)
    bk_init(pevent);
 
    /* create structured ADC0 bank */
-   bk_create(pevent, "ADC0", TID_WORD, &pdata);
+   bk_create(pevent, "ADC0", TID_WORD, (void **)&pdata);
 
    /* wait for ADC conversion */
    for (timeout = 100; timeout > 0; timeout--) {
@@ -303,7 +303,7 @@ INT read_trigger_event(char *pevent, INT off)
    bk_close(pevent, pdata);
 
    /* create variable length TDC bank */
-   bk_create(pevent, "TDC0", TID_WORD, &pdata);
+   bk_create(pevent, "TDC0", TID_WORD, (void **)&pdata);
 
    /* use following code to read out real CAMAC TDC */
    /*
@@ -345,7 +345,7 @@ INT read_scaler_event(char *pevent, INT off)
    bk_init(pevent);
 
    /* create SCLR bank */
-   bk_create(pevent, "SCLR", TID_DWORD, &pdata);
+   bk_create(pevent, "SCLR", TID_DWORD, (void **)&pdata);
 
    /* read scaler bank */
    for (a = 0; a < N_SCLR; a++)

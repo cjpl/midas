@@ -245,7 +245,7 @@ INT trigger_thread(void *param)
          bk_init(pdata);
          
          /* create ADC0 bank */
-         bk_create(pdata, "ADC0", TID_WORD, &padc);
+         bk_create(pdata, "ADC0", TID_WORD, (void **)&padc);
          
          /* just put in some random numbers in this demo */
          for (i=0 ; i<10 ; i++)

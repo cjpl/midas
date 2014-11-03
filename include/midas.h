@@ -1847,7 +1847,7 @@ extern "C" {
    void EXPRT bk_init32(void *event);
    BOOL EXPRT bk_is32(void *event);
    INT EXPRT bk_size(void *pbh);
-   void EXPRT bk_create(void *pbh, const char *name, WORD type, void *pdata);
+   void EXPRT bk_create(void *pbh, const char *name, WORD type, void **pdata);
    INT EXPRT bk_delete(void *event, const char *name);
    INT EXPRT bk_close(void *pbh, void *pdata);
    INT EXPRT bk_list(void *pbh, char *bklist);

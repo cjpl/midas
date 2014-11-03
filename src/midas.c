@@ -13637,7 +13637,7 @@ midas.h
 @param pdata pointer to the data area of the newly created bank
 @return void
 */
-void bk_create(void *event, const char *name, WORD type, void *pdata)
+void bk_create(void *event, const char *name, WORD type, void **pdata)
 {
    if (((BANK_HEADER *) event)->flags & BANK_FORMAT_32BIT) {
       BANK32 *pbk32;
@@ -13646,7 +13646,7 @@ void bk_create(void *event, const char *name, WORD type, void *pdata)
       strncpy(pbk32->name, name, 4);
       pbk32->type = type;
       pbk32->data_size = 0;
-      *((void **) pdata) = pbk32 + 1;
+      *pdata = pbk32 + 1;
    } else {
       BANK *pbk;
 
@@ -13654,7 +13654,7 @@ void bk_create(void *event, const char *name, WORD type, void *pdata)
       strncpy(pbk->name, name, 4);
       pbk->type = type;
       pbk->data_size = 0;
-      *((void **) pdata) = pbk + 1;
+      *pdata = pbk + 1;
    }
 }
 
