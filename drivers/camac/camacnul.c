@@ -28,175 +28,175 @@
 
 /*------------------------------------------------------------------*/
 
-INLINE void cam16i(const int c, const int n, const int a, const int f, WORD * d)
+void cam16i(const int c, const int n, const int a, const int f, WORD * d)
 {
    *d = 0;
 }
-INLINE void cam24i(const int c, const int n, const int a, const int f, DWORD * d)
+void cam24i(const int c, const int n, const int a, const int f, DWORD * d)
 {
    *d = 0;
 }
-INLINE void cam16i_q(const int c, const int n, const int a, const int f, WORD * d, int *x,
+void cam16i_q(const int c, const int n, const int a, const int f, WORD * d, int *x,
                      int *q)
 {
    *d = 0;
    *q = *x = 1;
 }
-INLINE void cam24i_q(const int c, const int n, const int a, const int f, DWORD * d,
+void cam24i_q(const int c, const int n, const int a, const int f, DWORD * d,
                      int *x, int *q)
 {
    *d = 0;
    *q = *x = 1;
 }
-INLINE void cam16i_r(const int c, const int n, const int a, const int f, WORD ** d,
+void cam16i_r(const int c, const int n, const int a, const int f, WORD ** d,
                      const int r)
 {
 }
-INLINE void cam24i_r(const int c, const int n, const int a, const int f, DWORD ** d,
+void cam24i_r(const int c, const int n, const int a, const int f, DWORD ** d,
                      const int r)
 {
 }
-INLINE void cam16i_rq(const int c, const int n, const int a, const int f, WORD ** d,
+void cam16i_rq(const int c, const int n, const int a, const int f, WORD ** d,
                       const int r)
 {
 }
-INLINE void cam24i_rq(const int c, const int n, const int a, const int f, DWORD ** d,
+void cam24i_rq(const int c, const int n, const int a, const int f, DWORD ** d,
                       const int r)
 {
 }
-INLINE void cam16i_sa(const int c, const int n, const int a, const int f, WORD ** d,
+void cam16i_sa(const int c, const int n, const int a, const int f, WORD ** d,
                       const int r)
 {
 }
-INLINE void cam24i_sa(const int c, const int n, const int a, const int f, DWORD ** d,
+void cam24i_sa(const int c, const int n, const int a, const int f, DWORD ** d,
                       const int r)
 {
 }
-INLINE void cam16i_sn(const int c, const int n, const int a, const int f, WORD ** d,
+void cam16i_sn(const int c, const int n, const int a, const int f, WORD ** d,
                       const int r)
 {
 }
-INLINE void cam24i_sn(const int c, const int n, const int a, const int f, DWORD ** d,
+void cam24i_sn(const int c, const int n, const int a, const int f, DWORD ** d,
                       const int r)
 {
 }
-INLINE void cami(const int c, const int n, const int a, const int f, WORD * d)
+void cami(const int c, const int n, const int a, const int f, WORD * d)
 {
    *d = 0;
 }
-INLINE void cam16o(const int c, const int n, const int a, const int f, WORD d)
+void cam16o(const int c, const int n, const int a, const int f, WORD d)
 {
 }
-INLINE void cam24o(const int c, const int n, const int a, const int f, DWORD d)
+void cam24o(const int c, const int n, const int a, const int f, DWORD d)
 {
 }
-INLINE void cam16o_q(const int c, const int n, const int a, const int f, WORD d, int *x,
+void cam16o_q(const int c, const int n, const int a, const int f, WORD d, int *x,
                      int *q)
 {
    *q = *x = 1;
 }
-INLINE void cam24o_q(const int c, const int n, const int a, const int f, DWORD d, int *x,
+void cam24o_q(const int c, const int n, const int a, const int f, DWORD d, int *x,
                      int *q)
 {
    *q = *x = 1;
 }
-INLINE void cam16o_r(const int c, const int n, const int a, const int f, WORD * d,
+void cam16o_r(const int c, const int n, const int a, const int f, WORD * d,
                      const int r)
 {
 }
-INLINE void cam24o_r(const int c, const int n, const int a, const int f, DWORD * d,
+void cam24o_r(const int c, const int n, const int a, const int f, DWORD * d,
                      const int r)
 {
 }
-INLINE void camo(const int c, const int n, const int a, const int f, WORD d)
+void camo(const int c, const int n, const int a, const int f, WORD d)
 {
 }
-INLINE int camc_chk(const int c)
+int camc_chk(const int c)
 {
    return 0;
 }
-INLINE void camc(const int c, const int n, const int a, const int f)
+void camc(const int c, const int n, const int a, const int f)
 {
 }
-INLINE void camc_q(const int c, const int n, const int a, const int f, int *q)
+void camc_q(const int c, const int n, const int a, const int f, int *q)
 {
    *q = 1;
 }
-INLINE void camc_sa(const int c, const int n, const int a, const int f, const int r)
+void camc_sa(const int c, const int n, const int a, const int f, const int r)
 {
 }
-INLINE void camc_sn(const int c, const int n, const int a, const int f, const int r)
+void camc_sn(const int c, const int n, const int a, const int f, const int r)
 {
 }
-INLINE int cam_init(void)
+int cam_init(void)
 {
    return 1;
 }
-INLINE int cam_init_rpc(char *host_name, char *exp_name, char *fe_name, char *client_name,
+int cam_init_rpc(char *host_name, char *exp_name, char *fe_name, char *client_name,
                         char *rpc_server)
 {
    return 1;
 }
-INLINE void cam_exit(void)
+void cam_exit(void)
 {
 }
-INLINE void cam_inhibit_set(const int c)
+void cam_inhibit_set(const int c)
 {
 }
-INLINE int cam_inhibit_test(const int c)
+int cam_inhibit_test(const int c)
 {
    return 1;
 }
-INLINE void cam_inhibit_clear(const int c)
+void cam_inhibit_clear(const int c)
 {
 }
-INLINE void cam_crate_clear(const int c)
+void cam_crate_clear(const int c)
 {
 }
-INLINE void cam_crate_zinit(const int c)
+void cam_crate_zinit(const int c)
 {
 }
-INLINE void cam_lam_enable(const int c, const int n)
+void cam_lam_enable(const int c, const int n)
 {
 }
-INLINE void cam_lam_disable(const int c, const int n)
+void cam_lam_disable(const int c, const int n)
 {
 }
-INLINE void cam_lam_read(const int c, DWORD * lam)
+void cam_lam_read(const int c, DWORD * lam)
 {
    *lam = 1;
 }
-INLINE void cam_lam_clear(const int c, const int n)
+void cam_lam_clear(const int c, const int n)
 {
 }
-INLINE void cam_interrupt_enable(const int c)
+void cam_interrupt_enable(const int c)
 {
 }
-INLINE void cam_interrupt_disable(const int c)
+void cam_interrupt_disable(const int c)
 {
 }
-INLINE int cam_interrupt_test(const int c)
+int cam_interrupt_test(const int c)
 {
    return 1;
 }
-INLINE void cam_interrupt_attach(const int c, const int n, void (*isr) (void))
+void cam_interrupt_attach(const int c, const int n, void (*isr) (void))
 {
 }
-INLINE void cam_interrupt_detach(const int c, const int n)
+void cam_interrupt_detach(const int c, const int n)
 {
 }
-INLINE void cam_glint_enable(void)
+void cam_glint_enable(void)
 {
 }
-INLINE void cam_glint_disable(void)
+void cam_glint_disable(void)
 {
 }
-INLINE void cam_glint_attach(int lam, void (*isr) (void))
+void cam_glint_attach(int lam, void (*isr) (void))
 {
 }
-INLINE void cam_glint_detach()
+void cam_glint_detach()
 {
 }
-INLINE void cam_op()
+void cam_op()
 {
 }
