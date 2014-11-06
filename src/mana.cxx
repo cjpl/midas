@@ -2401,7 +2401,7 @@ INT write_event_midas(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
 
             if (!exclude) {
                /* copy bank */
-               bk_create(pbuf, (char *) (&bkname), bktype, &pdata_copy);
+	       bk_create(pbuf, (char *) (&bkname), bktype, (void **)&pdata_copy);
                memcpy(pdata_copy, pdata, bksize);
                pdata_copy += bksize;
                bk_close(pbuf, pdata_copy);
