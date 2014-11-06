@@ -1035,31 +1035,31 @@ INT cd_hv_read(char *pevent, int offset)
       bk_init(pevent);
 
       /* create DMND bank */
-      bk_create(pevent, "DMND", TID_FLOAT, &pdata);
+      bk_create(pevent, "DMND", TID_FLOAT, (void **)&pdata);
       memcpy(pdata, hv_info->demand, sizeof(float) * hv_info->num_channels);
       pdata += hv_info->num_channels;
       bk_close(pevent, pdata);
 
       /* create MSRD bank */
-      bk_create(pevent, "MSRD", TID_FLOAT, &pdata);
+      bk_create(pevent, "MSRD", TID_FLOAT, (void **)&pdata);
       memcpy(pdata, hv_info->measured, sizeof(float) * hv_info->num_channels);
       pdata += hv_info->num_channels;
       bk_close(pevent, pdata);
 
       /* create CRNT bank */
-      bk_create(pevent, "CRNT", TID_FLOAT, &pdata);
+      bk_create(pevent, "CRNT", TID_FLOAT, (void **)&pdata);
       memcpy(pdata, hv_info->current, sizeof(float) * hv_info->num_channels);
       pdata += hv_info->num_channels;
       bk_close(pevent, pdata);
 
       /* create STAT bank */
-      bk_create(pevent, "STAT", TID_DWORD, &pdata);
+      bk_create(pevent, "STAT", TID_DWORD, (void **)&pdata);
       memcpy(pdata, hv_info->chStatus, sizeof(DWORD) * hv_info->num_channels); 
       pdata += hv_info->num_channels;
       bk_close(pevent, pdata);
 
       /* create TPTR bank */
-      bk_create(pevent, "TPTR", TID_FLOAT, &pdata);
+      bk_create(pevent, "TPTR", TID_FLOAT, (void **)&pdata);
       memcpy(pdata, hv_info->temperature, sizeof(float) * hv_info->num_channels); 
       pdata += hv_info->num_channels;
       bk_close(pevent, pdata);

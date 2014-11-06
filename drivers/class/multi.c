@@ -621,7 +621,7 @@ INT cd_multi_read(char *pevent, int offset)
 
       /* create INPT bank */
       if (m_info->num_channels_input) {
-         bk_create(pevent, "INPT", TID_FLOAT, &pdata);
+         bk_create(pevent, "INPT", TID_FLOAT, (void **)&pdata);
          memcpy(pdata, m_info->var_input, sizeof(float) * m_info->num_channels_input);
          pdata += m_info->num_channels_input;
          bk_close(pevent, pdata);
@@ -629,7 +629,7 @@ INT cd_multi_read(char *pevent, int offset)
 
       /* create OUTP bank */
       if (m_info->num_channels_output) {
-         bk_create(pevent, "OUTP", TID_FLOAT, &pdata);
+         bk_create(pevent, "OUTP", TID_FLOAT, (void **)&pdata);
          memcpy(pdata, m_info->var_output, sizeof(float) * m_info->num_channels_output);
          pdata += m_info->num_channels_output;
          bk_close(pevent, pdata);

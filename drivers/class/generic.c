@@ -442,13 +442,13 @@ INT cd_gen_read(char *pevent, int offset)
       bk_init(pevent);
 
       /* create DMND bank */
-      bk_create(pevent, "DMND", TID_FLOAT, &pdata);
+      bk_create(pevent, "DMND", TID_FLOAT, (void **)&pdata);
       memcpy(pdata, gen_info->demand, sizeof(float) * gen_info->num_channels);
       pdata += gen_info->num_channels;
       bk_close(pevent, pdata);
 
       /* create MSRD bank */
-      bk_create(pevent, "MSRD", TID_FLOAT, &pdata);
+      bk_create(pevent, "MSRD", TID_FLOAT, (void **)&pdata);
       memcpy(pdata, gen_info->measured, sizeof(float) * gen_info->num_channels);
       pdata += gen_info->num_channels;
       bk_close(pevent, pdata);
