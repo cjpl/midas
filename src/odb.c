@@ -3655,7 +3655,7 @@ INT db_enum_key(HNDLE hDB, HNDLE hKey, INT idx, HNDLE * subkey_handle)
       if (pkey->type == TID_LINK) {
          strcpy(str, (char *) pheader + pkey->data);
 
-         /* no not reolve if link to array index */
+         /* no not resolve if link to array index */
          if (strlen(str) > 0 && str[strlen(str) - 1] == ']') {
             *subkey_handle = (POINTER_T) pkey - (POINTER_T) pheader;
             db_unlock_database(hDB);
@@ -8178,9 +8178,11 @@ static void db_recurse_record_tree(HNDLE hDB, HNDLE hKey, void **data,
 {
    DATABASE_HEADER *pheader;
    KEYLIST *pkeylist;
-   KEY *pkey;
+   KEY *pkey, *pold, link;
+   HNDLE hKeyLink;
    INT size, align, corr, total_size_tmp;
-
+   char link_path[MAX_ODB_PATH];
+   
    /* get first subkey of hKey */
    pheader = _database[hDB - 1].database_header;
    pkey = (KEY *) ((char *) pheader + hKey);
@@ -8192,6 +8194,28 @@ static void db_recurse_record_tree(HNDLE hDB, HNDLE hKey, void **data,
 
    /* first browse through this level */
    do {
+      pold = NULL;
+      
+      if (pkey->type == TID_LINK) {
+         strlcpy(link_path, (char *) pheader + pkey->data, sizeof(link_path));
+         
+         if (link_path[0] == '/')
+            db_find_key1(hDB, 0, link_path, &hKeyLink);
+         else
+            db_find_key1(hDB, hKey, link_path, &hKeyLink);
+
+         if (hKeyLink) {
+            db_get_key(hDB, hKeyLink, &link);
+            if (link.type == TID_KEY) {
+            db_recurse_record_tree(hDB, hKeyLink,
+                                   data, total_size, base_align, NULL, bSet, convert_flags);
+            } else {
+               pold = pkey;
+               pkey = &link;
+            }
+         }
+      }
+      
       if (pkey->type != TID_KEY) {
          /* correct for alignment */
          align = 1;
@@ -8270,7 +8294,7 @@ static void db_recurse_record_tree(HNDLE hDB, HNDLE hKey, void **data,
          if (data)
             *data = (void *) ((char *) (*data) + corr);
 
-         /* now copy subtree */
+         /* now recurse subtree */
          db_recurse_record_tree(hDB, (POINTER_T) pkey - (POINTER_T) pheader,
                                 data, total_size, base_align, NULL, bSet, convert_flags);
 
@@ -8281,6 +8305,11 @@ static void db_recurse_record_tree(HNDLE hDB, HNDLE hKey, void **data,
 
          if (bSet && pkey->notify_count)
             db_notify_clients(hDB, (POINTER_T) pkey - (POINTER_T) pheader, FALSE);
+      }
+         
+      if (pold) {
+         pkey = pold;
+         pold = NULL;
       }
 
       if (!pkey->next_key)
