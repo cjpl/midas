@@ -18,8 +18,10 @@
 		D5A57235139D664F00B65A0A /* midas.c in Sources */ = {isa = PBXBuildFile; fileRef = D5A57234139D664F00B65A0A /* midas.c */; };
 		D5A57237139D668100B65A0A /* ftplib.c in Sources */ = {isa = PBXBuildFile; fileRef = D5A57236139D668100B65A0A /* ftplib.c */; };
 		D5A5723B139D669300B65A0A /* history_midas.cxx in Sources */ = {isa = PBXBuildFile; fileRef = D5A57238139D669300B65A0A /* history_midas.cxx */; };
-		D5A5723C139D669300B65A0A /* history_sql.cxx in Sources */ = {isa = PBXBuildFile; fileRef = D5A57239139D669300B65A0A /* history_sql.cxx */; };
 		D5A5723D139D669300B65A0A /* history.c in Sources */ = {isa = PBXBuildFile; fileRef = D5A5723A139D669300B65A0A /* history.c */; };
+		D5AEADCE1A0B7E4500F18720 /* history_common.cxx in Sources */ = {isa = PBXBuildFile; fileRef = D5AEADCD1A0B7E4500F18720 /* history_common.cxx */; };
+		D5AEADD11A0B7E5900F18720 /* history_odbc.cxx in Sources */ = {isa = PBXBuildFile; fileRef = D5AEADCF1A0B7E5900F18720 /* history_odbc.cxx */; };
+		D5AEADD21A0B7E5900F18720 /* history_schema.cxx in Sources */ = {isa = PBXBuildFile; fileRef = D5AEADD01A0B7E5900F18720 /* history_schema.cxx */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -52,8 +54,10 @@
 		D5A57234139D664F00B65A0A /* midas.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = midas.c; path = /midas/src/midas.c; sourceTree = "<absolute>"; };
 		D5A57236139D668100B65A0A /* ftplib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ftplib.c; path = /midas/src/ftplib.c; sourceTree = "<absolute>"; };
 		D5A57238139D669300B65A0A /* history_midas.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = history_midas.cxx; path = /midas/src/history_midas.cxx; sourceTree = "<absolute>"; };
-		D5A57239139D669300B65A0A /* history_sql.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = history_sql.cxx; path = /midas/src/history_sql.cxx; sourceTree = "<absolute>"; };
 		D5A5723A139D669300B65A0A /* history.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = history.c; path = /midas/src/history.c; sourceTree = "<absolute>"; };
+		D5AEADCD1A0B7E4500F18720 /* history_common.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = history_common.cxx; path = /midas/src/history_common.cxx; sourceTree = "<absolute>"; };
+		D5AEADCF1A0B7E5900F18720 /* history_odbc.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = history_odbc.cxx; path = /midas/src/history_odbc.cxx; sourceTree = "<absolute>"; };
+		D5AEADD01A0B7E5900F18720 /* history_schema.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = history_schema.cxx; path = /midas/src/history_schema.cxx; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,8 +91,10 @@
 		D5A57213139D63EF00B65A0A /* Source Files */ = {
 			isa = PBXGroup;
 			children = (
+				D5AEADCF1A0B7E5900F18720 /* history_odbc.cxx */,
+				D5AEADD01A0B7E5900F18720 /* history_schema.cxx */,
+				D5AEADCD1A0B7E4500F18720 /* history_common.cxx */,
 				D5A57238139D669300B65A0A /* history_midas.cxx */,
-				D5A57239139D669300B65A0A /* history_sql.cxx */,
 				D5A5723A139D669300B65A0A /* history.c */,
 				D5A57236139D668100B65A0A /* ftplib.c */,
 				D5A57234139D664F00B65A0A /* midas.c */,
@@ -144,7 +150,7 @@
 		D5A57207139D63EF00B65A0A /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0460;
+				LastUpgradeCheck = 0610;
 				ORGANIZATIONNAME = PSI;
 			};
 			buildConfigurationList = D5A5720A139D63EF00B65A0A /* Build configuration list for PBXProject "mlogger" */;
@@ -173,14 +179,16 @@
 				D5A57223139D642A00B65A0A /* elog.c in Sources */,
 				D5A57225139D642A00B65A0A /* mrpc.c in Sources */,
 				D5A57226139D642A00B65A0A /* odb.c in Sources */,
+				D5AEADCE1A0B7E4500F18720 /* history_common.cxx in Sources */,
 				D5A57227139D642A00B65A0A /* system.c in Sources */,
 				D5A5722C139D645500B65A0A /* mxml.c in Sources */,
 				D5A5722D139D645500B65A0A /* strlcpy.c in Sources */,
 				D5A57233139D662F00B65A0A /* mlogger.cxx in Sources */,
 				D5A57235139D664F00B65A0A /* midas.c in Sources */,
+				D5AEADD21A0B7E5900F18720 /* history_schema.cxx in Sources */,
+				D5AEADD11A0B7E5900F18720 /* history_odbc.cxx in Sources */,
 				D5A57237139D668100B65A0A /* ftplib.c in Sources */,
 				D5A5723B139D669300B65A0A /* history_midas.cxx in Sources */,
-				D5A5723C139D669300B65A0A /* history_sql.cxx in Sources */,
 				D5A5723D139D669300B65A0A /* history.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -191,11 +199,14 @@
 		D5A57217139D63EF00B65A0A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = DEBUG;
@@ -203,7 +214,9 @@
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				ONLY_ACTIVE_ARCH = YES;
@@ -214,16 +227,21 @@
 		D5A57218139D63EF00B65A0A /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				SDKROOT = macosx;

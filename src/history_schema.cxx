@@ -455,7 +455,8 @@ HsSchema* HsSchemaVector::find_event(const char* event_name, time_t t)
 {
    HsSchema* ss = NULL;
 
-   if (0) {
+#if 0
+   {
       printf("find_event: All schema for event %s: (total %d)\n", event_name, (int)data.size());
       int found = 0;
       for (unsigned i=0; i<data.size(); i++) {
@@ -467,6 +468,7 @@ HsSchema* HsSchemaVector::find_event(const char* event_name, time_t t)
       }
       printf("find_event: Found %d schemas for event %s\n", found, event_name);
    }
+#endif
 
    for (unsigned i=0; i<data.size(); i++) {
       HsSchema* s = data[i];
@@ -487,10 +489,12 @@ HsSchema* HsSchemaVector::find_event(const char* event_name, time_t t)
          ss = s;
    }
 
-   if (0 && ss) {
+#if 0
+   if (ss) {
       printf("find_event: for time %s, returning:\n", TimeToString(t).c_str());
       ss->print();
    }
+#endif
 
    return ss;
 }
@@ -2634,9 +2638,11 @@ int SchemaHistoryBase::hs_read_buffer(time_t start_time, time_t end_time,
          return status;
    }
 
-   if (0 && fDebug)
+#if 0
+   if (fDebug)
       fSchema.print(false);
-
+#endif
+   
    for (int i=0; i<num_var; i++) {
       hs_status[i] = HS_UNDEFINED_VAR;
    }
@@ -2673,10 +2679,12 @@ int SchemaHistoryBase::hs_read_buffer(time_t start_time, time_t end_time,
 
          ia[i] = sindex;
 
-         if (0&&fDebug) {
+#if 0
+         if (fDebug) {
             printf("For event [%s] tag [%s] index [%d] found schema: ", event_name[i], var_name[i], var_index[i]);
             s->print();
          }
+#endif
       }
    }
 
@@ -3959,9 +3967,10 @@ static int ReadMysqlTableNames(SqlBase* sql, HsSchemaVector *sv, const char* tab
       const char* xtable_name  = sql->GetText(1);
       time_t      xevent_time  = sql->GetTime(2);
 
-      if (0)
-         printf("read event name [%s] table name [%s] time %s\n", xevent_name, xtable_name, TimeToString(xevent_time).c_str());
-
+#if 0
+      printf("read event name [%s] table name [%s] time %s\n", xevent_name, xtable_name, TimeToString(xevent_time).c_str());
+#endif
+      
       HsSqlSchema* s = new HsSqlSchema;
       s->sql = sql;
       s->event_name = xevent_name;
@@ -4091,6 +4100,7 @@ int MysqlHistory::read_column_names(HsSchemaVector *sv, const char* table_name, 
    return HS_SUCCESS;
 }
 
+#if 0
 static int ReadMysqlTableSchema(SqlBase* sql, HsSchemaVector *sv, const char* table_name, int debug)
 {
    if (debug)
@@ -4109,6 +4119,7 @@ static int ReadMysqlTableSchema(SqlBase* sql, HsSchemaVector *sv, const char* ta
 
    return ReadMysqlTableNames(sql, sv, table_name, debug);
 }
+#endif
 
 int MysqlHistory::read_table_and_event_names(HsSchemaVector *sv)
 {
@@ -4339,12 +4350,14 @@ int FileHistory::read_schema(HsSchemaVector* sv, const char* event_name, const t
    // note: reverse iterator is used to sort filenames by time, newest first
    std::sort(flist.rbegin(), flist.rend());
 
-   if (0) {
+#if 0
+   {
       printf("file names sorted by time:\n");
       for (unsigned i=0; i<flist.size(); i++) {
          printf("%d: %s\n", i, flist[i].c_str());
       }
    }
+#endif
 
    for (unsigned i=0; i<flist.size(); i++) {
       std::string file_name = fPath + flist[i];
@@ -4505,11 +4518,13 @@ HsSchema* FileHistory::new_event(const char* event_name, time_t timestamp, int n
 
    assert(s != NULL);
 
-   if (0) {
+#if 0
+   {
       printf("schema for [%s] is %p\n", event_name, s);
       if (s)
          s->print();
    }
+#endif
 
    HsFileSchema* e = new HsFileSchema();
 
@@ -4610,11 +4625,12 @@ int FileHistory::create_file(const char* event_name, time_t timestamp, int ntags
       if (xdebug)
          printf("tag %d, tsize %d, n_bytes %d, xalign %d\n", i, tsize, n_bytes, xalign);
 
+#if 0
       // looks like history data does not do alignement and padding
-      if (0 && xalign != 0) {
+      if (xalign != 0) {
          padded = true;
          int pad_bytes = tsize - xalign;
-assert(pad_bytes > 0);
+         assert(pad_bytes > 0);
 
          ss += "tag: ";
          ss    += "XPAD";
@@ -4634,7 +4650,8 @@ assert(pad_bytes > 0);
          fprintf(stderr, "FIXME: need to debug padding!\n");
          //abort();
       }
-
+#endif
+      
       ss += "tag: ";
       ss    += rpc_tid_name(tags[i].type);
       ss    += " ";

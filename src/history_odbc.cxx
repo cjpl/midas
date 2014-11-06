@@ -152,9 +152,10 @@ static int sql2midasType(const char* name)
 
 static bool isCompatible(int tid, const char* sqlType)
 {
-   if (0)
-      printf("compare types midas \'%s\'=\'%s\' and sql \'%s\'\n", midasTypeName(tid), midas2sqlType(tid), sqlType);
-
+#if 0
+   printf("compare types midas \'%s\'=\'%s\' and sql \'%s\'\n", midasTypeName(tid), midas2sqlType(tid), sqlType);
+#endif
+   
    if (sql2midasType(sqlType) == tid)
       return true;
 
@@ -953,6 +954,7 @@ struct IndexEntry
 
 std::vector<IndexEntry*> gHistoryIndex;
 
+#if 0
 static void PrintIndex()
 {
    for (unsigned i=0; i<gHistoryIndex.size(); i++) {
@@ -964,6 +966,7 @@ static void PrintIndex()
          printf("  tag %d: [%s] [%s], time %d\n", j, e->tags[j].tag_name.c_str(), e->tags[j].column_name.c_str(), e->tags[j].timestamp);
    }
 }
+#endif
 
 static IndexEntry* FindIndexByTableName(const char* table_name)
 {

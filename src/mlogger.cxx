@@ -2742,13 +2742,15 @@ static int add_event(int* indexp, time_t timestamp, int event_id, const char* ev
    int size, i;
    int index = *indexp;
 
-   if (0) {   
+#if 0
+   {
       /* print the tags */
       printf("add_event: event %d, name \"%s\", ntags %d\n", event_id, event_name, ntags);
       for (i=0; i<ntags; i++) {
          printf("tag %d: name \"%s\", type %d, n_data %d\n", i, tags[i].name, tags[i].type, tags[i].n_data);
       }
    }
+#endif
 
    /* check for duplicate event id's */
    for (i=0; i<index; i++) {
