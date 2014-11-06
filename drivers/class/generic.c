@@ -94,7 +94,8 @@ INT gen_read(EQUIPMENT * pequipment, int channel)
       /* update if change is more than update_threshold */
       if ((ss_isnan(gen_info->measured[i]) && !ss_isnan(gen_info->measured_mirror[i])) ||
           (!ss_isnan(gen_info->measured[i]) && ss_isnan(gen_info->measured_mirror[i])) ||
-          (abs(gen_info->measured[i] - gen_info->measured_mirror[i]) >
+          (!ss_isnan(gen_info->measured[i]) && !ss_isnan(gen_info->measured_mirror[i]) &&
+           abs(gen_info->measured[i] - gen_info->measured_mirror[i]) >
            gen_info->update_threshold[i])) {
          for (i = 0; i < gen_info->num_channels; i++)
             gen_info->measured_mirror[i] = gen_info->measured[i];

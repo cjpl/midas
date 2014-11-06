@@ -111,8 +111,9 @@ void multi_read(EQUIPMENT * pequipment, int channel)
 
    /* check if significant change since last ODB update */
    for (i = 0; i < m_info->num_channels_input; i++)
-      if ((abs(m_info->var_input[i] - m_info->input_mirror[i]) >
-           m_info->update_threshold[i]) || 
+      if ((!ss_isnan(m_info->var_input[i]) && !ss_isnan(m_info->input_mirror[i]) &&
+           abs(m_info->var_input[i] - m_info->input_mirror[i]) >
+           m_info->update_threshold[i]) ||
           (ss_isnan(m_info->var_input[i]) && !ss_isnan(m_info->input_mirror[i])) ||
           (!ss_isnan(m_info->var_input[i]) && ss_isnan(m_info->input_mirror[i])))
          break;
