@@ -79,17 +79,17 @@ void v1720_ChannelSet(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel, uin
   if (what == V1720_CHANNEL_DAC)         mask = 0xFFFF;
   reg = what | (channel << 8);
   printf("base:0x%x reg:0x%x, this:%x\n", base, reg, that);
-  regWrite(mvme, base, reg, (that & 0xFFF));
+  regWrite(mvme, base, reg, (that & mask));
 }
 
 /*****************************************************************/
 uint32_t v1720_ChannelGet(MVME_INTERFACE *mvme, uint32_t base, uint32_t channel, uint32_t what)
 {
-  uint32_t reg, mask;
+  uint32_t reg;
 
-  if (what == V1720_CHANNEL_THRESHOLD)   mask = 0x0FFF;
-  if (what == V1720_CHANNEL_OUTHRESHOLD) mask = 0x0FFF;
-  if (what == V1720_CHANNEL_DAC)         mask = 0xFFFF;
+  //  if (what == V1720_CHANNEL_THRESHOLD)   mask = 0x0FFF;
+  //  if (what == V1720_CHANNEL_OUTHRESHOLD) mask = 0x0FFF;
+  //  if (what == V1720_CHANNEL_DAC)         mask = 0xFFFF;
   reg = what | (channel << 8);
   return regRead(mvme, base, reg);
 }
@@ -264,6 +264,54 @@ uint32_t v1720_DataRead(MVME_INTERFACE *mvme, uint32_t base, uint32_t *pdata, ui
   return i;
 }
 
+/*-PAA- Contains the KO modifications for reading the V1740/42 
+        Presently the block mode seem to fail on the last bytes, work around
+        is to read the last bytes through normal PIO. Caen has been
+        contacted about this problem.
+ */
+void v1720_DataBlockRead(MVME_INTERFACE* mvme, uint32_t base, uint32_t* pbuf32, int nwords32)
+{
+  int i, to_read32, status;
+  uint32_t w;
+  printf("--------------------- DataBlockRead() nwords32:%d\n", nwords32);
+  if (nwords32 < 100) { // PIO
+    for (i=0; i<nwords32; i++) {
+      w = regRead(mvme, base, 0);
+      //printf("word %d: 0x%08x\n", i, w);                                                    
+      *pbuf32++ = w;
+    }
+  } else {
+    mvme_set_dmode(mvme, MVME_DMODE_D32);
+    //    mvme_set_blt(mvme, MVME_BLT_BLT32);                                                     
+    //mvme_set_blt(mvme, MVME_BLT_MBLT64);                                                    
+    //mvme_set_blt(mvme, MVME_BLT_2EVME);                                                     
+    mvme_set_blt(mvme, MVME_BLT_2ESST);
+
+    while (nwords32>0) {
+      to_read32 = nwords32;
+      to_read32 &= ~0x3;
+      if (to_read32*4 >= 0xFF0)
+        to_read32 = 0xFF0/4;
+      else
+        to_read32 = nwords32 - 8;
+      if (to_read32 <= 0)
+        break;
+      printf("going to read: read %d, total %d\n", to_read32*4, nwords32*4);                
+      status=mvme_read(mvme, pbuf32, base, to_read32*4);
+      printf("read %d, status %d, total %d\n", to_read32*4, status, nwords32*4);            
+      nwords32 -= to_read32;
+      pbuf32 += to_read32;
+    }
+
+    while (nwords32) {
+      *pbuf32 = regRead(mvme, base, 0);
+      pbuf32++;
+      nwords32--;
+    }
+  }
+}
+
+#if 0
 /********************************************************************/
 /** v1720_DataBlockRead
 Read N entries (32bit) 
@@ -290,7 +338,7 @@ uint32_t v1720_DataBlockRead(MVME_INTERFACE *mvme, uint32_t base, uint32_t *pdes
 
   return (*nentry);
 }
-
+#endif
 
 /*****************************************************************/
 void  v1720_Status(MVME_INTERFACE *mvme, uint32_t base)
