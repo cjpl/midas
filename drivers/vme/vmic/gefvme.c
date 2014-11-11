@@ -660,14 +660,16 @@ int gefvme_read_dma(MVME_INTERFACE *mvme, void *dst, mvme_addr_t vme_addr, int n
 
   if (vmeDma.vmeDmaStatus != 0x02000000) {
     //*((uint32_t*)dst) = 0xdeadbeef;
-    printf("mvme_read_dma: DMA error, read %6d out of %6d bytes from 0x%08x, status 0x%08x, srcAddr 0x%08x, dstAddr 0x%08x\n", bytesRead, n_bytes, vme_addr, vmeDma.vmeDmaStatus, vmeDma.srcAddr, vmeDma.dstAddr);
+    printf("mvme_read_dma: DMA error, read %6d out of %6d bytes from 0x%08x, status 0x%08x, srcAddr 0x%08x, dstAddr 0x%08x\n"
+					 , bytesRead, n_bytes, vme_addr, vmeDma.vmeDmaStatus, vmeDma.srcAddr, vmeDma.dstAddr);
     fprintf(stderr,"mvme_read_dma: ioctl(VME_IOCTL_START_DMA) returned vmeDmaStatus 0x%08x\n", vmeDma.vmeDmaStatus);
     n_bytes = bytesRead;
     //return MVME_ACCESS_ERROR;
   }
   
   if (bytesRead!=0 && bytesRead!=n_bytes) {
-    printf("mvme_read_dma: DMA %6d of %6d bytes from 0x%08x, status 0x%08x, srcAddr 0x%08x, dstAddr 0x%08x\n", n_bytes, bytesRead, vme_addr, vmeDma.vmeDmaStatus, vmeDma.srcAddr, vmeDma.dstAddr);
+    printf("mvme_read_dma: DMA %6d of %6d bytes from 0x%08x, status 0x%08x, srcAddr 0x%08x, dstAddr 0x%08x\n"
+					 , n_bytes, bytesRead, vme_addr, vmeDma.vmeDmaStatus, vmeDma.srcAddr, vmeDma.dstAddr);
     fprintf(stderr,"mvme_read_dma: ioctl(VME_IOCTL_START_DMA) returned byteCount %d while requested read of %d bytes\n", bytesRead, n_bytes);
     return MVME_ACCESS_ERROR;
   }
