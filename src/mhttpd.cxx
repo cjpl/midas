@@ -1,3 +1,8 @@
+
+
+
+
+
 /********************************************************************\
 
   Name:         mhttpd.cxx
@@ -3472,7 +3477,8 @@ void show_rawfile(const char *path)
 
    rsprintf("<tr><td colspan=2>\n");
 
-   rsprintf("<pre>\n");
+   //PAA change font to fix and left-aligned for the runlog only.
+   rsprintf("<pre style='font-family:monospace; text-align:left'>\n");
 
    buf_size = sizeof(buffer);
 
@@ -3522,7 +3528,7 @@ void show_rawfile(const char *path)
 
    rsputs(buffer);
 
-   rsprintf("</pre>\n");
+   rsprintf("</pre></font>\n");
 
    rsprintf("</td></tr></table>\r\n");
    page_footer(TRUE);
