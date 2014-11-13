@@ -209,12 +209,12 @@ message(STATUS "MIDAS_LIBS: ${midas_libs}")
 ################################################################
 
 # Addons: mdaq-config
-configure_file(cmake/addons/mdaq-config.in
+configure_file(addons/mdaq-config.in
   ${PROJECT_BINARY_DIR}/bin/mdaq-config
   @ONLY)
 
 # pkg-config: mdaq.pc
-configure_file(cmake/addons/mdaq.pc.in
+configure_file(addons/mdaq.pc.in
   ${PROJECT_BINARY_DIR}/mdaq.pc
   @ONLY)
 
@@ -242,9 +242,9 @@ install(FILES  odb.xsd utils/notify.wav src/elogd.cfg
   DESTINATION ${INSTALL_DATADIR})
 
 # install addons
-install(FILES cmake/addons/exptab cmake/addons/mdaq.yaml
+install(FILES addons/exptab addons/mdaq.yaml
   DESTINATION ${INSTALL_DATADIR})
 install(FILES ${PROJECT_BINARY_DIR}/mdaq.pc
   DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
-install(PROGRAMS cmake/addons/mdaq  ${PROJECT_BINARY_DIR}/bin/mdaq-config
+install(PROGRAMS addons/mdaq  ${PROJECT_BINARY_DIR}/bin/mdaq-config
   DESTINATION bin)

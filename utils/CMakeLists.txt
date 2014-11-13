@@ -28,7 +28,6 @@ endif("${UTILS}" MATCHES "dio")
 foreach(exe ${UTILS})
   add_dependencies(${exe} midas)
   target_link_libraries(${exe} midas)
-  set_target_properties(${exe} PROPERTIES  LINK_FLAGS "${LDFLAGS}")
 endforeach(exe)
 
 ## Scripts: how to create symlink `stripchart`?
