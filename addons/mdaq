@@ -3,13 +3,16 @@
 '''
    Python script to handle midas daq sessions.
    Author: Exaos Lee <Exaos DOT Lee AT gmail>
-   Start Date: 2011-09-12, Chinese Fullmoon Festival
+   Log:
+   - 2011-09-12, Chinese Fullmoon Festival: first version
+   - 2014-11-13, After APEC: using subprocess to invoke other programs
 '''
-
+from __future__ import print_function  # for python2
 import os, sys, signal, time, yaml
-from pprint   import pprint
-from optparse import OptionParser # 2.6 ~ 3.2, argparse needs python>2.7
-
+import subprocess as sp
+from subprocess import call
+from pprint     import pprint
+from optparse   import OptionParser # 2.6 ~ 3.2, argparse needs python>2.7
 if sys.version >= "3.0":
     from subprocess import getoutput
 else:
@@ -108,8 +111,16 @@ def mdaq_run(args):
     if os.path.isfile(cmd):
         opts = " ".join(args[1:])
         if verbose: print("Starting %s ...\n\tOptions: %s"%(cmd,opts))
-        os.system( "%s %s"%(cmd,opts) )
-    else:  print("%s:\n\texecutable doesn't exist!"%(cmd))
+        try:
+            retcode = call("%s %s"%(cmd,opts))
+            if retcode < 0:
+                print("Child has terminated by signa", -retcode, file=sys.stderr)
+            else:
+                print("Child returned:", retcode, file=sys.stderr)
+        except OSError as e:
+            print("Execution failed:", e, file=sys.stderr)
+    else:
+        print("%s:\n\texecutable doesn't exist!"%(cmd))
 
 #-----------------------------------------------------------------------
 # Experiment DAQ config
