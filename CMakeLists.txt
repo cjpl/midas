@@ -61,7 +61,7 @@ set(NEED_ROOT    TRUE)
 set(NEED_MSCB    FALSE)
 # set(NEED_LIBROOTA TRUE) # use static root library?
 
-# maxmimum event size = ?
+# maxmimum event size = (default = 0x400000, 4M)
 #set(MIDAS_MAX_EVENT_SIZE 1000000)
 
 ################################################################
@@ -248,3 +248,4 @@ install(FILES ${PROJECT_BINARY_DIR}/mdaq.pc
   DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
 install(PROGRAMS addons/mdaq  ${PROJECT_BINARY_DIR}/bin/mdaq-config
   DESTINATION bin)
+install(DIRECTORY cmake  DESTINATION ${INSTALL_DATADIR})
