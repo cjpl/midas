@@ -1,0 +1,45 @@
+# Experiment configuration example
+# The configuration divided into two parts
+# 1. experiment -- define experiment base information
+# 2. midassys -- define parameters for MIDAS utilities
+
+# Experiment information
+experiment:
+  # The experiment ID, no space in it!
+  id: test
+  info: This is the example experiment using MIDAS DAQ system.
+  paths:
+    base: ./
+    data: ./data
+    bin: ./bin
+  analyzer:
+    name: analyzer
+    info: example online analyzer
+    options: []
+  frontend:
+    name: frontend
+    info: example frontend code
+    options: []
+
+# MIDAS System
+midas_sys:
+  path: /opt/daq
+  bin:  /opt/daq/bin
+  single: true
+  exptab: ''
+  host: ''
+  mhttpd: # MIDAS HTTPD Server
+    enabled: true
+    options: [-D]
+    port: 8080
+  mlogger: # Data Logger
+    enabled: true
+    options: [-D]
+  mserver: # MIDAS Server
+    enabled: true
+    options: [-D, -m]
+  odbedit: # Online DB Editor
+    enabled: false
+    options: []
+    script: ''
+

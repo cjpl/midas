@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+
+# check path
+fullpath1=`readlink $0`
+if [ "$?" -ne "0" ]; then
+    fullpath1=$0
+else
+    if [ ${fullpath1##/} = $fullpath1 ] && [ ${fullpath1##~} = $fullpath1 ]; then
+        # relative path, prepend directory where executable was found
+	lpath=`dirname $0`
+	fullpath1=$lpath/$fullpath1
+    fi
+fi
+progdir=`dirname $fullpath1`
+runningdir=`pwd`
+if [ ${progdir##/} != $progdir ] || [ ${progdir##~} != $progdir ]; then
+    # absolute path
+    fullpath=$progdirs
+else
+    # relative path
+    if [ $progdir != "." ]; then
+	fullpath=$runningdir/$progdir
+    else
+	fullpath=$runningdir
+    fi
+fi
+
+target=@target@
+platform=@platform@
+
+prefix=@CMAKE_INSTALL_PREFIX@
+execdir=@INSTALL_LIBEXECDIR@
+bindir=@INSTALL_LIBEXECDIR@/bin
+libdir=@INSTALL_LIBDIR@
+incdir=@INSTALL_INCLUDEDIR@
+datadir=@INSTALL_DATADIR@
+srcdir=@INSTALL_DATADIR@/src
+drvdir=@INSTALL_DATADIR@/drivers
+examplesdir=@INSTALL_DATADIR@/examples
+docdir=@INSTALL_DOCDIR@
+
+config="@CMAKE_OPTIONS@"
+
+enable_root=@ROOT_ENABLED@
+enable_root_static=@ROOT_STATIC_ENABLED@
+mdaq_cflags="@MDAQ_CFLAGS@ -I@INSTALL_INCLUDEDIR@"
+mdaq_libs="@MDAQ_LIBS@ -L@INSTALL_LIBDIR@ -lmidas"
+mdaq_shlibs="@MDAQ_LIBS@ -L@INSTALL_LIBDIR@ -lmidas-shared"
+
+version=@MIDAS_VERSION_MAJOR@.@MIDAS_VERSION_MINOR@.0.@MIDAS_VERSION_REVISION@
+
+altcc="@CMAKE_C_COMPILER@"
+altcxx="@CMAKE_CXX_COMPILER@"
+altld="@CMAKE_LD@"
+
+#### Main
+usage="\
+Usage: mdaq-config [--config] [--target] [--platform]\
+ [--cflags] [--libs] [--shlibs] [--enable-root] [--enable-root-static]\
+ [--prefix] [--execdir] [--bindir] [--libdir] [--incdir] [--datadir]\
+ [--srcdir] [--drvdir] [--docdir] [--examplesdir]\
+ [--help] [--version]"
+
+if test $# -eq 0; then
+    echo "$usage" 1>&2
+    exit 1
+fi
+
+out=""
+
+while test $# -gt 0; do
+    case "$1" in
+	-*=*) optarg=`echo "$1" | sed 's/[-_a-zA-Z0-9]*=//'` ;;
+	*)    optarg= ;;
+    esac
+
+    case $1 in
+	--config)
+	    out="$out $config"
+	    ;;
+	--target)
+	    out="$out $target"
+	    ;;
+	--platform)
+	    out="$out $platform"
+	    ;;
+	--cflags)
+	    out="$out ${mdaq_cflags}"
+	    ;;
+	--libs)
+	    out="$out ${mdaq_libs}"
+	    ;;
+	--shlibs)
+	    out="$out ${mdaq_shlibs}"
+	    ;;
+	--enable-root)
+	    out="$out ${enable_root}"
+	    ;;
+	--enable-root-static)
+	    out="$out ${enable_root_static}"
+	    ;;
+	--prefix)
+	    out="$out $prefix"
+	    ;;
+	--execdir)
+	    out="$out $execdir"
+	    ;;
+	--bindir)
+	    out="$out $bindir"
+	    ;;
+	--libdir)
+	    out="$out $libdir"
+	    ;;
+	--incdir)
+	    out="$out $incdir"
+	    ;;
+	--datadir)
+	    out="$out $datadir"
+	    ;;
+	--srcdir)
+	    out="$out $srcdir"
+	    ;;
+	--drvdir)
+	    out="$out $drvdir"
+	    ;;
+	--docdir)
+	    out="$out $docdir"
+	    ;;
+	--examplesdir)
+	    out="$out $examplesdir"
+	    ;;
+	--version)
+	    out="$out $version"
+	    ;;
+	--help)
+	    echo "${usage}"
+	    ;;
+	*)
+      ### Give an error
+	    echo "Unknown argument \"$1\"!" 1>&2
+	    echo "${usage}" 1>&2
+	    exit 1
+	    ;;
+    esac
+    shift
+done
+
+## Output
+echo $out
+

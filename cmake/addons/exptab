@@ -1,0 +1,4 @@
+#### Midas experiment list
+# Format: <expname> <absolute path> <username>
+# Example:
+#   mdaq_test  /home/das/online/mdaq_test  das

@@ -1,0 +1,18 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=@INSTALL_LIBEXECDIR@
+bindir=@INSTALL_LIBEXECDIR@/bin
+libdir=@INSTALL_LIBDIR@
+includedir=@INSTALL_INCLUDEDIR@
+datadir=@INSTALL_DATADIR@
+srcdir=@INSTALL_DATADIR@/src
+drvdir=@INSTALL_DATADIR@/drivers
+examplesdir=@INSTALL_DATADIR@/examples
+docdir=@INSTALL_DOCDIR@
+
+Name: mdaq
+Description: DAQ system based on midas
+Version: @MIDAS_VERSION_MAJOR@.@MIDAS_VERSION_MINOR@.0.@MIDAS_VERSION_REVISION@
+URL: http://midas.psi.ch
+Requires:
+Libs: @MDAQ_LIBS@ -L@INSTALL_LIBDIR@ -lmidas
+Cflags: @MDAQ_CFLAGS@ -I@INSTALL_INCLUDEDIR@
