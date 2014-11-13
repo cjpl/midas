@@ -1,0 +1,44 @@
+msc
+darwin
+linux
+git-revision.h
+analyzer
+frontend
+*~
+mtfe
+
+# auto-generated files
+include/git-revision.h
+
+# Build project files: Windows
+*.sln
+*.dsw
+*.dsp
+*.vcproj
+*.vcxproj
+*.vcxproj.*
+
+# build files under Mac OS X
+*.xcodeproj/
+
+# temporary files and dirs for build
+/build/
+/bin/
+/lib/
+*.o
+*.obj
+
+# ## from upstream
+
+*.lst
+*.obj
+*.M51
+*.lnp
+*.bak
+*.plg
+mscb/embedded/scs_210_dev/scs_210_maxigauge
+*.__i
+mscb_fe
+scfe
+NT/bin/mhttpd.exp
+NT/lib/midas.exp

@@ -44,28 +44,39 @@ add_custom_target(mfe ALL DEPENDS ${LIBRARY_OUTPUT_PATH}/mfe.o)
 
 ## generating fal.o
 add_custom_command( OUTPUT ${LIBRARY_OUTPUT_PATH}/fal.o
-  DEPENDS fal.cxx
-  COMMAND ${CMAKE_C_COMPILER}
-  ARGS -I${CMAKE_SOURCE_DIR}/include -I${MXML_PATH} -Dextname -DMANA_LITE -c ${CMAKE_SOURCE_DIR}/src/fal.cxx
+  DEPENDS fal.c
+  COMMAND ${CMAKE_CXX_COMPILER}
+  ARGS -I${CMAKE_SOURCE_DIR}/include -I${MXML_PATH} -Dextname -DMANA_LITE -c ${CMAKE_SOURCE_DIR}/src/fal.c
   WORKING_DIRECTORY ${LIBRARY_OUTPUT_PATH})
 add_custom_target(fal ALL DEPENDS ${LIBRARY_OUTPUT_PATH}/fal.o)
 
 ## analyzer objects: mana.o
 add_custom_command( OUTPUT ${LIBRARY_OUTPUT_PATH}/mana.o
-  DEPENDS mana.cxx
+  DEPENDS mana.c
   COMMAND ${CMAKE_C_COMPILER}
-  ARGS -I${CMAKE_SOURCE_DIR}/include ${CFLAGS} -c ${CMAKE_SOURCE_DIR}/src/mana.cxx
+  ARGS -I${CMAKE_SOURCE_DIR}/include ${CFLAGS} -c ${CMAKE_SOURCE_DIR}/src/mana.c
   WORKING_DIRECTORY ${LIBRARY_OUTPUT_PATH})
 add_custom_target(mana ALL DEPENDS ${LIBRARY_OUTPUT_PATH}/mana.o)
 
 set(EXTRA_MOBJS mfe.o fal.o mana.o)
 
+## hmana.o
+if(NEED_CERNLIB)
+  add_custom_command( OUTPUT ${LIBRARY_OUTPUT_PATH}/hmana.o
+    DEPENDS mana.c
+    COMMAND ${CMAKE_C_COMPILER}
+    ARGS -I${CMAKE_SOURCE_DIR}/include -Dextname -DHAVE_HBOOK -o hmana.o -c ${CMAKE_SOURCE_DIR}/src/mana.c
+    WORKING_DIRECTORY ${LIBRARY_OUTPUT_PATH})
+  add_custom_target(hmana ALL DEPENDS ${LIBRARY_OUTPUT_PATH}/hmana.o)
+  set(EXTRA_MOBJS ${EXTRA_MOBJS} hmana.o )
+endif(NEED_CERNLIB)
+
 # rmana.o
 if(ROOT_ENABLED)
-  set(ARG_LIST "-DUSE_ROOT ${ROOT_CFLAGS} -I${CMAKE_SOURCE_DIR}/include -o rmana.o -c ${CMAKE_SOURCE_DIR}/src/mana.cxx")
+  set(ARG_LIST "-DUSE_ROOT ${ROOT_CFLAGS} -I${CMAKE_SOURCE_DIR}/include -o rmana.o -c ${CMAKE_SOURCE_DIR}/src/mana.c")
   separate_arguments(ARG_LIST)
   add_custom_command( OUTPUT ${LIBRARY_OUTPUT_PATH}/rmana.o
-    DEPENDS mana.cxx
+    DEPENDS mana.c
     COMMAND ${CMAKE_CXX_COMPILER}
     ARGS ${ARG_LIST}
     WORKING_DIRECTORY ${LIBRARY_OUTPUT_PATH})
@@ -73,26 +84,15 @@ if(ROOT_ENABLED)
   set(EXTRA_MOBJS ${EXTRA_MOBJS} rmana.o )
 endif(ROOT_ENABLED)
 
-## hmana.o
-if(NEED_CERNLIB)
-  add_custom_command( OUTPUT ${LIBRARY_OUTPUT_PATH}/hmana.o
-    DEPENDS mana.cxx
-    COMMAND ${CMAKE_C_COMPILER}
-    ARGS -I${CMAKE_SOURCE_DIR}/include -Dextname -DHAVE_HBOOK -o hmana.o -c ${CMAKE_SOURCE_DIR}/src/mana.cxx
-    WORKING_DIRECTORY ${LIBRARY_OUTPUT_PATH})
-  add_custom_target(hmana ALL DEPENDS ${LIBRARY_OUTPUT_PATH}/hmana.o)
-  set(EXTRA_MOBJS ${EXTRA_MOBJS} hmana.o )
-endif(NEED_CERNLIB)
-
 ############################################################
 ## Core Utilties
 set( CORE_UTILS  mserver  mhttpd  mlogger odbedit lazylogger  mtransition )
 
 add_executable(mserver     mserver.c)
-add_executable(mhttpd      mhttpd.cxx mongoose.c mgd.c sequencer.cxx ${MSCB_SRC})
+add_executable(mhttpd      mhttpd.cxx mgd.c sequencer.cxx ${MSCB_SRC})
 add_executable(mlogger     mlogger.cxx)
-add_executable(odbedit     odbedit.cxx  cmdedit.cxx)
-add_executable(lazylogger  lazylogger.cxx  mdsupport.cxx)
+add_executable(odbedit     odbedit.c  cmdedit.c)
+add_executable(lazylogger  lazylogger.cxx  mdsupport.c)
 add_executable(mtransition mtransition.cxx)
 
 ## mhttpd -- something special
@@ -100,24 +100,16 @@ set_target_properties(mhttpd
   PROPERTIES LINKER_LANGUAGE CXX LINK_FLAGS "-lm ${LDFLAGS}")
 
 ## mlogger
-# MySQL: $(mysql_config --libs), $(mysql_config --include)
-if(MYSQL_FOUND)
-  message(STATUS "MySQL support will be added to mblogger")
-  set(MYSQL_CFLAGS "-DHAVE_MYSQL -I${MYSQL_INCLUDE_DIR}")
-endif(MYSQL_FOUND)
-# with ROOT?
-if(ROOT_ENABLED)
-  set_target_properties(mlogger PROPERTIES
-    COMPILE_FLAGS "${MYSQL_CFLAGS} ${BUILD_ROOT_FLAGS}"
-    LINK_FLAGS    "${MYSQL_LIBRARIES} ${ROOT_LIBRARIES} ${LDFLAGS}")
-else(ROOT_ENABLED)
-  set_target_properties(mlogger PROPERTIES
-    COMPILE_FLAGS "${MYSQL_CFLAGS}"
-    LINK_FLAGS    "${MYSQL_LIBRARIES} ${LDFLAGS}")
-endif(ROOT_ENABLED)
+# MySQL and with ROOT?
+set_target_properties(mlogger
+  PROPERTIES
+  LINKER_LANGUAGE CXX
+  COMPILE_FLAGS "${MYSQL_CFLAGS} ${BUILD_ROOT_FLAGS}"
+  LINK_FLAGS    "${MYSQL_LIBRARIES} ${ROOT_LIBRARIES} ${LDFLAGS}")
+message(STATUS "mlogger link: ${MYSQL_LIBRARIES} ${ROOT_LIBRARIES} ${LDFLAGS}")
 
 ## Core LINK Tests
-set( LINK_TESTS  mfe_link_test mana_link_test fal_link_test )
+set( LINK_TESTS  mfe_link_test mana_link_test )
 
 # mfe_link_test
 add_executable(mfe_link_test mfe.c)
@@ -125,20 +117,14 @@ set_target_properties(mfe_link_test PROPERTIES
   COMPILE_FLAGS "-DLINK_TEST ${CFLAGS}"  LINKER_LANGUAGE C)
 
 # mana_link_test
-add_executable(mana_link_test mana.cxx)
+add_executable(mana_link_test mana.c)
 set_target_properties(mana_link_test PROPERTIES
-  COMPILE_FLAGS "-DLINK_TEST ${CFLAGS}"  LINKER_LANGUAGE CXX)
-
-# fal_link_test
-add_executable(fal_link_test fal.cxx)
-set_target_properties(fal_link_test PROPERTIES
-  COMPILE_FLAGS "-DMANA_LITE -DLINK_TEST ${CFLAGS}"  LINKER_LANGUAGE CXX)
+  COMPILE_FLAGS "-DLINK_TEST ${CFLAGS}"  LINKER_LANGUAGE C)
 
 ## All targets need to link to midas library
 
 foreach(exe ${CORE_UTILS} ${LINK_TESTS})
   target_link_libraries(${exe} midas)
-  set_target_properties(${exe} PROPERTIES LINK_FLAGS "${LDFLAGS}")
 endforeach(exe)
 
 ################################################################

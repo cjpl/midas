@@ -2,21 +2,22 @@
 ## Extra utilities
 set(UTILS
   mtape   mhist  mstat  mdump  mhdump  mchart  webpaw  odbhist  melog
-  mh2sql  mjson_test    mcnaf  ${EXTRA_UTILS} )
+  mcnaf  ${EXTRA_UTILS} )
 
 add_executable(mtape   mtape.c)
-add_executable(mhist   mhist.cxx)
+add_executable(mhist   mhist.c)
 add_executable(mstat   mstat.c)
-add_executable(mdump   mdump.cxx ../src/mdsupport.cxx)
+add_executable(mdump   mdump.c ../src/mdsupport.c)
 add_executable(mhdump  mhdump.cxx)
 add_executable(mchart  mchart.c)
 add_executable(webpaw  webpaw.c)
 add_executable(odbhist odbhist.c)
 add_executable(melog   melog.c)
-add_executable(mh2sql  mh2sql.cxx)
-add_executable(mjson_test  mjson_test.cxx)
-add_executable(mcnaf       mcnaf.c ../drivers/camac/camacrpc.c)
+add_executable(mcnaf   mcnaf.c ../drivers/camac/camacrpc.c)
 
+if("${UTILS}" MATCHES "mh2sql")
+  add_executable(mh2sql  mh2sql.cxx)
+endif("${UTILS}" MATCHES "mh2sql")
 if("${UTILS}" MATCHES "mlxspeaker")
   add_executable(mlxspeaker mlxspeaker.c)
 endif("${UTILS}" MATCHES "mlxspeaker")

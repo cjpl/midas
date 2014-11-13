@@ -169,6 +169,12 @@ if(ZLIB_FOUND)
   set(midas_libs   ${midas_libs} -lz)
 endif(ZLIB_FOUND)
 
+## MySQL
+if(MYSQL_FOUND)
+  message(STATUS "MySQL support will be added to mblogger")
+  set(MYSQL_CFLAGS "-DHAVE_MYSQL -I${MYSQL_INCLUDE_DIR}")
+endif(MYSQL_FOUND)
+
 ## ROOT
 set(ROOT_ENABLED NO)
 set(ROOT_STATIC_ENABLED NO)
@@ -196,29 +202,11 @@ foreach(o ${midas_cflags})
 endforeach(o)
 
 ## messages
+set(CMAKE_EXE_LINKER_FLAGS "${LDFLAGS}")
 message(STATUS "MIDAS_CFLAGS: ${midas_cflags}")
 message(STATUS "MIDAS_LIBS: ${midas_libs}")
 
 ################################################################
-# generate git-revision.h
-find_program(GIT_EXECUTABLE git)
-if(GIT_EXECUTABLE)
-  execute_process(
-    COMMAND ${GIT_EXECUTABLE} --no-pager log -n 1 --pretty=format:"%ad - %h"
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE GIT_REVISION
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-  message(STATUS "Apply git-revision: ${GIT_REVISION}")
-endif(GIT_EXECUTABLE)
-configure_file(include/git-revision.h.in
-  ${CMAKE_SOURCE_DIR}/include/git-revision.h
-  @ONLY)
-
-# MIDAS library and core executables
-add_subdirectory(src)
-
-# MIDAS utils
-add_subdirectory(utils)
 
 # Addons: mdaq-config
 configure_file(cmake/addons/mdaq-config.in
@@ -229,6 +217,12 @@ configure_file(cmake/addons/mdaq-config.in
 configure_file(cmake/addons/mdaq.pc.in
   ${PROJECT_BINARY_DIR}/mdaq.pc
   @ONLY)
+
+# MIDAS library and core executables
+add_subdirectory(src)
+
+# MIDAS utils
+add_subdirectory(utils)
 
 # MIDAS doc
 #add_subdirectory(doc)
@@ -244,8 +238,7 @@ install(DIRECTORY src
   FILES_MATCHING REGEX ".(c|cxx)")
 install(DIRECTORY examples  DESTINATION ${INSTALL_DATADIR})
 install(DIRECTORY drivers   DESTINATION ${INSTALL_DATADIR})
-install(DIRECTORY resources DESTINATION ${INSTALL_DATADIR})
-install(FILES  odb.xsd ssl_cert.pem utils/notify.wav src/elogd.cfg
+install(FILES  odb.xsd utils/notify.wav src/elogd.cfg
   DESTINATION ${INSTALL_DATADIR})
 
 # install addons
