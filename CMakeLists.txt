@@ -236,7 +236,9 @@ add_subdirectory(utils)
 
 ################################################################
 # install: headers
-install(DIRECTORY include/
+install(DIRECTORY include/  DESTINATION ${INSTALL_INCLUDEDIR})
+install(FILES
+  ${MXML_PATH}/mxml.h  ${MXML_PATH}/strlcpy.h
   DESTINATION ${INSTALL_INCLUDEDIR})
 
 # install: src, examples, drivers
