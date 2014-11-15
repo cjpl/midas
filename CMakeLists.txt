@@ -96,7 +96,14 @@ endif(NEED_MSCB)
 ## Find ROOT environment
 include(FindROOT)
 if(ROOT_FOUND)
-  message("** Libraries and utilities will be compiled with ROOT.")
+  execute_process(
+    COMMAND ${ROOT_CONFIG_EXECUTABLE} --cflags
+    OUTPUT_VARIABLE ROOT_CFLAGS
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  execute_process(
+    COMMAND ${ROOT_CONFIG_EXECUTABLE} --libs
+    OUTPUT_VARIABLE ROOT_LIBS
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
 else(ROOT_FOUND)
   message("** WARNING: ROOTSYS not found in your system!")
   message("            All ROOT related codes will not be compiled!")
@@ -179,7 +186,7 @@ endif(MYSQL_FOUND)
 set(ROOT_ENABLED NO)
 set(ROOT_STATIC_ENABLED NO)
 if(NEED_ROOT AND ROOT_FOUND)
-  message(STATUS "Using ROOTSYS found at ${ROOTSYS}")
+  message(STATUS "Using ROOTSYS (${ROOT_VERSION}) found at ${ROOTSYS}")
   set(ROOT_ENABLED YES)
   set(BUILD_ROOT_FLAGS "-DHAVE_ROOT ${ROOT_CFLAGS}")
 endif(NEED_ROOT AND ROOT_FOUND)

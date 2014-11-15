@@ -21,7 +21,6 @@ endif(NEED_STRLCPY)
 if(NEED_FTPLIB)
   set(LIB_OBJS  ${LIB_OBJS}  ${FTPLIB}.c)
 endif(NEED_FTPLIB)
-message(STATUS "LIB_OBJS: ${LIB_OBJS}")
 
 ## Add static lib
 add_library(midas STATIC ${LIB_OBJS})
@@ -105,8 +104,7 @@ set_target_properties(mlogger
   PROPERTIES
   LINKER_LANGUAGE CXX
   COMPILE_FLAGS "${MYSQL_CFLAGS} ${BUILD_ROOT_FLAGS}"
-  LINK_FLAGS    "${MYSQL_LIBRARIES} ${ROOT_LIBRARIES} ${LDFLAGS}")
-message(STATUS "mlogger link: ${MYSQL_LIBRARIES} ${ROOT_LIBRARIES} ${LDFLAGS}")
+  LINK_FLAGS    "${MYSQL_LIBRARIES} ${ROOT_LIBS} ${LDFLAGS}")
 
 ## Core LINK Tests
 set( LINK_TESTS  mfe_link_test mana_link_test )
