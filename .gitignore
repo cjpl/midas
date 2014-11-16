@@ -12,11 +12,14 @@ include/git-revision.h
 
 # Build project files: Windows
 *.sln
+*.suo
 *.dsw
 *.dsp
 *.vcproj
 *.vcxproj
 *.vcxproj.*
+*.pch
+*.ncb
 
 # build files under Mac OS X
 *.xcodeproj/
